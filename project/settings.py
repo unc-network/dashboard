@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'welcome',
 
+    # Our Apps
+    'akips',
+
     # Celery
     'django_celery_results',
     'django_celery_beat',
