@@ -16,6 +16,15 @@ class Home(View):
     def get(self, request, *args, **kwargs):
         context = {}
 
+        return render(request, self.template_name, context=context)
+
+class TaskTest(View):
+    ''' Generic first view '''
+    template_name = 'akips/home.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
         # Call example task
         example_task.delay()
 
