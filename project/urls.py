@@ -21,7 +21,8 @@ from welcome.views import index, health
 from akips.views import Home
 
 urlpatterns = [
-    path('', Home.as_view(), name='home'),
+    #path('', Home.as_view(), name='home'),
+    path('', index, name='home'),
     path('health/', health),
     path('admin/', admin.site.urls),
 
