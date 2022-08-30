@@ -23,6 +23,8 @@ urlpatterns = [
     path('', index, name='home'),
     path('health/', health),
     path('admin/', admin.site.urls),
+
+    path('akips/', include('akips.urls')),
 ]
 
 if settings.DEBUG:
