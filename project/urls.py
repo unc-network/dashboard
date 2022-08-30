@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from welcome.views import index, health
-from akips.views import Home
+#from akips.views import Home
 
 urlpatterns = [
     #path('', Home.as_view(), name='home'),
