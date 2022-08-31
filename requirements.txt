@@ -9,6 +9,7 @@ whitenoise==6.0.0
 
 # General
 python-dotenv
+requests
 
 # Django LDAP 
 django-auth-ldap
