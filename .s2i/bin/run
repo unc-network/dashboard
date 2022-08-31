@@ -48,6 +48,11 @@ APP_HOME=$(readlink -f "${APP_HOME:-.}")
 PYTHONPATH="$(pwd)${PYTHONPATH:+:$PYTHONPATH}"
 cd "$APP_HOME"
 
+if [-z "$RUN_CELERY"]; then
+  echo "---> Starting Celery..."
+  exec ./celery.py --app project worker -B
+fi
+
 if [ -z "$APP_SCRIPT" ] && [ -z "$APP_FILE" ] && [ -z "$APP_MODULE" ]; then
   # Set default values for APP_SCRIPT and APP_FILE only when all three APP_
   # variables are not defined by user. This prevents a situation when
