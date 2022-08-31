@@ -4,6 +4,7 @@ import logging
 import requests
 import re
 import pprint
+import json
 import ipaddress
 
 # Get an instance logger
@@ -136,3 +137,35 @@ class AKIPS:
             logger.debug('API request finished successfully, response code: %i %s'
                         % (r.status_code, r.reason))
             return r.text
+
+class NIT:
+    # Class to handle interactions with the NIT
+    nit_server = os.getenv('NIT_SERVER', '')
+    nit_username = os.getenv('NIT_USERNAME', '')
+    nit_password = os.getenv('NIT_PASSWORD', '')
+    session = requests.Session()
+
+    def get_device_data(self, params=None):
+        ''' Search and Read Objects: GET Method '''
+        url = 'https://' + self.nit_server + '/json/full_dump_with_aps.json'
+        logger.debug("WAPI GET %s" % (url))
+        logger.debug("WAPI GET params: " + pprint.pformat(params))
+        #params['username'] = self.nit_username
+        #params['password'] = self.nit_password
+        # GET requests have 2 args: URL, HEADERS
+        r = self.session.get(url, params=params, verify=False)
+
+        # Return Status/Errors
+        # 200	Normal return. Referenced object or result of search in body.
+        if r.status_code != 200:
+            # Errors come back in the page text and look like below:
+            # ERROR: api-db invalid username/password
+            logger.warning('WAPI request finished with error, response code: %i %s'
+                        % (r.status_code, r.reason))
+            #json_object = r.json()
+            #logger.warning('Error message: %s' % json_object['Error'])
+            return None
+        else:
+            logger.debug('API request finished successfully, response code: %i %s'
+                        % (r.status_code, r.reason))
+            return json.loads(r.text)

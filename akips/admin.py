@@ -8,7 +8,7 @@ from akips.models import Device,Unresponsive,Summary
 class AKIPS_deviceAdmin(admin.ModelAdmin):
     list_display = ('name', 'ip4addr', 'tier', 'building_name', 'type', 'sysName', 'last_refresh')
     list_filter = ['tier','building_name', 'type']
-    search_fields = ['name', 'ip4addr']
+    search_fields = ['name', 'sysName','ip4addr']
 
 @admin.register(Unresponsive)
 class AKIPS_unresponsiveAdmin(admin.ModelAdmin):

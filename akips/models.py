@@ -16,6 +16,7 @@ class Device(models.Model):
 
     class Meta:
         ordering = ['name']
+        indexes = [ models.Index(fields=['ip4addr'])]
 
     def __str__(self):
         return str(self.name)

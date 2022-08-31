@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models import Count
 
 from .models import Device, Unresponsive
-from akips.utils import AKIPS
+from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
 logger = logging.getLogger(__name__)
@@ -52,15 +52,43 @@ def refresh_akips_devices():
                     'sysName': value['SNMPv2-MIB.sysName'],
                     'sysDescr': value['SNMPv2-MIB.sysDescr'],
                     'sysLocation': value['SNMPv2-MIB.sysLocation'],
-                    'tier': tier,
-                    'building_name': bldg_name,
-                    'type': type,
+                    #'tier': tier,
+                    #'building_name': bldg_name,
+                    #'type': type,
                     'last_refresh': now
                 }
             )
             time.sleep(0.05)
 
         # Update summary totals
+
+@shared_task
+def refresh_nit():
+    logger.debug("Refeshing nit device data")
+
+    nit = NIT()
+    device_data = nit.get_device_data()
+    #logger.debug("nit data {}".format(device_data))
+    if device_data:
+        for device in device_data['nodes']:
+            logger.debug("Updating device {}".format(device))
+            if 'hierarchy' in device and device['hierarchy']:
+                type = device['hierarchy']
+            elif 'type' in device and device['type']:
+                type = device['type'].upper()
+            else:
+                type = ''
+            if device['building_name'] is None:
+                device['building_name'] = ''
+            Device.objects.filter(ip4addr=device['ip']).update(
+                #tier=device['tier1'],
+                building_name=device['building_name'],
+                type=device['type'].upper()
+                #type=device['hierarchy'].upper()
+            )
+            #logger.debug("Found devices {}".format(devices))
+            time.sleep(0.05)
+
 
 @shared_task
 def refresh_unreachable():
