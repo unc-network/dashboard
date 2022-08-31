@@ -49,7 +49,7 @@ PYTHONPATH="$(pwd)${PYTHONPATH:+:$PYTHONPATH}"
 cd "$APP_HOME"
 
 echo "---> Starting Celery..."
-exec ./celery --app project worker -B
+exec celery --app project worker -B
 # if [-z "$RUN_CELERY"]; then
 #   echo "---> Starting Celery..."
 #   exec ./celery.py --app project worker -B
