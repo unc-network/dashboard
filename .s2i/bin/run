@@ -48,7 +48,7 @@ APP_HOME=$(readlink -f "${APP_HOME:-.}")
 PYTHONPATH="$(pwd)${PYTHONPATH:+:$PYTHONPATH}"
 cd "$APP_HOME"
 
-if [-z "$RUN_CELERY"]; then
+if [ -z "$RUN_CELERY" ]; then
   echo "---> Starting Celery..."
   exec celery --app project worker -l INFO -B 
 fi
