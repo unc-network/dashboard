@@ -1,3 +1,63 @@
 from django.db import models
 
 # Create your models here.
+
+class Device(models.Model):
+    # devices from akips
+    name = models.CharField(max_length=255, unique=True)
+    ip4addr = models.GenericIPAddressField()
+    sysName = models.CharField(max_length=255)
+    sysDescr = models.CharField(max_length=255)
+    sysLocation = models.CharField(max_length=255)
+    tier = models.CharField(max_length=255)
+    building_name = models.CharField(max_length=255)
+    type = models.CharField(max_length=255)
+    last_refresh = models.DateTimeField()
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return str(self.name)
+
+class Unresponsive(models.Model):
+    # unresponsive events from akips
+    #device = models.ForeignKey(AKIPS_device, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    child = models.CharField(max_length=255)
+    attribute = models.CharField(max_length=255)
+    device_added = models.DateTimeField()
+    event_start = models.DateTimeField()
+    ip4addr = models.GenericIPAddressField()
+    last_refresh = models.DateTimeField()
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return str(self.name)
+
+class Summary(models.Model):
+    TYPE_CHOICES = (
+        ('Distribution', 'Distribution'),
+        ('Building', 'Building')
+    )
+    STATE_CHOICES = (
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    )
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    status = models.CharField(max_length=32, choices=STATE_CHOICES)
+    name = models.CharField(max_length=255)
+    switch_count = models.IntegerField()
+    ap_count = models.IntegerField()
+    ups_count = models.IntegerField()
+    total_count = models.IntegerField()
+    percent_down = models.DecimalField(max_digits=3,decimal_places=3)
+    last_event = models.DateTimeField()
+    trend = models.CharField(max_length=255)
+    incident = models.CharField(max_length=255)
+
+    def __str__(self):
+        return str(self.type)
+
