@@ -3,12 +3,14 @@ import os
 import logging
 import requests
 import re
+import pprint
 import ipaddress
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
 
-class AKIPS_API:
+
+class AKIPS:
     # Class to handle interactions with the NIT database
     akips_server = os.getenv('AKIPS_SERVER', '')
     akips_username = os.getenv('AKIPS_USERNAME', '')
@@ -18,7 +20,7 @@ class AKIPS_API:
     def get_devices(self):
         ''' Pull a list of fields for all devices in akips '''
         params = {
-            'cmds': 'mget text * sys /ip.addr|SNMPv2-MIB.sysName|SNMPv2-MIB.sysDescr/',
+            'cmds': 'mget text * sys /ip.addr|SNMPv2-MIB.sysName|SNMPv2-MIB.sysDescr|SNMPv2-MIB.sysLocation/',
         }
         text = self.get(params=params)
         if text:
@@ -38,6 +40,7 @@ class AKIPS_API:
                             'ip4addr': '',
                             'SNMPv2-MIB.sysName': '',
                             'SNMPv2-MIB.sysDescr': '',
+                            'SNMPv2-MIB.sysLocation': '',
                         }
                     # Save this attribute value to data
                     data[ match.group(1) ][ match.group(3) ] = match.group(4)
@@ -72,6 +75,40 @@ class AKIPS_API:
             if name:
                 data['name'] = name
             logger.debug("Found device {} in akips".format( data ))
+            return data
+        return None
+
+    def get_unreachable(self):
+        ''' Pull a list of unreachable IPv4 ping devices '''
+        params = {
+            'cmds': 'mget * * ping4 PING.icmpState value /down/',
+        }
+        text = self.get(params=params)
+        if text:
+            data = {} 
+            # Data comes back as 'plain/text' type so we have to parse it
+            # Example output, data on each line:
+            # 152.19.198.33 ping4 PING.icmpState = 1,down,1519844016,1646695881,152.19.198.33
+            # 152.19.198.37 ping4 PING.icmpState = 1,down,1519844016,1642967467,152.19.198.37
+            # 172.22.37.68 ping4 PING.icmpState = 1,down,1443798140,1659405567,172.22.37.68
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)$", line)
+                if match:
+                    if match.group(1) not in data:
+                        # Populate a default entry for all desired fields
+                        data[ match.group(1) ] = {
+                            'child': match.group(2),
+                            'attribute': match.group(3),
+                            'index': match.group(4),
+                            'state': match.group(5),
+                            'device_added': match.group(6), # epoch in local timezone
+                            'event_start': match.group(7),  # epoch in local timezone
+                            'ip4addr': match.group(8),
+                        }
+                    # Save this attribute value to data
+                    #data[ match.group(1) ][ match.group(3) ] = match.group(4)
+            logger.debug("Found {} devices in akips".format( len( data.keys() )))
             return data
         return None
 
