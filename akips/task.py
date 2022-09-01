@@ -83,7 +83,8 @@ def refresh_nit():
             Device.objects.filter(ip4addr=device['ip']).update(
                 #tier=device['tier1'],
                 building_name=device['building_name'],
-                type=device['type'].upper()
+                type=type.upper()
+                #type=device['type'].upper()
                 #type=device['hierarchy'].upper()
             )
             #logger.debug("Found devices {}".format(devices))
