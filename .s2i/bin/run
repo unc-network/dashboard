@@ -50,7 +50,7 @@ cd "$APP_HOME"
 
 if [ ! -z "$RUN_CELERY" ]; then
   echo "---> Starting Celery..."
-  exec celery --app project worker -l INFO -B 
+  exec celery --app project worker -l DEBUG -B 
 fi
 
 if [ -z "$APP_SCRIPT" ] && [ -z "$APP_FILE" ] && [ -z "$APP_MODULE" ]; then
