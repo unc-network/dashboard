@@ -52,7 +52,7 @@ def refresh_akips_devices():
                     'sysName': value['SNMPv2-MIB.sysName'],
                     'sysDescr': value['SNMPv2-MIB.sysDescr'],
                     'sysLocation': value['SNMPv2-MIB.sysLocation'],
-                    #'tier': tier,
+                    'tier': tier,
                     #'building_name': bldg_name,
                     #'type': type,
                     'last_refresh': now
