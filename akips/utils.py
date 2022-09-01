@@ -121,8 +121,8 @@ class AKIPS:
         params['username'] = self.akips_username
         params['password'] = self.akips_password
         # GET requests have 2 args: URL, HEADERS
-        #r = self.session.get(url, params=params, verify=False)
-        r = self.session.get(url, params=params)
+        # Verify is off because the 'certifi' python module is missing the InCommon interim CA
+        r = self.session.get(url, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
