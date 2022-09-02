@@ -11,6 +11,7 @@ class Device(models.Model):
     sysLocation = models.CharField(max_length=255)
     tier = models.CharField(max_length=255)
     building_name = models.CharField(max_length=255)
+    hierarcy = models.CharField(max_length=255)
     type = models.CharField(max_length=255)
     last_refresh = models.DateTimeField()
 

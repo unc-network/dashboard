@@ -76,17 +76,24 @@ def refresh_nit():
         for device in device_data['nodes']:
             logger.debug("Updating device {}".format(device))
             if 'hierarchy' in device and device['hierarchy']:
-                type = device['hierarchy']
+                hierarcy = device['hierarchy']
+                if device['hierarchy'] in ['TIER1','BES','EDGE','SPINE','POD']:
+                    type = 'SWITCH'
+                else:
+                    type = device['hierarchy']
             elif 'type' in device and device['type']:
+                hierarcy = ''
                 type = device['type'].upper()
             else:
+                hierarcy = ''
                 type = ''
             if device['building_name'] is None:
                 device['building_name'] = ''
             Device.objects.filter(ip4addr=device['ip']).update(
                 #tier=device['tier1'],
                 building_name=device['building_name'],
-                type=type.upper()
+                type=type.upper(),
+                hierarcy=hierarcy.upper()
                 #type=device['type'].upper()
                 #type=device['hierarchy'].upper()
             )

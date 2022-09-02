@@ -18,15 +18,14 @@ from django.contrib import admin
 from django.urls import include, path
 
 from welcome.views import index, health
-#from akips.views import Home
 
 urlpatterns = [
-    #path('', Home.as_view(), name='home'),
-    path('', index, name='home'),
+    #path('', index, name='home'),
+    path('', include('akips.urls')),
     path('health/', health),
     path('admin/', admin.site.urls),
 
-    path('akips/', include('akips.urls')),
+    #path('akips/', include('akips.urls')),
 ]
 
 if settings.DEBUG:
