@@ -118,31 +118,19 @@ def refresh_unreachable():
                     'last_refresh': now,
                 }
             )
-            Unresponsive.objects.update_or_create(
-                #device = AKIPS_device(name=key),
-                name = key,     # akips device name
-                defaults = {
-                    # 'name': key,                        # akips device name
-                    'child': value['child'],            # ping4
-                    'attribute': value['attribute'],    # PING.icmpState
-                    #'index': value['index'],            # 1
-                    #'state': value['state'],            # down
-                    'device_added': datetime.fromtimestamp( int(value['device_added']), tz=timezone.get_current_timezone()),
-                    'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
-                    'ip4addr': value['ip4addr'],
-                    'last_refresh': now,
-                }
-            )
             time.sleep(0.05)
 
         # Remove stale entries
         Unreachable.objects.exclude(last_refresh=now).delete()
-        Unresponsive.objects.exclude(last_refresh=now).delete()
 
         # Update summary totals
-        #tier_switch_count = AKIPS_unresponsive.objects.filter(type='SW').values('tier').annotate(total=Count('tier')).order_by('tier')
-        #tier_ap_count = AKIPS_unresponsive.objects.filter(type='AP').values('tier').annotate(total=Count('tier')).order_by('tier')
-        #tier_ups_count = AKIPS_unresponsive.objects.filter(type='UPS').values('tier').annotate(total=Count('tier')).order_by('tier')
-        #bldg_switch_count = AKIPS_unresponsive.objects.filter(type='SW').values('building_name').annotate(total=Count('building_name')).order_by('building_name')
-        #bldg_ap_count = AKIPS_unresponsive.objects.filter(type='AP').values('building_name').annotate(total=Count('building_name')).order_by('building_name')
-        #bldg_ups_count = AKIPS_unresponsive.objects.filter(type='UPS').values('building_name').annotate(total=Count('building_name')).order_by('building_name')
+        tier_count = {}
+        tier_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        tier_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        tier_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        logger.info("unreachable tier counts {}".format(tier_count))
+        building_count = {}
+        building_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        building_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        building_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        logger.info("unreachable building counts {}".format(building_count))
