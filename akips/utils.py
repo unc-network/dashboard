@@ -94,6 +94,10 @@ class AKIPS:
             # 152.19.198.33 ping4 PING.icmpState = 1,down,1519844016,1646695881,152.19.198.33
             # 152.19.198.37 ping4 PING.icmpState = 1,down,1519844016,1642967467,152.19.198.37
             # 172.22.37.68 ping4 PING.icmpState = 1,down,1443798140,1659405567,172.22.37.68
+            #
+            # Example child attribute values
+            # ping4	PING.icmpState	1,down,1575702020,1662054938,172.29.172.68
+            # sys	SNMP.snmpState	1,down,1575702020,1662054911,
             lines = text.split('\n')
             for line in lines:
                 match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)$", line)

@@ -21,6 +21,24 @@ class Device(models.Model):
     def __str__(self):
         return str(self.name)
 
+class Unreachable(models.Model):
+    # Unresponsive devices from akips
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    child = models.CharField(max_length=255)
+    attribute = models.CharField(max_length=255)
+    index = models.CharField(max_length=255)    # extracted from value
+    state = models.CharField(max_length=255)    # extracted from value
+    device_added = models.DateTimeField()       # extracted from value
+    event_start = models.DateTimeField()        # extracted from value
+    ip4addr = models.GenericIPAddressField()    # extracted from value
+    last_refresh = models.DateTimeField()
+
+    class Meta:
+        ordering = ['ip4addr']
+
+    def __str__(self):
+        return str(self.device)
+
 class Unresponsive(models.Model):
     # unresponsive events from akips
     #device = models.ForeignKey(AKIPS_device, on_delete=models.CASCADE)

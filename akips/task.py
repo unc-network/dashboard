@@ -7,7 +7,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unresponsive
+from .models import Device, Unreachable, Unresponsive
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -60,6 +60,9 @@ def refresh_akips_devices():
             )
             time.sleep(0.05)
 
+        # Remove stale entries
+        Device.objects.exclude(last_refresh=now).delete()
+
         # Update summary totals
 
 @shared_task
@@ -98,22 +101,43 @@ def refresh_unreachable():
     akips = AKIPS()
     devices = akips.get_unreachable()
     if devices:
-        #now = datetime.now()
         now = timezone.now()
         for key, value in devices.items():
             logger.debug("{}: {}".format(key, value))
-            Unresponsive.objects.update_or_create(
-                #device = AKIPS_device(name=key),
-                name = key,
+            Unreachable.objects.update_or_create(
+                device = Device.objects.get(name=key),
                 defaults = {
-                    'name': key,
-                    'ip4addr': value['ip4addr'],
+                    # 'name': key,                        # akips device name
+                    'child': value['child'],            # ping4
+                    'attribute': value['attribute'],    # PING.icmpState
+                    'index': value['index'],            # 1
+                    'state': value['state'],            # down
                     'device_added': datetime.fromtimestamp( int(value['device_added']), tz=timezone.get_current_timezone()),
                     'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
+                    'ip4addr': value['ip4addr'],
+                    'last_refresh': now,
+                }
+            )
+            Unresponsive.objects.update_or_create(
+                #device = AKIPS_device(name=key),
+                name = key,     # akips device name
+                defaults = {
+                    # 'name': key,                        # akips device name
+                    'child': value['child'],            # ping4
+                    'attribute': value['attribute'],    # PING.icmpState
+                    #'index': value['index'],            # 1
+                    #'state': value['state'],            # down
+                    'device_added': datetime.fromtimestamp( int(value['device_added']), tz=timezone.get_current_timezone()),
+                    'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
+                    'ip4addr': value['ip4addr'],
                     'last_refresh': now,
                 }
             )
             time.sleep(0.05)
+
+        # Remove stale entries
+        Unreachable.objects.exclude(last_refresh=now).delete()
+        Unresponsive.objects.exclude(last_refresh=now).delete()
 
         # Update summary totals
         #tier_switch_count = AKIPS_unresponsive.objects.filter(type='SW').values('tier').annotate(total=Count('tier')).order_by('tier')

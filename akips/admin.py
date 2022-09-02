@@ -1,21 +1,27 @@
 from django.contrib import admin
-from akips.models import Device,Unresponsive,Summary
+from akips.models import Device,Unreachable,Unresponsive,Summary
 
 # Register your models here.
 
 # Register your models here.
 @admin.register(Device)
-class AKIPS_deviceAdmin(admin.ModelAdmin):
+class DeviceAdmin(admin.ModelAdmin):
     list_display = ('name', 'ip4addr', 'tier', 'building_name', 'type', 'sysName', 'last_refresh')
     list_filter = ['type', 'tier','building_name']
     search_fields = ['name', 'sysName','ip4addr']
 
+@admin.register(Unreachable)
+class UnreachableAdmin(admin.ModelAdmin):
+    list_display = ('device', 'ip4addr', 'device_added', 'event_start', 'last_refresh')
+    list_filter = ['last_refresh']
+    search_fields = ['ip4addr']
+
 @admin.register(Unresponsive)
-class AKIPS_unresponsiveAdmin(admin.ModelAdmin):
+class UnresponsiveAdmin(admin.ModelAdmin):
     list_display = ('name', 'ip4addr', 'device_added', 'event_start', 'last_refresh')
     list_filter = ['last_refresh']
     search_fields = ['name', 'ip4addr']
 
 @admin.register(Summary)
-class AKIPS_summary(admin.ModelAdmin):
+class SummaryAdmin(admin.ModelAdmin):
     list_display = ('type', 'name', 'status')
