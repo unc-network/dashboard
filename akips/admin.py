@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device,Unreachable,Unresponsive,Summary
+from akips.models import Device,Unreachable,Summary
 
 # Register your models here.
 
@@ -15,12 +15,6 @@ class UnreachableAdmin(admin.ModelAdmin):
     list_display = ('device', 'ip4addr', 'device_added', 'event_start', 'last_refresh')
     list_filter = ['last_refresh']
     search_fields = ['ip4addr']
-
-@admin.register(Unresponsive)
-class UnresponsiveAdmin(admin.ModelAdmin):
-    list_display = ('name', 'ip4addr', 'device_added', 'event_start', 'last_refresh')
-    list_filter = ['last_refresh']
-    search_fields = ['name', 'ip4addr']
 
 @admin.register(Summary)
 class SummaryAdmin(admin.ModelAdmin):

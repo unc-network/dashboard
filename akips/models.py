@@ -39,23 +39,6 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
-class Unresponsive(models.Model):
-    # unresponsive events from akips
-    #device = models.ForeignKey(AKIPS_device, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
-    child = models.CharField(max_length=255)
-    attribute = models.CharField(max_length=255)
-    device_added = models.DateTimeField()
-    event_start = models.DateTimeField()
-    ip4addr = models.GenericIPAddressField()
-    last_refresh = models.DateTimeField()
-
-    class Meta:
-        ordering = ['name']
-
-    def __str__(self):
-        return str(self.name)
-
 class Summary(models.Model):
     TYPE_CHOICES = (
         ('Distribution', 'Distribution'),

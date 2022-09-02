@@ -7,7 +7,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Unresponsive
+from .models import Device, Unreachable
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
