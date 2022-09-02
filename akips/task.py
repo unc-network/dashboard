@@ -40,7 +40,11 @@ def refresh_akips_devices():
                 bldg_name = match_location.group('bldg_name')
                 type = match_location.group('type').upper()
             else:
-                tier = ''
+                match_snowflake = re.match(r'^(?P<tier>(RC|Micro|VPN))-',value['SNMPv2-MIB.sysName'])
+                if match_snowflake:
+                    tier = match_snowflake.group('tier')
+                else:
+                    tier = ''
                 bldg_name = ''
                 type = ''
             Device.objects.update_or_create(
