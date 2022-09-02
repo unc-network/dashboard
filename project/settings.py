@@ -40,6 +40,9 @@ else:
 
 ALLOWED_HOSTS = ['*']
 
+# Openshift Namespace
+# Find the namespace this application is running under.
+OPENSHIFT_NAMESPACE = os.getenv('OPENSHIFT_BUILD_NAMESPACE', 'LOCAL')
 
 # Application definition
 

@@ -10,6 +10,8 @@ import ipaddress
 # Get an instance logger
 logger = logging.getLogger(__name__)
 
+# The InCommon intermediate CA is not in the default cert bundle, disable warning.
+requests.packages.urllib3.disable_warnings()
 
 class AKIPS:
     # Class to handle interactions with the NIT database
