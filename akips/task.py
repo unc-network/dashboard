@@ -61,7 +61,7 @@ def refresh_akips_devices():
             time.sleep(0.05)
 
         # Remove stale entries
-        Device.objects.exclude(last_refresh=now).delete()
+        Device.objects.exclude(last_refresh__gte=now).delete()
 
         # Update summary totals
 
@@ -128,7 +128,7 @@ def refresh_unreachable():
             time.sleep(0.05)
 
         # Remove stale entries
-        Unreachable.objects.exclude(last_refresh=now).delete()
+        Unreachable.objects.exclude(last_refresh__gte=now).delete()
 
         # Update summary totals
         tier_count = {}
