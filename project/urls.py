@@ -20,12 +20,12 @@ from django.urls import include, path
 from welcome.views import index, health
 
 urlpatterns = [
-    #path('', index, name='home'),
-    path('', include('akips.urls')),
+    path('', index, name='home'),
+    #path('', include('akips.urls')),
     path('health/', health),
     path('admin/', admin.site.urls),
 
-    #path('akips/', include('akips.urls')),
+    path('akips/', include('akips.urls')),
 ]
 
 if settings.DEBUG:
