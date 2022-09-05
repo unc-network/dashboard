@@ -154,7 +154,7 @@ def refresh_unreachable():
                 tier_name = entry.device.tier
             else:
                 tier_name = 'Unknown'
-            logger.info("checking {}".format(tier_name))
+            logger.debug("checking {}".format(tier_name))
             if entry.device.tier not in tier_count:
                 tier_count[ tier_name ] = {
                     'SWITCH': 0,
