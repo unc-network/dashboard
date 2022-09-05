@@ -7,7 +7,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable
+from .models import Device, Unreachable, Summary
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -135,13 +135,58 @@ def refresh_unreachable():
         Unreachable.objects.exclude(last_refresh__gte=now).delete()
 
         # Update summary totals
+        # tier_count = {}
+        # tier_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        # tier_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        # tier_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
+        # logger.info("unreachable tier counts {}".format(tier_count))
+        # building_count = {}
+        # building_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        # building_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        # building_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
+        # logger.info("unreachable building counts {}".format(building_count))
+
+        # Calculate Event Updates
+        unreachables = Unreachable.objects.all()
         tier_count = {}
-        tier_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
-        tier_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
-        tier_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__tier').annotate(total=Count('device__tier')).order_by('device__tier')
-        logger.info("unreachable tier counts {}".format(tier_count))
-        building_count = {}
-        building_count['switch'] = Unreachable.objects.filter(device__type='SWITCH').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
-        building_count['ap'] = Unreachable.objects.filter(device__type='AP').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
-        building_count['ups'] = Unreachable.objects.filter(device__type='UPS').values('device__building_name').annotate(total=Count('device__building_name')).order_by('device__building_name')
-        logger.info("unreachable building counts {}".format(building_count))
+        for entry in unreachables:
+            if entry.device.tier:
+                tier_name = entry.device.tier
+            else:
+                tier_name = 'Unknown'
+            logger.info("checking {}".format(tier_name))
+            if entry.device.tier not in tier_count:
+                tier_count[ tier_name ] = {
+                    'SWITCH': 0,
+                    'AP': 0,
+                    'UPS': 0,
+                    'TOTAL': 0,
+                }
+            if entry.device.type in ['SWITCH','AP','UPS']:
+                tier_count[ tier_name ][ entry.device.type ] += 1
+                tier_count[ tier_name ][ 'TOTAL' ] += 1
+        logger.info("tier count {}".format(tier_count))
+
+        # Update the Summary Table
+        for tier_name in tier_count.keys():
+            summary_search = Summary.objects.filter(
+                type = 'Distribution',
+                name = tier_name,
+                status = 'Open'
+            )
+            if not summary_search:
+                newEvent = Summary.objects.create(
+                    type = 'Distribution',
+                    name = tier_name,
+                    status = 'Open',
+                    switch_count = tier_count[tier_name]['SWITCH'],
+                    ap_count = tier_count[tier_name]['AP'],
+                    ups_count = tier_count[tier_name]['UPS'],
+                    total_count = tier_count[tier_name]['TOTAL'],
+                    #percent_down = tier_count[tier_name]['TOTAL'] / tier_count[tier_name]['SWITCH'],
+                    percent_down = 0,
+                    last_event = now,
+                    trend = 'new',
+                    incident = 'blah'
+                )
+                #newEvent.save()
