@@ -59,7 +59,7 @@ class Summary(models.Model):
     percent_down = models.DecimalField(max_digits=3,decimal_places=3)
     last_event = models.DateTimeField()
     trend = models.CharField(max_length=255)
-    incident = models.CharField(max_length=255,Blank=True)
+    incident = models.CharField(max_length=255)
 
     def __str__(self):
         return str(self.type)
