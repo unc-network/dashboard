@@ -17,8 +17,8 @@ class Home(View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        context['tiers'] = Summary.objects.filter(type='Distribution',status='Open')
-        context['bldgs'] = Summary.objects.filter(type='Building',status='Open')
+        context['tiers'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
+        context['bldgs'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
 
         return render(request, self.template_name, context=context)
 

@@ -26,7 +26,7 @@
             <tbody>
                 {% for tier in tiers %}
                 <tr>
-                    <td>{{ tier.name }}</td>
+                    <td><a href="#">{{ tier.name }}</a></td>
                     <td>{{ tier.switch_count }}</td>
                     <td>{{ tier.ap_count }}</td>
                     <td>{{ tier.ups_count }}</td>
@@ -62,7 +62,7 @@
             <tbody>
                 {% for bldg in bldgs %}
                 <tr>
-                    <td>{{ bldg.name }}</td>
+                    <td><a href="#">{{ bldg.name }}</a></td>
                     <td>{{ bldg.switch_count }}</td>
                     <td>{{ bldg.ap_count }}</td>
                     <td>{{ bldg.ups_count }}</td>
