@@ -108,11 +108,11 @@ def refresh_nit():
 @shared_task
 def refresh_unreachable():
     logger.info("refreshing unreachable")
+    now = timezone.now()
 
     akips = AKIPS()
     devices = akips.get_unreachable()
     if devices:
-        now = timezone.now()
         for key, value in devices.items():
             logger.debug("{}: {}".format(key, value))
             Unreachable.objects.update_or_create(
@@ -185,6 +185,7 @@ def refresh_unreachable():
                     total_count = tier_count[tier_name]['TOTAL'],
                     #percent_down = tier_count[tier_name]['TOTAL'] / tier_count[tier_name]['SWITCH'],
                     percent_down = 0,
+                    first_event = now,
                     last_event = now,
                     trend = 'new',
                     incident = 'blah'
