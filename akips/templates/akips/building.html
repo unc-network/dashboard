@@ -22,7 +22,7 @@
             <tbody>
                 {% for device in devices %}
                 <tr>
-                    <td>{{ device.device.name }}</td>
+                    <td><a href="{% url 'device' device.device.name %}">{{ device.device.name }}</a></td>
                     <td>{{ device.device.ip4addr }}</td>
                     <td>{{ device.device.sysDescr }}</td>
                     <td>{{ device.last_refresh }}</td>

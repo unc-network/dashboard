@@ -72,9 +72,13 @@ class DeviceView(View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        device_name = self.kwargs.get('device', None)
+        device_name = self.kwargs.get('name', None)
         if device_name is None:
             raise Http404("Invalid Device Name")
-        context['device'] = device_name
+        context['name'] = device_name
+
+        devices = Unreachable.objects.filter(device__name=device_name)
+        logger.debug("Found devices {}".format(devices))
+        context['devices'] = devices
 
         return render(request, self.template_name, context=context)
