@@ -207,3 +207,6 @@ def refresh_unreachable():
                 #event.aps_count = 0
                 #event.ups_count = 0
                 event.save()
+
+    finish_time = timezone.now()
+    logger.info("AKIPS unreachable updated in {} seconds".format(finish_time - now))
