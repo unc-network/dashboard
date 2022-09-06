@@ -204,7 +204,7 @@ def refresh_unreachable():
                     first_event = now,
                     last_event = now,
                     trend = 'new',
-                    incident = 'blah'
+                    #incident = 'blah'
                 )
             else:
                 event = summary_search[0]
@@ -233,7 +233,7 @@ def refresh_unreachable():
                     first_event = now,
                     last_event = now,
                     trend = 'new',
-                    incident = 'blah'
+                    #incident = 'blah'
                 )
             else:
                 event = summary_search[0]
