@@ -4,11 +4,12 @@ from . import views
 
 urlpatterns = [
     path('', views.Home.as_view(), name='akips_home'),
+    path('unreachbles/', views.UnreachableView.as_view(), name='unreachable'),
 
     # Event Focus Views
-    #path('tier/<tier>/', views.TierView.as_view(), name='tier'),
-    #path('builiding/<bldg>/', views.BldgView.as_view(), name='bldg'),
-    #path('device/<name>/', views.DeviceView.as_view(), name='device'),
+    path('tier/<tier>/', views.TierView.as_view(), name='tier'),
+    path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
+    path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
@@ -19,6 +20,4 @@ urlpatterns = [
     # JSON Views
     #path('ajax/summary/', views.SummaryAJAX.as_view(), name='summary'),
 
-    # Test
-    path('task', views.TaskTest.as_view(), name='akips_tasktest'),
 ]

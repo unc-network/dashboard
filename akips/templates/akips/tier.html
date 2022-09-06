@@ -1,0 +1,35 @@
+{% extends 'akips/base.html' %}
+
+{% block page_name %}Event Focus | {{ tier }}{% endblock %}
+
+{% block content %}
+ <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Devices</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Description</th>
+                    <th>Last Event</th>
+                    <th>Hibernate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td>{{ device.device.name }}</td>
+                    <td>{{ device.device.ip4addr }}</td>
+                    <td>{{ device.device.sysDescr }}</td>
+                    <td>{{ device.last_refresh }}</td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

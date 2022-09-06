@@ -64,7 +64,7 @@
                             <input type="checkbox" class="form-check-input" id="ack_tier_{{ tier.id }}">
                         </div>
                     </td>
-                    <td><a href="#">{{ tier.name }}</a></td>
+                    <td><a href="{% url 'tier' tier.name %}">{{ tier.name }}</a></td>
                     <td>{{ tier.switch_count }}</td>
                     <td>{{ tier.ap_count }}</td>
                     <td>{{ tier.ups_count }}</td>
@@ -106,7 +106,7 @@
                             <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
                         </div>
                     </td>
-                    <td><a href="#">{{ bldg.name }}</a></td>
+                    <td><a href="{% url 'building' bldg.name %}">{{ bldg.name }}</a></td>
                     <td>{{ bldg.switch_count }}</td>
                     <td>{{ bldg.ap_count }}</td>
                     <td>{{ bldg.ups_count }}</td>
