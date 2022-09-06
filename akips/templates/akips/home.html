@@ -1,65 +1,81 @@
 {% extends 'akips/base.html' %}
 
+{% block page_name %}Dashboard{% endblock %}
+{% block page_description %}A testing overview{% endblock %}
+
+
 {% block content %}
- <h2>Test</h2>
+ <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Distribution Summary</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Tier</th>
+                    <th>Switch</th>
+                    <th>AP</th>
+                    <th>UPS</th>
+                    <th>Down</th>
+                    <th>Last Event</th>
+                    <th>Trend</th>
+                    <th>Incident</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tier in tiers %}
+                <tr>
+                    <td>{{ tier.name }}</td>
+                    <td>{{ tier.switch_count }}</td>
+                    <td>{{ tier.ap_count }}</td>
+                    <td>{{ tier.ups_count }}</td>
+                    <td>{{ tier.percent_down }}</td>
+                    <td>{{ tier.last_event }}</td>
+                    <td>{{ tier.trend }}</td>
+                    <td>{{ tier.incident }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
- <table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Tier</th>
-            <th>Switch</th>
-            <th>AP</th>
-            <th>UPS</th>
-            <th>Down</th>
-            <th>Last Event</th>
-            <th>Trend</th>
-            <th>Incident</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for tier in tiers %}
-        <tr>
-            <td>{{ tier.name }}</td>
-            <td>{{ tier.switch_count }}</td>
-            <td>{{ tier.ap_count }}</td>
-            <td>{{ tier.ups_count }}</td>
-            <td>{{ tier.percent_down }}</td>
-            <td>{{ tier.last_event }}</td>
-            <td>{{ tier.trend }}</td>
-            <td>{{ tier.incident }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Building</th>
-            <th>Switch</th>
-            <th>AP</th>
-            <th>UPS</th>
-            <th>Down</th>
-            <th>Last Event</th>
-            <th>Trend</th>
-            <th>Incident</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for bldg in bldgs %}
-        <tr>
-            <td>{{ bldg.name }}</td>
-            <td>{{ bldg.switch_count }}</td>
-            <td>{{ bldg.ap_count }}</td>
-            <td>{{ bldg.ups_count }}</td>
-            <td>{{ bldg.percent_down }}</td>
-            <td>{{ bldg.last_event }}</td>
-            <td>{{ bldg.trend }}</td>
-            <td>{{ bldg.incident }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+ <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Building Summary</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Building</th>
+                    <th>Switch</th>
+                    <th>AP</th>
+                    <th>UPS</th>
+                    <th>Down</th>
+                    <th>Last Event</th>
+                    <th>Trend</th>
+                    <th>Incident</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bldg in bldgs %}
+                <tr>
+                    <td>{{ bldg.name }}</td>
+                    <td>{{ bldg.switch_count }}</td>
+                    <td>{{ bldg.ap_count }}</td>
+                    <td>{{ bldg.ups_count }}</td>
+                    <td>{{ bldg.percent_down }}</td>
+                    <td>{{ bldg.last_event }}</td>
+                    <td>{{ bldg.trend }}</td>
+                    <td>{{ bldg.incident }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 
 {% endblock %}
