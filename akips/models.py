@@ -57,6 +57,7 @@ class Summary(models.Model):
     ups_count = models.IntegerField()
     total_count = models.IntegerField()
     percent_down = models.DecimalField(max_digits=3,decimal_places=3)
+    first_event = models.DateTimeField()
     last_event = models.DateTimeField()
     trend = models.CharField(max_length=255)
     incident = models.CharField(max_length=255)
