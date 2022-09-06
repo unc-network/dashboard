@@ -4,7 +4,7 @@ from . import views
 
 urlpatterns = [
     path('', views.Home.as_view(), name='akips_home'),
-    path('unreachbles/', views.UnreachableView.as_view(), name='unreachable'),
+    path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
 
     # Event Focus Views
     path('tier/<tier>/', views.TierView.as_view(), name='tier'),

@@ -30,6 +30,9 @@ class UnreachableView(View):
     def get(self, request, *args, **kwargs):
         context = {}
 
+        devices = Unreachable.objects.all()
+        context['devices'] = devices
+
         return render(request, self.template_name, context=context)
 
 class TierView(View):
@@ -43,8 +46,9 @@ class TierView(View):
             raise Http404("Invalid Tier Name")
         context['tier'] = tier_name
 
+        if tier_name == 'Unknown':
+            tier_name = ''
         devices = Unreachable.objects.filter(device__tier=tier_name)
-        logger.debug("Found devices {}".format(devices))
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -60,8 +64,9 @@ class BuildingView(View):
             raise Http404("Invalid Building Name")
         context['bldg'] = bldg_name
 
+        if bldg_name == 'Unknown':
+            bldg_name = ''
         devices = Unreachable.objects.filter(device__building_name=bldg_name)
-        logger.debug("Found devices {}".format(devices))
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -78,7 +83,6 @@ class DeviceView(View):
         context['name'] = device_name
 
         devices = Unreachable.objects.filter(device__name=device_name)
-        logger.debug("Found devices {}".format(devices))
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)

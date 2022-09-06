@@ -1,35 +1,37 @@
 {% extends 'akips/base.html' %}
 
-{% block page_name %}Device{% endblock %}
-{% block page_description %}A testing overview{% endblock %}
-
+{% block page_name %}Unreachable Devices{% endblock %}
 
 {% block content %}
  <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Critical Devices</h3>
+        <h3 class="card-title">Unreachable</h3>
     </div>
     <div class="card-body table-responsive p-0">
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>Ack</th>
                     <th>Name</th>
                     <th>IP Address</th>
+                    <th>sysName</th>
                     <th>Description</th>
+                    <th>Tier</th>
+                    <th>Building</th>
+                    <th>Type</th>
                     <th>Last Event</th>
-                    <th>Incident Request</th>
                 </tr>
             </thead>
             <tbody>
-                {% for device in devicess %}
+                {% for device in devices %}
                 <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td>{{ device.device.name }}</td>
+                    <td>{{ device.device.ip4addr }}</td>
+                    <td>{{ device.device.sysName }}</td>
+                    <td>{{ device.device.sysDescr }}</td>
+                    <td>{{ device.device.tier }}</td>
+                    <td>{{ device.device.building_name }}</td>
+                    <td>{{ device.device.type }}</td>
+                    <td>{{ device.last_refresh }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
