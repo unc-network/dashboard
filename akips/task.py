@@ -175,7 +175,7 @@ def refresh_unreachable():
                 status = 'Open'
             )
             if not summary_search:
-                newEvent = Summary.objects.create(
+                event = Summary.objects.create(
                     type = 'Distribution',
                     name = tier_name,
                     status = 'Open',
@@ -189,4 +189,18 @@ def refresh_unreachable():
                     trend = 'new',
                     incident = 'blah'
                 )
-                #newEvent.save()
+            else:
+                event = summary_search[0]
+                event.switch_count = tier_count[tier_name]['SWITCH']
+                event.ap_count = tier_count[tier_name]['AP']
+                event.ups_count = tier_count[tier_name]['UPS']
+                event.last_event = now
+                event.save()
+
+        # Close events with no devices
+        Summary.objects.filter(
+            status='Open',
+            switch_count=0,
+            aps_count=0,
+            ups_count=0,
+        ).update(status='Closed')
