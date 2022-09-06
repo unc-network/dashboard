@@ -198,9 +198,11 @@ def refresh_unreachable():
                 event.save()
 
         # Close events with no devices
-        Summary.objects.filter(
-            status='Open',
-            switch_count=0,
-            aps_count=0,
-            ups_count=0,
-        ).update(status='Closed')
+        all_open = Summary.objects.filter(status='Open')
+        for event in all_open:
+            if event.type == 'Distribution' and event.name not in tier_count.keys():
+                event.status = 'Closed'
+                #event.switch_count = 0
+                #event.aps_count = 0
+                #event.ups_count = 0
+                event.save()
