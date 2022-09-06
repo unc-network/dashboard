@@ -215,7 +215,7 @@ def refresh_unreachable():
                 event.save()
         for bldg_name in bldg_count.keys():
             summary_search = Summary.objects.filter(
-                type = 'Distribution',
+                type = 'Building',
                 name = bldg_name,
                 status = 'Open'
             )
