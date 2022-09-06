@@ -47,6 +47,7 @@ OPENSHIFT_NAMESPACE = os.getenv('OPENSHIFT_BUILD_NAMESPACE', 'LOCAL')
 # Application definition
 
 INSTALLED_APPS = [
+    #'adminlte3_theme',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +56,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'welcome',
+
+    'adminlte3',
 
     # Our Apps
     'akips',

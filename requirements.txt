@@ -13,6 +13,7 @@ requests
 
 # Django LDAP 
 django-auth-ldap
+django-adminlte3
 
 # Celery
 celery
