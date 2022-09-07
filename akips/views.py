@@ -24,7 +24,7 @@ class Home(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
-class UnreachableView(View):
+class UnreachableView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/unreachable.html'
 
@@ -36,7 +36,7 @@ class UnreachableView(View):
 
         return render(request, self.template_name, context=context)
 
-class TierView(View):
+class TierView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/tier.html'
 
@@ -54,7 +54,7 @@ class TierView(View):
 
         return render(request, self.template_name, context=context)
 
-class BuildingView(View):
+class BuildingView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/building.html'
 
@@ -72,7 +72,7 @@ class BuildingView(View):
 
         return render(request, self.template_name, context=context)
 
-class DeviceView(View):
+class DeviceView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/device.html'
 
