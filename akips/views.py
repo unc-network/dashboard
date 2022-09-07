@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views.generic import View
 from django.http import Http404
+from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
 
 from .models import Summary, Unreachable
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
-class Home(View):
+class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
 

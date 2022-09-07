@@ -20,10 +20,12 @@ from django.urls import include, path
 from welcome.views import index, health
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('accounts/', include("django.contrib.auth.urls")),
+
     path('', index, name='home'),
     #path('', include('akips.urls')),
     path('health/', health),
-    path('admin/', admin.site.urls),
 
     path('akips/', include('akips.urls')),
 ]

@@ -150,8 +150,7 @@
                         </a>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-footer">
-                                <a href="{% block change_password_url %}{% url 'admin:password_change' %}{% endblock %}" class="btn btn-primary btn-sm">{% trans 'Change password' %}</a>
-                                <a  href="{% block logout_url %}{% logout_url %}{% endblock %}" class="btn btn-danger btn-sm">{%trans 'Sign out'%}</a>
+                                <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">{%trans 'Log out'%}</a>
                             </div>
                         
                     </div>

@@ -112,6 +112,9 @@ DATABASES = {
 # https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
+LOGIN_REDIRECT_URL = "/akips"
+LOGOUT_REDIRECT_URL = "/akips"
+
 # LDAP Authentication Configuration
 # https://django-auth-ldap.readthedocs.io/en/latest/example.html
 
