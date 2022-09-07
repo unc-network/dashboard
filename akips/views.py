@@ -4,7 +4,7 @@ from django.http import Http404
 from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
 
-from .models import Summary, Unreachable
+from .models import Summary, Unreachable, Device
 from .task import example_task
 
 # Get a instance of logger
@@ -83,6 +83,7 @@ class DeviceView(LoginRequiredMixin, View):
             raise Http404("Invalid Device Name")
         context['name'] = device_name
 
+        context['device'] = Device.objects.get(name=device_name)
         devices = Unreachable.objects.filter(device__name=device_name)
         context['devices'] = devices
 

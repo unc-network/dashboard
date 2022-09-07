@@ -10,9 +10,10 @@
         {% block logo_text %}<span class="brand-text font-weight-light">OCNES </span>{% endblock %}
     </a>
     {% endblock %}
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
+    <div class="collapse navbar-collapse order-3" id="navbarCollapse">
     
     <!-- Header Navbar: style can be found in header.less -->
     {% block nav_bar %}
@@ -173,6 +174,7 @@
     </ul>
         {% endblock nav_custom_menu %}
 
+    </div>
 {% endblock %}
     </div>
 </nav>

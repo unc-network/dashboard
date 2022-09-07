@@ -14,23 +14,15 @@
                     <th>Name</th>
                     <th>IP Address</th>
                     <th>sysName</th>
-                    <th>Description</th>
-                    <th>Tier</th>
-                    <th>Building</th>
-                    <th>Type</th>
                     <th>Last Event</th>
                 </tr>
             </thead>
             <tbody>
                 {% for device in devices %}
                 <tr>
-                    <td>{{ device.device.name }}</td>
+                    <td><a href="{% url 'device' device.device.name %}">{{ device.device.name }}</a></td>
                     <td>{{ device.device.ip4addr }}</td>
                     <td>{{ device.device.sysName }}</td>
-                    <td>{{ device.device.sysDescr }}</td>
-                    <td>{{ device.device.tier }}</td>
-                    <td>{{ device.device.building_name }}</td>
-                    <td>{{ device.device.type }}</td>
                     <td>{{ device.last_refresh }}</td>
                 </tr>
                 {% endfor %}
