@@ -6,14 +6,14 @@ class Device(models.Model):
     # devices from akips
     name = models.CharField(max_length=255, unique=True)
     ip4addr = models.GenericIPAddressField()
-    sysName = models.CharField(max_length=255)
-    sysDescr = models.CharField(max_length=255)
-    sysLocation = models.CharField(max_length=255)
+    sysName = models.CharField(max_length=255,blank=True)
+    sysDescr = models.CharField(max_length=255,blank=True)
+    sysLocation = models.CharField(max_length=255,blank=True)
     critical = models.BooleanField(default=False)
-    tier = models.CharField(max_length=255)
-    building_name = models.CharField(max_length=255)
-    hierarcy = models.CharField(max_length=255)
-    type = models.CharField(max_length=255)
+    tier = models.CharField(max_length=255,blank=True)
+    building_name = models.CharField(max_length=255,blank=True)
+    hierarcy = models.CharField(max_length=255,blank=True)
+    type = models.CharField(max_length=255,blank=True)
     last_refresh = models.DateTimeField()
 
     class Meta:
