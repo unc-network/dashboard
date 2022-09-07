@@ -90,6 +90,7 @@ def refresh_akips_devices():
                         pass
                     elif g_match.group('index') == '4':
                         bldg = g_match.group('label')
+            device.critical = critical
             device.tier = tier
             device.building_name = bldg
             device.save()
@@ -97,10 +98,14 @@ def refresh_akips_devices():
 
             time.sleep(0.05)
 
+    finish_time = timezone.now()
+    logger.info("AKIPS devices updated in {}".format(finish_time - now))
+
 
 @shared_task
 def refresh_nit():
     logger.debug("Refeshing nit device data")
+    now = timezone.now()
 
     nit = NIT()
     device_data = nit.get_device_data()
@@ -132,6 +137,9 @@ def refresh_nit():
             )
             #logger.debug("Found devices {}".format(devices))
             time.sleep(0.05)
+
+    finish_time = timezone.now()
+    logger.info("NIT refreshed in {}".format(finish_time - now))
 
 
 @shared_task
@@ -287,4 +295,4 @@ def refresh_unreachable():
                 event.save()
 
     finish_time = timezone.now()
-    logger.info("AKIPS unreachable updated in {} seconds".format(finish_time - now))
+    logger.info("AKIPS unreachable updated in {}".format(finish_time - now))
