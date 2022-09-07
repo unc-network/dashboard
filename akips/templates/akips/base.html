@@ -20,7 +20,7 @@
 
     {% block extra_head %}{% endblock %}
 </head>
-<body class="hold-transition sidebar-mini {% block body_class %}{% block bodyclass %}layout-fixed {% endblock %}{% endblock %}">
+<body class="hold-transition layout-top-nav {% block body_class %}{% block bodyclass %}layout-fixed {% endblock %}{% endblock %}">
 
 {% block body %}
     <div class="wrapper">
@@ -28,14 +28,11 @@
             {% include 'akips/_main_header.html' %}
         {% endblock %}
 
-        {% block nav_sidebar %}
-            {% include 'akips/_main_sidebar.html' %}
-        {% endblock %}
-
         {% block content_wrapper %}
         <div class="content-wrapper">
             {% block content_header %}
                 <section class="content-header">
+                    <div class="container">
                     {% block no_heading %}
                         <h1>
                             {% block page_name %}{% endblock %}
@@ -50,11 +47,13 @@
                             {# Breadcrumb implementation left to developers #}
                         {% endblock %}
                     {% endblock no_heading %}
+                    </div>
                 </section>
             {% endblock %}
 
             {% block content_outer %}
             <section class="content">
+                <div class="container">
                 {% block messages %}
                     {% include 'akips/_messages.html' %}
                 {% endblock %}
@@ -62,6 +61,7 @@
                 {% block content_block_wrap %}
                     {% block content %}{% endblock %}
                 {% endblock %}
+                </div>
             </section>
             {% endblock %}
 
