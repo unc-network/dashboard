@@ -14,7 +14,7 @@
     {% endblock %}
 
     {% block stylesheets %}
-        {% include 'adminlte/lib/_styles.html' %}
+        {% include 'akips/_styles.html' %}
         {% block style_sheets %}{% endblock %}
     {% endblock %}
 
@@ -56,7 +56,7 @@
             {% block content_outer %}
             <section class="content">
                 {% block messages %}
-                    {% include 'adminlte/lib/_messages.html' %}
+                    {% include 'akips/_messages.html' %}
                 {% endblock %}
 
                 {% block content_block_wrap %}
@@ -69,7 +69,7 @@
         {% endblock content_wrapper %}
         
         {% block nav_footer %}
-            {% include 'adminlte/lib/_main_footer.html' %}
+            {% include 'akips/_main_footer.html' %}
         {% endblock %}
 
 
@@ -78,7 +78,7 @@
 {% endblock body %}
 
 {% block javascript %}
-{% include 'adminlte/lib/_scripts.html' %}
+{% include 'akips/_scripts.html' %}
 {% block js %}{% endblock %}
 {% endblock %}
 
