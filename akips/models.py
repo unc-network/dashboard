@@ -44,7 +44,8 @@ class Unreachable(models.Model):
 class Summary(models.Model):
     TYPE_CHOICES = (
         ('Distribution', 'Distribution'),
-        ('Building', 'Building')
+        ('Building', 'Building'),
+        ('Critical', 'Critical')
     )
     STATE_CHOICES = (
         ('Open', 'Open'),

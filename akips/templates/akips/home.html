@@ -22,14 +22,18 @@
                 </tr>
             </thead>
             <tbody>
-                {% for device in devicess %}
+                {% for crit in critical %}
                 <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="ack_crit_{{ crit.id }}">
+                        </div>
+                    </td>
+                    <td>{{ device.device.name }}</td>
+                    <td>{{ device.device.ip4addr }}</td>
+                    <td>{{ device.device.sysDescr }}</td>
+                    <td>{{ tier.last_event }}</td>
+                    <td>{{ tier.incident }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

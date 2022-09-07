@@ -19,6 +19,7 @@ class Home(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
+        context['critical'] = Summary.objects.filter(type='Critical',status='Open').order_by('name')
         context['tiers'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
         context['bldgs'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
 
