@@ -140,7 +140,7 @@ AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
 AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr='cn')
 
 # Simple group restrictions
-AUTH_LDAP_REQUIRE_GROUP = "cn=unc:app:its:net:routerproxy:admins,ou=groups,dc=unc,dc=edu"
+AUTH_LDAP_REQUIRE_GROUP = "cn=unc:app:its:net:routerproxy:users,ou=groups,dc=unc,dc=edu"
 #AUTH_LDAP_DENY_GROUP = "cn=disabled,ou=django,ou=groups,dc=example,dc=com"
 
 # Populate the Django user from the LDAP directory.
