@@ -9,6 +9,7 @@ class Device(models.Model):
     sysName = models.CharField(max_length=255)
     sysDescr = models.CharField(max_length=255)
     sysLocation = models.CharField(max_length=255)
+    critical = models.BooleanField(default=False)
     tier = models.CharField(max_length=255)
     building_name = models.CharField(max_length=255)
     hierarcy = models.CharField(max_length=255)

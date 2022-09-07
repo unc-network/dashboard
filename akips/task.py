@@ -20,12 +20,11 @@ def example_task():
 @shared_task
 def refresh_akips_devices():
     logger.info("refreshing akips devices")
+    now = timezone.now()
 
     akips = AKIPS()
     devices = akips.get_devices()
     if devices:
-        #now = datetime.now()
-        now = timezone.now()
         for key, value in devices.items():
             logger.debug("{}: {}".format(key, value))
             name = re.compile(r'^(?P<tier>\w+)-(?P<bldg_id>\w+)-(?P<bldg_name>\w+)-(?P<type>[a-zA-Z0-9]+)[-_](?P<extra>\S+)$')
@@ -67,7 +66,37 @@ def refresh_akips_devices():
         # Remove stale entries
         Device.objects.exclude(last_refresh__gte=now).delete()
 
-        # Update summary totals
+    # Check group membership
+    group_membership = akips.get_group_membership()
+    if group_membership:
+        for key, value in group_membership.items():
+            logger.debug("{}: {}".format(key, value))
+            device = Device.objects.get(name=key)
+            critical = False
+            tier = ''
+            bldg = ''
+            for group_name in value:
+                logger.debug("group {} and device {}".format(group_name,device))
+                g_match = re.match(r'^(?P<index>\d+)-(?P<label>.+)$',group_name)
+                if g_match:
+                    logger.debug("matched {} and {}".format(g_match.group('index'),g_match.group('label')))
+                    if g_match.group('index') == '0':
+                        critical = True
+                    elif g_match.group('index') == '1':
+                        critical = True
+                    elif g_match.group('index') == '2':
+                        tier = g_match.group('label')
+                    elif g_match.group('index') == '3':
+                        pass
+                    elif g_match.group('index') == '4':
+                        bldg = g_match.group('label')
+            device.tier = tier
+            device.building_name = bldg
+            device.save()
+            logger.debug("Set {} to critical {}, tier {}, and building {}".format(device, critical, tier, bldg))
+
+            time.sleep(0.05)
+
 
 @shared_task
 def refresh_nit():

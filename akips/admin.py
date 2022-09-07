@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device,Unreachable,Summary
+from akips.models import Device, Unreachable, Summary
 
 # Register your models here.
 

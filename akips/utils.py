@@ -51,6 +51,32 @@ class AKIPS:
             return data
         return None
 
+    def get_group_membership(self):
+        ''' Pull a list of device to group memberships '''
+        params = {
+            'cmds': 'mgroup device *',
+        }
+        text = self.get(params=params)
+        if text:
+            data = {} 
+            # Data comes back as 'plain/text' type so we have to parse it
+            # Example output, data on each line:
+            # 172.28.12.10 = 2-Campus-Services,3-Building-Entrance-Switches,4-Physical-Plant-Maintenance-Shop,admin,Extreme,user
+            # 172.28.12.11 = 2-Campus-Services,4-Physical-Plant-Maintenance-Shop,admin,Liebert,poll_oid_20,user
+            # 172.28.12.112 = 2-Campus-Services,3-Building-Entrance-Switches,4-Lenoir-Hall,admin,Extreme,user
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("^(\S+)\s=\s(.*)$", line)
+                if match:
+                    if match.group(1) not in data:
+                        # Populate a default entry for all desired fields
+                        data[ match.group(1) ] = match.group(2).split(',')
+                    # Save this attribute value to data
+                    #data[ match.group(1) ][ match.group(3) ] = match.group(4)
+            logger.debug("Found {} device and group mappings in akips".format( len( data.keys() )))
+            return data
+        return None
+
     def get_device(self, name):
         ''' Pull the entire configuration for a single device '''
         params = {
