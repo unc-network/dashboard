@@ -45,6 +45,16 @@ def refresh_akips_devices():
                 else:
                     tier = ''
                 bldg_name = ''
+
+            if re.search(r'-(ups[0-9]*)[-_]?',value['SNMPv2-MIB.sysName'], re.IGNORECASE):
+                type = 'UPS'
+            elif re.search(r'-(ap)[-_]?',value['SNMPv2-MIB.sysName'], re.IGNORECASE):
+                type = 'AP'
+            elif re.search(r'-(tier1|bes|sw[0-9]*|spine|pod[a-z]*)[-_]?',value['SNMPv2-MIB.sysName'], re.IGNORECASE):
+                type = 'SWITCH'
+            elif re.search(r'-(legacy|agg|arista)[-]?',value['SNMPv2-MIB.sysName'], re.IGNORECASE):
+                type = 'SWITCH'
+            else:
                 type = ''
             Device.objects.update_or_create(
                 #ip4addr = value['ip4addr'],
@@ -57,7 +67,7 @@ def refresh_akips_devices():
                     'sysLocation': value['SNMPv2-MIB.sysLocation'],
                     #'tier': tier,
                     #'building_name': bldg_name,
-                    #'type': type,
+                    'type': type,
                     'last_refresh': now
                 }
             )
