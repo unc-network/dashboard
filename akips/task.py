@@ -212,9 +212,9 @@ def refresh_unreachable():
                 }
             if entry.device.type in ['SWITCH','AP','UPS']:
                 tier_count[ tier_name ][ entry.device.type ] += 1
-                tier_count[ tier_name ][ 'TOTAL' ] += 1
                 bldg_count[ bldg_name ][ entry.device.type ] += 1
-                bldg_count[ bldg_name ][ 'TOTAL' ] += 1
+            tier_count[ tier_name ][ 'TOTAL' ] += 1
+            bldg_count[ bldg_name ][ 'TOTAL' ] += 1
         logger.info("tier count {}".format(tier_count))
         logger.info("bldg count {}".format(bldg_count))
 
@@ -226,6 +226,12 @@ def refresh_unreachable():
                 status = 'Open'
             )
             if not summary_search:
+                # This is a new event
+                if tier_name == 'Unknown':
+                    tier_device_total = Device.objects.filter(tier='').count()
+                else:
+                    tier_device_total = Device.objects.filter(tier=tier_name).count()
+                tier_percent_down = tier_count[tier_name]['TOTAL'] / tier_device_total
                 event = Summary.objects.create(
                     type = 'Distribution',
                     name = tier_name,
@@ -233,15 +239,14 @@ def refresh_unreachable():
                     switch_count = tier_count[tier_name]['SWITCH'],
                     ap_count = tier_count[tier_name]['AP'],
                     ups_count = tier_count[tier_name]['UPS'],
-                    total_count = tier_count[tier_name]['TOTAL'],
-                    #percent_down = tier_count[tier_name]['TOTAL'] / tier_count[tier_name]['SWITCH'],
-                    percent_down = 0,
+                    total_count = tier_device_total,
+                    percent_down = tier_percent_down,
                     first_event = now,
                     last_event = now,
                     trend = 'new',
-                    #incident = 'blah'
                 )
             else:
+                # This is a update event
                 event = summary_search[0]
                 event.switch_count = tier_count[tier_name]['SWITCH']
                 event.ap_count = tier_count[tier_name]['AP']
@@ -255,6 +260,12 @@ def refresh_unreachable():
                 status = 'Open'
             )
             if not summary_search:
+                # This is a new event
+                if bldg_name == 'Unknown':
+                    bldg_device_total = Device.objects.filter(building_name='').count()
+                else:
+                    bldg_device_total = Device.objects.filter(building_name=bldg_name).count()
+                bldg_percent_down = bldg_count[bldg_name]['TOTAL'] / bldg_device_total
                 event = Summary.objects.create(
                     type = 'Building',
                     name = bldg_name,
@@ -262,15 +273,14 @@ def refresh_unreachable():
                     switch_count = bldg_count[bldg_name]['SWITCH'],
                     ap_count = bldg_count[bldg_name]['AP'],
                     ups_count = bldg_count[bldg_name]['UPS'],
-                    total_count = bldg_count[bldg_name]['TOTAL'],
-                    #percent_down = tier_count[tier_name]['TOTAL'] / tier_count[tier_name]['SWITCH'],
-                    percent_down = 0,
+                    total_count = bldg_device_total,
+                    percent_down = bldg_percent_down,
                     first_event = now,
                     last_event = now,
                     trend = 'new',
-                    #incident = 'blah'
                 )
             else:
+                # This is a update event
                 event = summary_search[0]
                 event.switch_count = bldg_count[bldg_name]['SWITCH']
                 event.ap_count = bldg_count[bldg_name]['AP']
