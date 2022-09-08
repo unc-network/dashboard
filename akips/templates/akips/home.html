@@ -79,7 +79,7 @@
                     <td>{{ tier.switch_count }}</td>
                     <td>{{ tier.ap_count }}</td>
                     <td>{{ tier.ups_count }}</td>
-                    <td>{{ tier.percent_down }}</td>
+                    <td>{% widthratio tier.percent_down 1 100 %}%</td>
                     <td>{{ tier.last_event }}</td>
                     <td>{{ tier.trend }}</td>
                     <td>{{ tier.incident }}</td>
@@ -118,7 +118,7 @@
                     <td>{{ bldg.switch_count }}</td>
                     <td>{{ bldg.ap_count }}</td>
                     <td>{{ bldg.ups_count }}</td>
-                    <td>{{ bldg.percent_down }}</td>
+                    <td>{% widthratio bldg.percent_down 1 100 %}%</td>
                     <td>{{ bldg.last_event }}</td>
                     <td>{{ bldg.trend }}</td>
                     <td>{{ bldg.incident }}</td>

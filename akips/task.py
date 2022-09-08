@@ -231,7 +231,7 @@ def refresh_unreachable():
                     tier_device_total = Device.objects.filter(tier='').count()
                 else:
                     tier_device_total = Device.objects.filter(tier=tier_name).count()
-                tier_percent_down = tier_count[tier_name]['TOTAL'] / tier_device_total
+                tier_percent_down = round( tier_count[tier_name]['TOTAL'] / tier_device_total, 3)
                 event = Summary.objects.create(
                     type = 'Distribution',
                     name = tier_name,
@@ -251,6 +251,15 @@ def refresh_unreachable():
                 event.switch_count = tier_count[tier_name]['SWITCH']
                 event.ap_count = tier_count[tier_name]['AP']
                 event.ups_count = tier_count[tier_name]['UPS']
+                tier_percent_down = round( tier_count[tier_name]['TOTAL'] / event.total_count, 3)
+                logger.debug("tier change {} to {}".format(event.percent_down,tier_percent_down))
+                if tier_percent_down ==  event.percent_down:
+                    event.trend = 'steady'
+                elif tier_percent_down > event.percent_down:
+                    event.trend = 'increasing'
+                elif tier_percent_down < event.percent_down:
+                    event.trend = 'decreasing'
+                event.percent_down = tier_percent_down
                 event.last_event = now
                 event.save()
         for bldg_name in bldg_count.keys():
@@ -265,7 +274,7 @@ def refresh_unreachable():
                     bldg_device_total = Device.objects.filter(building_name='').count()
                 else:
                     bldg_device_total = Device.objects.filter(building_name=bldg_name).count()
-                bldg_percent_down = bldg_count[bldg_name]['TOTAL'] / bldg_device_total
+                bldg_percent_down = round( bldg_count[bldg_name]['TOTAL'] / bldg_device_total, 3)
                 event = Summary.objects.create(
                     type = 'Building',
                     name = bldg_name,
@@ -285,6 +294,15 @@ def refresh_unreachable():
                 event.switch_count = bldg_count[bldg_name]['SWITCH']
                 event.ap_count = bldg_count[bldg_name]['AP']
                 event.ups_count = bldg_count[bldg_name]['UPS']
+                bldg_percent_down = round( bldg_count[bldg_name]['TOTAL'] / event.total_count, 3)
+                logger.debug("bldg change {} to {}".format(event.percent_down,bldg_percent_down))
+                if bldg_percent_down ==  event.percent_down:
+                    event.trend = 'steady'
+                elif bldg_percent_down > event.percent_down:
+                    event.trend = 'increasing'
+                elif bldg_percent_down < event.percent_down:
+                    event.trend = 'decreasing'
+                event.percent_down = bldg_percent_down
                 event.last_event = now
                 event.save()
 
