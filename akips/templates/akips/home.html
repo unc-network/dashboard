@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block content %}
+{% if critical %}
 <div class="card">
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-sm">
@@ -20,18 +21,6 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_crit_dummy">
-                        </div>
-                    </td>
-                    <td>dummy row</td>
-                    <td>0.0.0.0</td>
-                    <td>dummy description</td>
-                    <td></td>
-                    <td></td>
-                </tr>
                 {% for crit in critical %}
                 <tr>
                     <td>
@@ -39,17 +28,18 @@
                             <input type="checkbox" class="form-check-input" id="ack_crit_{{ crit.id }}">
                         </div>
                     </td>
-                    <td>{{ device.device.name }}</td>
-                    <td>{{ device.device.ip4addr }}</td>
-                    <td>{{ device.device.sysDescr }}</td>
-                    <td>{{ tier.last_event }}</td>
-                    <td>{{ tier.incident }}</td>
+                    <td><a href="{% url 'device' crit.name %}">{{ crit.name }}</a></td>
+                    <td>{{ crit.device.ip4addr }}</td>
+                    <td>{{ crit.device.sysDescr }}</td>
+                    <td>{{ crit.last_event }}</td>
+                    <td>{{ crit.incident }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endif %}
 
 <div class="card">
     <div class="card-body table-responsive p-0">

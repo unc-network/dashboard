@@ -189,8 +189,9 @@ def refresh_unreachable():
         # Remove stale entries
         Unreachable.objects.exclude(last_refresh__gte=now).delete()
 
-        # Calculate Event Updates
+        # Calculate device totals
         unreachables = Unreachable.objects.exclude(device__maintenance=True)
+        crit_count = {}
         tier_count = {}
         bldg_count = {}
         for entry in unreachables:
@@ -202,6 +203,14 @@ def refresh_unreachable():
                 bldg_name = entry.device.building_name
             else:
                 bldg_name = 'Unknown'
+
+            # Identify critical devices
+            if entry.device.critical:
+                crit_count[ entry.device.name ] = {
+                    'TOTAL': 1,
+                }
+
+            # Identify tier and building devices
             logger.debug("checking {}".format(tier_name))
             if entry.device.tier not in tier_count:
                 tier_count[ tier_name ] = {
@@ -223,10 +232,42 @@ def refresh_unreachable():
                 bldg_count[ bldg_name ][ entry.device.type ] += 1
             tier_count[ tier_name ][ 'TOTAL' ] += 1
             bldg_count[ bldg_name ][ 'TOTAL' ] += 1
+
+        logger.debug("crit count {}".format(crit_count))
         logger.debug("tier count {}".format(tier_count))
         logger.debug("bldg count {}".format(bldg_count))
 
-        # Update the Summary Table
+        # Update critical type summary events
+        for crit_name in crit_count.keys():
+            summary_search = Summary.objects.filter(
+                type = 'Critical',
+                name = crit_name,
+                status = 'Open'
+            )
+            if not summary_search:
+                # This is a new event
+                event = Summary.objects.create(
+                    type = 'Critical',
+                    name = crit_name,
+                    device = Device.objects.get(name=crit_name),
+                    status = 'Open',
+                    max_count = 1,
+                    total_count = 1,
+                    first_event = now,
+                    last_event = now,
+                    trend = 'New',
+                )
+            else:
+                # This is a update event
+                event = summary_search[0]
+                event.trend = 'Stable'
+                event.last_event = now
+                event.save()
+
+        # Close critical type events open with no down devices
+        Summary.objects.filter(type='Critical',status='Open').exclude(name__in=crit_count.keys()).update(status='Closed')
+
+        # Update distribution type summary events
         for tier_name in tier_count.keys():
             summary_search = Summary.objects.filter(
                 type = 'Distribution',
@@ -270,6 +311,11 @@ def refresh_unreachable():
                 event.total_count = tier_count[tier_name]['TOTAL']
                 event.last_event = now
                 event.save()
+
+        # Close distribution type events open with no down devices
+        Summary.objects.filter(type='Distribution',status='Open').exclude(name__in=tier_count.keys()).update(status='Closed')
+
+        # Update building type summary events
         for bldg_name in bldg_count.keys():
             summary_search = Summary.objects.filter(
                 type = 'Building',
@@ -314,18 +360,8 @@ def refresh_unreachable():
                 event.last_event = now
                 event.save()
 
-        # Close events open with no down devices
-        Summary.objects.filter(type='Distribution',status='Open').exclude(name__in=tier_count.keys()).update(status='Closed')
+        # Close building type events open with no down devices
         Summary.objects.filter(type='Building',status='Open').exclude(name__in=bldg_count.keys()).update(status='Closed')
-        # all_open = Summary.objects.filter(status='Open',total_count=0)
-        # for event in all_open:
-        #     if event.type == 'Distribution' and event.name in tier_count.keys():
-        #         pass
-        #     elif event.type == 'Building' and event.name in bldg_count.keys():
-        #         pass
-        #     else:
-        #         event.status = 'Closed'
-        #         event.save()
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))

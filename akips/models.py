@@ -55,6 +55,7 @@ class Summary(models.Model):
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
     status = models.CharField(max_length=32, choices=STATE_CHOICES)
     name = models.CharField(max_length=255)
+    device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)
     switch_count = models.IntegerField(default=0)
     ap_count = models.IntegerField(default=0)
     ups_count = models.IntegerField(default=0)
