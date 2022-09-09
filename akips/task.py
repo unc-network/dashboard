@@ -19,7 +19,7 @@ def example_task():
 
 @shared_task
 def refresh_akips_devices():
-    logger.info("refreshing akips devices")
+    logger.debug("refreshing akips devices")
     now = timezone.now()
 
     akips = AKIPS()
@@ -117,7 +117,7 @@ def refresh_akips_devices():
             time.sleep(0.05)
 
     finish_time = timezone.now()
-    logger.info("AKIPS devices updated in {}".format(finish_time - now))
+    logger.info("AKIPS deivce refresh runtime {}".format(finish_time - now))
 
 
 @shared_task
@@ -157,12 +157,12 @@ def refresh_nit():
             time.sleep(0.05)
 
     finish_time = timezone.now()
-    logger.info("NIT refreshed in {}".format(finish_time - now))
+    logger.info("NIT refresh runtime {}".format(finish_time - now))
 
 
 @shared_task
 def refresh_unreachable():
-    logger.info("refreshing unreachable")
+    logger.debug("refreshing unreachable")
     now = timezone.now()
 
     akips = AKIPS()
@@ -223,8 +223,8 @@ def refresh_unreachable():
                 bldg_count[ bldg_name ][ entry.device.type ] += 1
             tier_count[ tier_name ][ 'TOTAL' ] += 1
             bldg_count[ bldg_name ][ 'TOTAL' ] += 1
-        logger.info("tier count {}".format(tier_count))
-        logger.info("bldg count {}".format(bldg_count))
+        logger.debug("tier count {}".format(tier_count))
+        logger.debug("bldg count {}".format(bldg_count))
 
         # Update the Summary Table
         for tier_name in tier_count.keys():
@@ -329,4 +329,4 @@ def refresh_unreachable():
                 event.save()
 
     finish_time = timezone.now()
-    logger.info("AKIPS unreachable updated in {}".format(finish_time - now))
+    logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
