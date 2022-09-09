@@ -7,7 +7,7 @@ from akips.models import Device, Unreachable, Summary
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('name', 'ip4addr', 'tier', 'building_name', 'type', 'sysName', 'last_refresh')
-    list_filter = ['critical', 'type', 'tier', 'building_name']
+    list_filter = ['critical', 'maintenance', 'type', 'tier', 'building_name']
     search_fields = ['name', 'sysName','ip4addr']
 
 @admin.register(Unreachable)

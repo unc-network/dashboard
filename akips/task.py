@@ -24,6 +24,7 @@ def refresh_akips_devices():
 
     akips = AKIPS()
     devices = akips.get_devices()
+    #devices = None
     if devices:
         for key, value in devices.items():
             logger.debug("{}: {}".format(key, value))
@@ -76,8 +77,15 @@ def refresh_akips_devices():
         # Remove stale entries
         Device.objects.exclude(last_refresh__gte=now).delete()
 
+    # Identify devices in maintenance mode
+    maintenance_list = akips.get_maintenance_mode()
+    if maintenance_list:
+        Device.objects.filter(name__in=maintenance_list).update(maintenance=True)
+        Device.objects.exclude(name__in=maintenance_list).update(maintenance=False)
+
     # Check group membership
     group_membership = akips.get_group_membership()
+    #group_membership = None
     if group_membership:
         for key, value in group_membership.items():
             logger.debug("{}: {}".format(key, value))
@@ -182,7 +190,7 @@ def refresh_unreachable():
         Unreachable.objects.exclude(last_refresh__gte=now).delete()
 
         # Calculate Event Updates
-        unreachables = Unreachable.objects.all()
+        unreachables = Unreachable.objects.exclude(device__maintenance=True)
         tier_count = {}
         bldg_count = {}
         for entry in unreachables:

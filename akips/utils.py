@@ -77,6 +77,29 @@ class AKIPS:
             return data
         return None
 
+    def get_maintenance_mode(self):
+        ''' Pull a list of devices in maintenance mode '''
+        params = {
+            'cmds': 'mget * * any group maintenance_mode',
+        }
+        text = self.get(params=params)
+        if text:
+            data = []
+            # Data comes back as 'plain/text' type so we have to parse it
+            # Example output, data on each line with something at the end:
+            # GH-Art_Lab_102
+            # GH-Art_Lab_113C
+            # HackNC-2
+            # ok: mget * * any group maintenance_mode
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("^(\S+)$", line)
+                if match:
+                    data.append( match.group(1) )
+            logger.debug("Found {} devices in maintenance mode".format( len( data )))
+            return data
+        return None
+
     def get_device(self, name):
         ''' Pull the entire configuration for a single device '''
         params = {
