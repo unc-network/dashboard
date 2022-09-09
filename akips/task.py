@@ -165,6 +165,7 @@ def refresh_unreachable():
     logger.debug("refreshing unreachable")
     now = timezone.now()
 
+
     akips = AKIPS()
     devices = akips.get_unreachable()
     if devices:
