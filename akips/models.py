@@ -59,6 +59,7 @@ class Summary(models.Model):
     ap_count = models.IntegerField(default=0)
     ups_count = models.IntegerField(default=0)
     total_count = models.IntegerField(default=0)
+    max_count = models.IntegerField(default=0)
     percent_down = models.DecimalField(default=0,max_digits=3,decimal_places=3)
     first_event = models.DateTimeField()
     last_event = models.DateTimeField()

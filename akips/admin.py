@@ -18,6 +18,6 @@ class UnreachableAdmin(admin.ModelAdmin):
 
 @admin.register(Summary)
 class SummaryAdmin(admin.ModelAdmin):
-    list_display = ('type', 'name', 'switch_count', 'ap_count', 'ups_count', 'status', 'first_event', 'last_event')
+    list_display = ('type', 'name', 'total_count', 'max_count', 'status', 'first_event', 'last_event')
     list_filter = ['type','status']
     search_fields = ['name']
