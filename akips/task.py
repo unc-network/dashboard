@@ -252,7 +252,7 @@ def refresh_unreachable():
                     percent_down = tier_percent_down,
                     first_event = now,
                     last_event = now,
-                    trend = 'new',
+                    trend = 'New',
                 )
             else:
                 # This is a update event
@@ -262,11 +262,12 @@ def refresh_unreachable():
                 event.ups_count = tier_count[tier_name]['UPS']
                 event.percent_down = round( tier_count[tier_name]['TOTAL'] / event.max_count, 3)
                 if tier_count[tier_name]['TOTAL'] ==  event.total_count:
-                    event.trend = 'steady'
+                    event.trend = 'Stable'
                 elif tier_count[tier_name]['TOTAL'] > event.total_count:
-                    event.trend = 'increasing'
+                    event.trend = 'Increasing'
                 elif tier_count[tier_name]['TOTAL'] < event.total_count:
-                    event.trend = 'decreasing'
+                    event.trend = 'Decreasing'
+                event.total_count = tier_count[tier_name]['TOTAL']
                 event.last_event = now
                 event.save()
         for bldg_name in bldg_count.keys():
@@ -294,7 +295,7 @@ def refresh_unreachable():
                     percent_down = bldg_percent_down,
                     first_event = now,
                     last_event = now,
-                    trend = 'new',
+                    trend = 'New',
                 )
             else:
                 # This is a update event
@@ -304,28 +305,17 @@ def refresh_unreachable():
                 event.ups_count = bldg_count[bldg_name]['UPS']
                 event.percent_down = round( bldg_count[bldg_name]['TOTAL'] / event.max_count, 3)
                 if bldg_count[bldg_name]['TOTAL'] ==  event.total_count:
-                    event.trend = 'steady'
+                    event.trend = 'Stable'
                 elif bldg_count[bldg_name]['TOTAL'] > event.total_count:
-                    event.trend = 'increasing'
+                    event.trend = 'Increasing'
                 elif bldg_count[bldg_name]['TOTAL'] < event.total_count:
-                    event.trend = 'decreasing'
+                    event.trend = 'Decreasing'
+                event.total_count = bldg_count[bldg_name]['TOTAL']
                 event.last_event = now
                 event.save()
 
-        # Close events with no devices
+        # Close events open with no down devices
         Summary.objects.filter(status='Open',total_count=0).update(status='Closed')
-        # all_open = Summary.objects.filter(status='Open')
-        # for event in all_open:
-        #     if event.type == 'Distribution' and event.name in tier_count.keys():
-        #         pass
-        #     elif event.type == 'Building' and event.name in bldg_count.keys():
-        #         pass
-        #     else:
-        #         event.status = 'Closed'
-        #         #event.switch_count = 0
-        #         #event.aps_count = 0
-        #         #event.ups_count = 0
-        #         event.save()
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))

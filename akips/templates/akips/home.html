@@ -138,16 +138,18 @@
                     <th>Device</th>
                     <th>Trap</th>
                     <th>Recorded</th>
-                    <th>UPS Count</th>
                     <th>Incident Request</th>
                     <th>Clear Trap</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td></td>
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
+                        </div>
+                    </td>
                     <td>dummy row</td>
-                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -155,7 +157,6 @@
                 </tr>
                 {% for trap in traps %}
                 <tr>
-                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
