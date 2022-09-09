@@ -315,7 +315,17 @@ def refresh_unreachable():
                 event.save()
 
         # Close events open with no down devices
-        Summary.objects.filter(status='Open',total_count=0).update(status='Closed')
+        Summary.objects.filter(type='Distribution',status='Open',total_count=0).exclude(name__in=tier_count.keys()).update(status='Closed')
+        Summary.objects.filter(type='Building',status='Open',total_count=0).exclude(name__in=bldg_count.keys()).update(status='Closed')
+        # all_open = Summary.objects.filter(status='Open',total_count=0)
+        # for event in all_open:
+        #     if event.type == 'Distribution' and event.name in tier_count.keys():
+        #         pass
+        #     elif event.type == 'Building' and event.name in bldg_count.keys():
+        #         pass
+        #     else:
+        #         event.status = 'Closed'
+        #         event.save()
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
