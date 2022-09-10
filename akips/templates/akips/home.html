@@ -1,4 +1,5 @@
 {% extends 'akips/base.html' %}
+{% load static %}
 
 {% block title %}OCNES Dashboard{% endblock %}
 {% block extra_head%}
@@ -159,4 +160,12 @@
         </table>
     </div>
 </div>
+
+<audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
+<a href="javascript:play_single_sound();">Play 5-sec sound on single channel</a>
+<script type="text/javascript">
+	function play_single_sound() {
+		document.getElementById('audiotag1').play();
+	}
+</script>
 {% endblock %}
