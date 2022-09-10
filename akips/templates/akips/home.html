@@ -72,7 +72,7 @@
                     <td>{{ tier.ups_count }}</td>
                     <td>{% widthratio tier.percent_down 1 100 %}%</td>
                     <td>{{ tier.last_event }}</td>
-                    <td>{{ tier.trend }}</td>
+                    <td class="akips_trend">{{ tier.trend }}</td>
                     <td>{{ tier.incident }}</td>
                 </tr>
                 {% endfor %}
@@ -111,7 +111,7 @@
                     <td>{{ bldg.ups_count }}</td>
                     <td>{% widthratio bldg.percent_down 1 100 %}%</td>
                     <td>{{ bldg.last_event }}</td>
-                    <td>{{ bldg.trend }}</td>
+                    <td class="akips_trend">{{ bldg.trend }}</td>
                     <td>{{ bldg.incident }}</td>
                 </tr>
                 {% endfor %}
@@ -163,9 +163,22 @@
 
 <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
 <a href="javascript:play_single_sound();">Play 5-sec sound on single channel</a>
+{% endblock %}
+
+{% block js %}
 <script type="text/javascript">
 	function play_single_sound() {
 		document.getElementById('audiotag1').play();
 	}
+</script>
+<script type="text/javascript">
+    $(document).ready(function() {
+
+        $('.akips_trend:contains(New)').each(function( index ) {
+		    document.getElementById('audiotag1').play();
+            //console.log( index + ": found New in " + $( this ).text() );
+        });
+
+    })
 </script>
 {% endblock %}
