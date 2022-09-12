@@ -1,6 +1,7 @@
 {% load static %}
 
 {% block content %}
+{% if critical %}
 <div class="card">
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-sm">
@@ -33,4 +34,5 @@
         </table>
     </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -7,18 +7,18 @@
 {% endblock %}
 
 {% block content %}
-<div id="crit_card" class="card card-primary">
-    <div class="card-body table-responsive p-0" data-card-widget="card-refresh" data-source="{% url 'crit_card' %}">
+<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+    <div class="card-body table-responsive p-0">
     </div>
 </div>
 
-<div id="tier_card" class="card card-primary">
-    <div class="card-body table-responsive p-0" data-card-widget="card-refresh" data-source="{% url 'tier_card' %}">
+<div id="tier_card" class="card card-primary event-card" data-url="{% url 'tier_card' %}">
+    <div class="card-body table-responsive p-0">
     </div>
 </div>
 
-<div id="bldg_card" class="card card-primary">
-    <div class="card-body table-responsive p-0" data-card-widget="card-refresh" data-source="{% url 'bldg_card' %}">
+<div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
+    <div class="card-body table-responsive p-0">
     </div>
 </div>
 
@@ -75,21 +75,39 @@
 </script>
 <script type="text/javascript">
 	function refresh_cards() {
-        $('#crit_card [data-card-widget="card-refresh"]').CardRefresh('load');
-        $('#tier_card [data-card-widget="card-refresh"]').CardRefresh('load');
-        $('#bldg_card [data-card-widget="card-refresh"]').CardRefresh('load');
 
-        $('.akips_trend:contains(New)').each(function( index ) {
-		    document.getElementById('audiotag1').play();
-            //console.log( index + ": found New in " + $( this ).text() );
+        $('.event-card').each(function( index ) {
+            var url = $(this).data("url");
+            var body = $(this).find(".card-body");
+
+            $.ajax({
+            type: "GET",
+            url: url,
+            dataType: "html",
+            data: {},
+            success: function (result, status, xhr) {
+                body.html(result);
+                console.log("ajax success ")
+
+                $('.akips_trend:contains(New)').each(function( index ) {
+                    document.getElementById('audiotag1').play();
+                    //console.log( index + ": found New in " + $( this ).text() );
+                });
+            },
+            error: function (xhr, status, error) {
+                console.log("ajax failed")
+            }
+            });
+            console.log( "event card " + url);
         });
-
         console.log("Refreshed cards");
 	}
 </script>
 <script type="text/javascript">
     $(document).ready(function() {
         var refresh_seconds = 30000;
+
+        refresh_cards();
 
         $('.akips_trend:contains(New)').each(function( index ) {
 		    document.getElementById('audiotag1').play();
