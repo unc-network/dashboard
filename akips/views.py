@@ -25,6 +25,15 @@ class Home(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class CritCard(LoginRequiredMixin, View):
+    ''' Generic card refresh view '''
+    template_name = 'akips/card_refresh_crit.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context['critical'] = Summary.objects.filter(type='Critical',status='Open').order_by('name')
+        return render(request, self.template_name, context=context)
+
 class TierCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_tier.html'

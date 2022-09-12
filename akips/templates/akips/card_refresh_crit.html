@@ -1,0 +1,36 @@
+{% load static %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Ack</th>
+                    <th>Critical Device</th>
+                    <th>IP Address</th>
+                    <th>Description</th>
+                    <th>Last Event</th>
+                    <th>Incident Request</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for crit in critical %}
+                <tr>
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="ack_crit_{{ crit.id }}">
+                        </div>
+                    </td>
+                    <td><a href="{% url 'device' crit.name %}">{{ crit.name }}</a></td>
+                    <td>{{ crit.device.ip4addr }}</td>
+                    <td>{{ crit.device.sysDescr }}</td>
+                    <td>{{ crit.last_event }}</td>
+                    <td>{{ crit.incident }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

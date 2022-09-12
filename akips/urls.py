@@ -12,7 +12,9 @@ urlpatterns = [
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
     # Dynamic Card Views
-    path('TierCard', views.TierCard.as_view(), name='tier_card'),
+    path('critcard/', views.CritCard.as_view(), name='crit_card'),
+    path('tiercard/', views.TierCard.as_view(), name='tier_card'),
+    path('bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
