@@ -25,7 +25,7 @@ class Device(models.Model):
         return str(self.name)
 
 class Unreachable(models.Model):
-    # Unresponsive devices from akips
+    # Unreachable devices from akips
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
@@ -43,6 +43,7 @@ class Unreachable(models.Model):
         return str(self.device)
 
 class Summary(models.Model):
+    ''' Summarized view of unreachable devices '''
     TYPE_CHOICES = (
         ('Distribution', 'Distribution'),
         ('Building', 'Building'),
@@ -56,6 +57,7 @@ class Summary(models.Model):
     status = models.CharField(max_length=32, choices=STATE_CHOICES)
     name = models.CharField(max_length=255)
     device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)
+    unreachables = models.ManyToManyField(Unreachable)
     switch_count = models.IntegerField(default=0)
     ap_count = models.IntegerField(default=0)
     ups_count = models.IntegerField(default=0)
