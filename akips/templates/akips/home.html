@@ -120,50 +120,15 @@
     </div>
 </div>
 
-<div class="card card-primary">
+<div id="testcard" class="card card-primary">
     <div class="card-header">
-        <h3 class="card-title">Test dynamic card content</h3>
+        <h3 class="card-title">Test dynamic card content every 10 sec refresh</h3>
         <div class="card-tools">
-            <button type="button" class="btn btn-primary" data-card-widget="card-refresh" data-source="/unreachable">Card Refresh</button>
+            <button type="button" class="btn btn-primary" data-card-widget="card-refresh" data-source="{% url 'tier_card' %}">Card Refresh</button>
         </div>
     </div>
     <div class="card-body table-responsive p-0">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th>Ack</th>
-                    <th>Device</th>
-                    <th>Trap</th>
-                    <th>Recorded</th>
-                    <th>Incident Request</th>
-                    <th>Clear Trap</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
-                        </div>
-                    </td>
-                    <td>dummy row</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% for trap in traps %}
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
     </div>
 </div>
 
@@ -219,13 +184,24 @@
 	}
 </script>
 <script type="text/javascript">
+	function refresh_cards() {
+        //$('#testcard [data-card-widget="card-refresh"]').on('loaded.lte.cardrefresh', handleLoadedEvent)
+        $('#testcard [data-card-widget="card-refresh"]').CardRefresh('load')
+	}
+</script>
+<script type="text/javascript">
     $(document).ready(function() {
+        var refresh_seconds = 10000;
 
         $('.akips_trend:contains(New)').each(function( index ) {
 		    document.getElementById('audiotag1').play();
             //console.log( index + ": found New in " + $( this ).text() );
         });
 
+        var intervalId = window.setInterval(function(){
+            //refresh_cards();
+            $('#testcard [data-card-widget="card-refresh"]').CardRefresh('load');
+        }, refresh_seconds);
     })
 </script>
 {% endblock %}

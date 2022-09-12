@@ -11,6 +11,9 @@ urlpatterns = [
     path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
+    # Dynamic Card Views
+    path('TierCard', views.TierCard.as_view(), name='tier_card'),
+
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
 

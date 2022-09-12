@@ -25,6 +25,24 @@ class Home(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class TierCard(LoginRequiredMixin, View):
+    ''' Generic card refresh view '''
+    template_name = 'akips/card_refresh_tier.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context['tiers'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
+        return render(request, self.template_name, context=context)
+
+class BuildingCard(LoginRequiredMixin, View):
+    ''' Generic card refresh view '''
+    template_name = 'akips/card_refresh_bldg.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context['bldgs'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
+        return render(request, self.template_name, context=context)
+
 class UnreachableView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/unreachable.html'
