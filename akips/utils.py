@@ -246,7 +246,7 @@ class AKIPS:
                         % (r.status_code, r.reason))
             if re.match(r'^ERROR:',r.text):
                 logger.warn("AKIPS API failed with {}".format(r.text))
-                return None
+                return r.text
             else:
                 return r.text
 
