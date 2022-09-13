@@ -75,10 +75,12 @@
 </script>
 <script type="text/javascript">
 	function refresh_cards() {
+        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
 
         $('.event-card').each(function( index ) {
             var url = $(this).data("url");
             var body = $(this).find(".card-body");
+            body.append(overlay);
 
             $.ajax({
             type: "GET",
@@ -87,9 +89,10 @@
             data: {},
             success: function (result, status, xhr) {
                 body.html(result);
-                console.log("ajax success ")
+                //console.log("ajax success ")
 
-                $('.akips_trend:contains(New)').each(function( index ) {
+               //$('.akips_trend:contains(New)').each(function( index ) {
+                body.find('.akips_trend:contains(New)').each(function( index ) {
                     document.getElementById('audiotag1').play();
                     //console.log( index + ": found New in " + $( this ).text() );
                 });
@@ -98,9 +101,7 @@
                 console.log("ajax failed")
             }
             });
-            console.log( "event card " + url);
         });
-        console.log("Refreshed cards");
 	}
 </script>
 <script type="text/javascript">
@@ -109,10 +110,9 @@
 
         refresh_cards();
 
-        $('.akips_trend:contains(New)').each(function( index ) {
-		    document.getElementById('audiotag1').play();
-            //console.log( index + ": found New in " + $( this ).text() );
-        });
+        // $('.akips_trend:contains(New)').each(function( index ) {
+		//     document.getElementById('audiotag1').play();
+        // });
 
         var intervalId = window.setInterval(function(){
             refresh_cards();

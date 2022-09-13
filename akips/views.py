@@ -1,11 +1,13 @@
 from django.shortcuts import render
 from django.views.generic import View
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
-
+import json
+import pprint
 from .models import Summary, Unreachable, Device
 from .task import example_task
+from .utils import AKIPS
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
@@ -116,3 +118,26 @@ class DeviceView(LoginRequiredMixin, View):
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
+
+class SetMaintenanceView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        device_name = request.GET.get('device_name',None)            # Required
+        maintenance_mode = request.GET.get('maintenance_mode',None)  # Required
+        logger.debug("Got {} and {}".format(device_name,maintenance_mode))
+        if device_name is None or maintenance_mode is None:
+            raise Http404("Missing device name or maintenance mode setting")
+        device = Device.objects.get(name=device_name)
+
+        # Get the current device from local database
+        akips = AKIPS()
+        result = akips.set_maintenance_mode(device_name,True)
+        logger.debug(json.dumps(result, indent=4, sort_keys=True))
+
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)

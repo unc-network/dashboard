@@ -100,6 +100,24 @@ class AKIPS:
             return data
         return None
 
+    def set_maintenance_mode(self, device_name, mode=True):
+        ''' Set mantenance mode on or off for a device '''
+        params = {
+            'function': 'web_manual_grouping',
+            'type': 'device',
+            'group': 'maintenance_mode',
+            'device': device_name
+        }
+        if mode:
+            params['mode'] = 'assign'
+        else:
+            params['mode'] = 'clear'
+        text = self.get(section='/api-script',params=params)
+        if text:
+            logger.debug("Maintenance mode update result {}".format( text ))
+            return text
+        return None
+
     def get_device(self, name):
         ''' Pull the entire configuration for a single device '''
         params = {
@@ -201,9 +219,10 @@ class AKIPS:
             return data
         return None
 
-    def get(self, params=None):
+    def get(self, section='/api-db/', params=None):
         ''' Search and Read Objects: GET Method '''
-        url = 'https://' + self.akips_server + '/api-db'
+        #url = 'https://' + self.akips_server + '/api-db'
+        url = 'https://' + self.akips_server + section
         logger.debug("WAPI GET %s" % (url))
         logger.debug("WAPI GET params: " + pprint.pformat(params))
         params['username'] = self.akips_username
@@ -225,7 +244,11 @@ class AKIPS:
         else:
             logger.debug('API request finished successfully, response code: %i %s'
                         % (r.status_code, r.reason))
-            return r.text
+            if re.match(r'^ERROR:',r.text):
+                logger.warn("AKIPS API failed with {}".format(r.text))
+                return None
+            else:
+                return r.text
 
 class NIT:
     # Class to handle interactions with the NIT
