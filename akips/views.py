@@ -14,6 +14,24 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
+# def handler403(request, exception):
+#     response = render(request, "dashboard/error_pages/403.html")
+#     response.status_code = 403
+
+#     return response
+
+# def handler404(request, exception):
+#     response = render(request, "dashboard/error_pages/404.html")
+#     response.status_code = 404
+
+#     return response
+
+# def handler500(request):
+#     response = render(request, "dashboard/error_pages/500.html")
+#     response.status_code = 500
+
+#     return response
+
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'

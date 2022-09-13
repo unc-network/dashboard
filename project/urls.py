@@ -19,6 +19,10 @@ from django.urls import include, path
 
 from welcome.views import index, health
 
+#handler403 = rp_views.handler403
+#handler404 = rp_views.handler404
+#handler500 = rp_views.handler500
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include("django.contrib.auth.urls")),
