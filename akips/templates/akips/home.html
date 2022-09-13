@@ -92,7 +92,7 @@
                 //console.log("ajax success ")
 
                //$('.akips_trend:contains(New)').each(function( index ) {
-                body.find('.akips_trend:contains(New)').each(function( index ) {
+                body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
                     document.getElementById('audiotag1').play();
                     //console.log( index + ": found New in " + $( this ).text() );
                 });

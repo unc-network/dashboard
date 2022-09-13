@@ -31,13 +31,15 @@
                 </dl>
             </div>
             <div class="col-4">
-                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h" class="btn btn-primary">View in AKiPS</a>
-                {% if device.maintenance %}
-                <div class="callout callout-danger">
-                    <h5>Maintenance Mode is ON</h5>
+                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a>
+                <div class="custom-control custom-switch">
+                    {% if device.maintenance %}
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" >
+                    {% endif %}
+                    <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
                 </div>
-                {% endif %}
-                <button type="button" class="btn btn-primary" onclick='toggle_maintenance_mode()'>Toggle Maintenance Mode</button>
             </div>
         </div>
     </div>
@@ -78,5 +80,23 @@
 	function toggle_maintenance_mode() {
         console.log("NYI")
 	}
+</script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+    $('#maintSwitch1').change(function() {
+        var url = $(this).data("url");
+        var name = $(this).data("name");
+        if(this.checked) {
+            //var returnVal = confirm("Are you sure?");
+            //$(this).prop("checked", returnVal);
+            console.log("maint checkbox on");
+            $.get(url, { "device_name": name, "maintenance_mode": 'True'})
+        } else {
+            console.log("maint checkbox off")
+            $.get(url, { "device_name": name, "maintenance_mode": 'False'})
+        }
+    });
+});
 </script>
 {% endblock %}
