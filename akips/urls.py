@@ -11,13 +11,13 @@ urlpatterns = [
     path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
-    # Specific Update Views
+    # API Update Views
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
 
     # Dynamic Card Views
-    path('critcard/', views.CritCard.as_view(), name='crit_card'),
-    path('tiercard/', views.TierCard.as_view(), name='tier_card'),
-    path('bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
+    path('api/critcard/', views.CritCard.as_view(), name='crit_card'),
+    path('api/tiercard/', views.TierCard.as_view(), name='tier_card'),
+    path('api/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),

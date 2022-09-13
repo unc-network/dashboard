@@ -173,6 +173,7 @@ def refresh_unreachable():
             logger.debug("{}: {}".format(key, value))
             Unreachable.objects.update_or_create(
                 device = Device.objects.get(name=key),
+                event_start = datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
                 defaults = {
                     # 'name': key,                        # akips device name
                     'child': value['child'],            # ping4
@@ -180,18 +181,20 @@ def refresh_unreachable():
                     'index': value['index'],            # 1
                     'state': value['state'],            # down
                     'device_added': datetime.fromtimestamp( int(value['device_added']), tz=timezone.get_current_timezone()),
-                    'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
+                    #'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
                     'ip4addr': value['ip4addr'],
                     'last_refresh': now,
+                    'status': 'Open',
                 }
             )
             time.sleep(0.05)
 
         # Remove stale entries
-        Unreachable.objects.exclude(last_refresh__gte=now).delete()
+        Unreachable.objects.exclude(last_refresh__gte=now).update(status='Closed')
 
         # Calculate device totals
-        unreachables = Unreachable.objects.exclude(device__maintenance=True)
+        #unreachables = Unreachable.objects.exclude(device__maintenance=True)
+        unreachables = Unreachable.objects.filter(status='Open',device__maintenance=False)
         crit_count = {}
         tier_count = {}
         bldg_count = {}

@@ -12,12 +12,12 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
-    list_display = ('device', 'ip4addr', 'device_added', 'event_start', 'last_refresh')
-    list_filter = ['last_refresh']
+    list_display = ['device', 'ip4addr', 'event_start', 'last_refresh', 'status']
+    list_filter = ['status', 'last_refresh']
     search_fields = ['ip4addr']
 
 @admin.register(Summary)
 class SummaryAdmin(admin.ModelAdmin):
-    list_display = ('type', 'name', 'total_count', 'max_count', 'status', 'first_event', 'last_event')
-    list_filter = ['type','status']
+    list_display = ('name', 'type', 'total_count', 'max_count', 'status', 'first_event', 'last_event')
+    list_filter = ['status', 'type']
     search_fields = ['name']

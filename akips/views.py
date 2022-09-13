@@ -61,7 +61,7 @@ class UnreachableView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        devices = Unreachable.objects.exclude(device__maintenance=True)
+        devices = Unreachable.objects.exclude(status='Closed').exclude(device__maintenance=True)
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
