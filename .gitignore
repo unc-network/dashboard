@@ -59,3 +59,14 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Mac filesystem metadata
+.DS_Store
+
+# Visual Studio Code
+.vscode
+
+# PYENV virtual environments
+/venv/
+.python-version
+.env

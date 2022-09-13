@@ -1,0 +1,34 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES {{ bldg}}{% endblock %}
+{% block page_name %}Event Focus | {{ bldg }}{% endblock %}
+
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Description</th>
+                    <th>Last Event</th>
+                    <th>Hibernate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td><a href="{% url 'device' device.device.name %}">{{ device.device.name }}</a></td>
+                    <td>{{ device.device.ip4addr }}</td>
+                    <td>{{ device.device.sysDescr }}</td>
+                    <td>{{ device.last_refresh }}</td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+{% block extra_head%}
+<!-- <meta http-equiv="refresh" content="30"> -->
+{% endblock %}
+
+{% block content %}
+<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+    <div class="card-body table-responsive p-0">
+    </div>
+</div>
+
+<div id="tier_card" class="card card-primary event-card" data-url="{% url 'tier_card' %}">
+    <div class="card-body table-responsive p-0">
+    </div>
+</div>
+
+<div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
+    <div class="card-body table-responsive p-0">
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Ack</th>
+                    <th>Device</th>
+                    <th>Trap</th>
+                    <th>Recorded</th>
+                    <th>Incident Request</th>
+                    <th>Clear Trap</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
+                        </div>
+                    </td>
+                    <td>dummy row</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% for trap in traps %}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
+<a href="javascript:play_single_sound();">Test sound</a>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+	function play_single_sound() {
+		document.getElementById('audiotag1').play();
+	}
+</script>
+<script type="text/javascript">
+	function refresh_cards() {
+        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+
+        $('.event-card').each(function( index ) {
+            var url = $(this).data("url");
+            var body = $(this).find(".card-body");
+            body.append(overlay);
+
+            $.ajax({
+            type: "GET",
+            url: url,
+            dataType: "html",
+            data: {},
+            success: function (result, status, xhr) {
+                body.html(result);
+                //console.log("ajax success ")
+
+               //$('.akips_trend:contains(New)').each(function( index ) {
+                body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
+                    document.getElementById('audiotag1').play();
+                    //console.log( index + ": found New in " + $( this ).text() );
+                });
+            },
+            error: function (xhr, status, error) {
+                console.log("ajax failed")
+            }
+            });
+        });
+	}
+</script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        var refresh_seconds = 30000;
+
+        refresh_cards();
+
+        // $('.akips_trend:contains(New)').each(function( index ) {
+		//     document.getElementById('audiotag1').play();
+        // });
+
+        var intervalId = window.setInterval(function(){
+            refresh_cards();
+        }, refresh_seconds);
+    })
+</script>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES {{ device.name }}{% endblock %}
+{% block page_name %}Device Focus | {{ name }}{% endblock %}
+
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-8">
+                <dl class="row">
+                    <dt class="col-sm-2">Name</dt>
+                    <dd class="col-sm-10">{{ device.sysName }}</dd>
+                    <dt class="col-sm-2">Address</dt>
+                    <dd class="col-sm-10">{{ device.ip4addr }}</dd>
+                    <dt class="col-sm-2">sysName</dt>
+                    <dd class="col-sm-10">{{ device.sysName }}</dd>
+                    <dt class="col-sm-2">sysLocation</dt>
+                    <dd class="col-sm-10">{{ device.sysLocation }}</dd>
+                    <dt class="col-sm-2">sysDescr</dt>
+                    <dd class="col-sm-10">{{ device.sysDescr }}</dd>
+                    <dt class="col-sm-2">Tier</dt>
+                    <dd class="col-sm-10">{{ device.tier }}</dd>
+                    <dt class="col-sm-2">Building</dt>
+                    <dd class="col-sm-10">{{ device.building_name }}</dd>
+                    <dt class="col-sm-2">Type</dt>
+                    <dd class="col-sm-10">{{ device.type }}</dd>
+                    <dt class="col-sm-2">Last Refresh</dt>
+                    <dd class="col-sm-10">{{ device.last_refresh }}</dd>
+                </dl>
+            </div>
+            <div class="col-4">
+                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a>
+                <div class="custom-control custom-switch">
+                    {% if device.maintenance %}
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" >
+                    {% endif %}
+                    <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Unreachable History</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Start Event</th>
+                    <th>Last Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td>{{ device.device.name }}</td>
+                    <td>{{ device.device.ip4addr }}</td>
+                    <td>{{ device.event_start }}</td>
+                    <td>{{ device.last_refresh }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+	function toggle_maintenance_mode() {
+        console.log("NYI")
+	}
+</script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+    $('#maintSwitch1').change(function() {
+        var url = $(this).data("url");
+        var name = $(this).data("name");
+        if(this.checked) {
+            //var returnVal = confirm("Are you sure?");
+            //$(this).prop("checked", returnVal);
+            console.log("maint checkbox on");
+            $.get(url, { "device_name": name, "maintenance_mode": 'True'})
+        } else {
+            console.log("maint checkbox off")
+            $.get(url, { "device_name": name, "maintenance_mode": 'False'})
+        }
+    });
+});
+</script>
+{% endblock %}
