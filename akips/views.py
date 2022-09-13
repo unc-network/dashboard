@@ -129,11 +129,19 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         logger.debug("Got {} and {}".format(device_name,maintenance_mode))
         if device_name is None or maintenance_mode is None:
             raise Http404("Missing device name or maintenance mode setting")
-        device = Device.objects.get(name=device_name)
 
+        # Update local database
+        device = Device.objects.get(name=device_name)
+        if maintenance_mode == 'True':
+            device.maintenance = True
+        else:
+            device.maintenance = False
+        device.save()
+
+        result = {}
         # Get the current device from local database
         akips = AKIPS()
-        result = akips.set_maintenance_mode(device_name,True)
+        result['text'] = akips.set_maintenance_mode(device_name,maintenance_mode)
         logger.debug(json.dumps(result, indent=4, sort_keys=True))
 
         # Return the results

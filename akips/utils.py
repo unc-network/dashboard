@@ -108,7 +108,7 @@ class AKIPS:
             'group': 'maintenance_mode',
             'device': device_name
         }
-        if mode:
+        if mode == 'True':
             params['mode'] = 'assign'
         else:
             params['mode'] = 'clear'
