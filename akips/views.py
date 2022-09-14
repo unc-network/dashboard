@@ -98,7 +98,7 @@ class TierView(LoginRequiredMixin, View):
 
         if tier_name == 'Unknown':
             tier_name = ''
-        devices = Unreachable.objects.filter(status='Open',device__tier=tier_name).order_by('name')
+        devices = Unreachable.objects.filter(status='Open',device__tier=tier_name).order_by('device__name')
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -117,7 +117,7 @@ class BuildingView(LoginRequiredMixin, View):
         if bldg_name == 'Unknown':
             bldg_name = ''
         #devices = Unreachable.objects.filter(device__building_name=bldg_name)
-        devices = Unreachable.objects.filter(status='Open',device__building_name=bldg_name).order_by('name')
+        devices = Unreachable.objects.filter(status='Open',device__building_name=bldg_name).order_by('device__name')
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
