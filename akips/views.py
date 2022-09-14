@@ -1,11 +1,19 @@
-from django.shortcuts import render
-from django.views.generic import View
-from django.http import Http404, JsonResponse
-from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
 import json
-import pprint
-from .models import Summary, Unreachable, Device
+from secrets import compare_digest
+
+from django.conf import settings
+from django.shortcuts import render
+from django.views.generic import View
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden
+from django.contrib.auth.mixins import LoginRequiredMixin
+#from django.utils.decorators import method_decorator
+from django.db.transaction import atomic, non_atomic_requests
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+
+from .models import Summary, Unreachable, Device, WebhookMessage
 from .task import example_task
 from .utils import AKIPS
 
@@ -170,3 +178,45 @@ class SetMaintenanceView(LoginRequiredMixin, View):
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
+
+# class AKIPSListener(LoginRequiredMixin, View):
+#     ''' accept inbound webhooks '''
+#     pretty_print = True
+
+#     def get(self, request, *args, **kwargs):
+#         pass
+
+#     @method_decorator(ensure_csrf_cookie)
+#     def post(self, request, *args, **kwargs):
+#         jsondata = request.body
+#         data = json.loads(jsondata)
+#         logger.info("Webhook provided: {}".format(data))
+
+#         result = {'status': 'it worked'}
+#         # Return the results
+#         if self.pretty_print:
+#             return JsonResponse(result, json_dumps_params={'indent': 4})
+#         else:
+#             return JsonResponse(result)
+
+@csrf_exempt
+@require_POST
+@non_atomic_requests
+def akips_webhook(request):
+    given_token = request.headers.get("Akips-Webhook-Token", "")
+    if not compare_digest(given_token, settings.AKIPS_WEBHOOK_TOKEN):
+        logger.debug( "expected token {}".format(settings.AKIPS_WEBHOOK_TOKEN) )
+        logger.debug( "got token      {}".format(given_token) )
+        return HttpResponseForbidden(
+            "Incorrect token in Akips-Webhook-Token header.",
+            content_type="text/plain",
+        )
+
+    payload = json.loads(request.body)
+    WebhookMessage.objects.create( message=payload )
+    process_webhook_payload(payload)
+    return HttpResponse("Message received.", content_type="text/plain")
+
+@atomic
+def process_webhook_payload(payload):
+    pass

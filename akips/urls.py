@@ -26,6 +26,7 @@ urlpatterns = [
     #path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # JSON Views
-    #path('ajax/summary/', views.SummaryAJAX.as_view(), name='summary'),
+    #path('webhook/', views.AKIPSListener.as_view(), name='akips_webhook'),
+    path('webhook/', views.akips_webhook, name='akips_webhook'),
 
 ]
