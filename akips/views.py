@@ -79,7 +79,8 @@ class UnreachableView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        devices = Unreachable.objects.exclude(status='Closed').exclude(device__maintenance=True)
+        #devices = Unreachable.objects.exclude(status='Closed').exclude(device__maintenance=True)
+        devices = Unreachable.objects.filter(status='Open',device__maintenance=False)
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -97,7 +98,7 @@ class TierView(LoginRequiredMixin, View):
 
         if tier_name == 'Unknown':
             tier_name = ''
-        devices = Unreachable.objects.filter(device__tier=tier_name)
+        devices = Unreachable.objects.filter(status='Open',device__tier=tier_name).order_by('name')
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -115,7 +116,8 @@ class BuildingView(LoginRequiredMixin, View):
 
         if bldg_name == 'Unknown':
             bldg_name = ''
-        devices = Unreachable.objects.filter(device__building_name=bldg_name)
+        #devices = Unreachable.objects.filter(device__building_name=bldg_name)
+        devices = Unreachable.objects.filter(status='Open',device__building_name=bldg_name).order_by('name')
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
@@ -132,7 +134,8 @@ class DeviceView(LoginRequiredMixin, View):
         context['name'] = device_name
 
         context['device'] = Device.objects.get(name=device_name)
-        devices = Unreachable.objects.filter(device__name=device_name)
+        #devices = Unreachable.objects.filter(device__name=device_name)
+        devices = Unreachable.objects.filter(status='Open',device__name=device_name)
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
