@@ -7,8 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<form action="" method="post">
-    {% csrf_token %}
+<form method="get" action="/incident/">
 
 <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
     <div class="card-body table-responsive p-0">

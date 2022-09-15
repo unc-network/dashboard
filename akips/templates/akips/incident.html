@@ -1,0 +1,99 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+
+<p>You are about to submit a ServiceNow Incident.  The Incident will be populated with the information below.
+    Please select a criticality level and the group you wish to submit the request to.
+</p>
+
+<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Switch Count</th>
+                    <th>AP Count</th>
+                    <th>UPS Count</th>
+                    <th>Last Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>dummy row</a></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% for summary in summaries %}
+                <tr>
+                    <td>{{ summary.name }}</a></td>
+                    <td>{{ summary.switch_count }}</td>
+                    <td>{{ summary.ap_count }}</td>
+                    <td>{{ summary.ups_count }}</td>
+                    <td>{{ summary.last_event }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p>Please enter any comments about this event below.</p>
+<div class="form-group">
+    <label>Description</label>
+    <textarea class="form-control" rows="3" placeholder="Enter..."></textarea>
+</div>
+
+<div class="row">
+    <div class="col-2">
+        <p>Assignment Group</p>
+    </div>
+    <div class="col-10">
+        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-outline-primary active">
+                <input type="radio" name="options" id="Deployment" autocomplete="off" checked> Deployment
+            </label>
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="options" id="Engineering" autocomplete="off"> Engineering
+            </label>
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="options" id="Wireless" autocomplete="off"> Wireless
+            </label>
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="options" id="SoM" autocomplete="off"> SoM
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-2">
+        <p>Criticality Level</p>
+    </div>
+    <div class="col-10">
+        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-outline-primary active">
+                <input type="radio" name="options" id="Normal" autocomplete="off" checked> Normal
+            </label>
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="options" id="Critical" autocomplete="off"> Critical
+            </label>
+        </div>
+    </div>
+</div>
+<div class="text-right">
+    <button type="submit" class="btn btn-primary">Create Incident</button>
+</div>
+
+</form>
+{% endblock %}
+
+{% block js %}
+{% endblock %}

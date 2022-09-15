@@ -53,6 +53,12 @@ class Home(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+    def post(self, request, *args, **kwargs):
+        post_template = 'akips/incident.html'
+        context = {}
+
+        return render(request, post_template, context=context)
+
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_crit.html'
@@ -145,6 +151,20 @@ class DeviceView(LoginRequiredMixin, View):
         #devices = Unreachable.objects.filter(device__name=device_name)
         devices = Unreachable.objects.filter(status='Open',device__name=device_name)
         context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
+
+class IncidentView(LoginRequiredMixin, View):
+    ''' Create Incidents '''
+    template_name = 'akips/incident.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        context = {}
 
         return render(request, self.template_name, context=context)
 

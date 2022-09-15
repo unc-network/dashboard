@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path('', views.Home.as_view(), name='home'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
+    path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # Event Focus Views
     path('tier/<tier>/', views.TierView.as_view(), name='tier'),
