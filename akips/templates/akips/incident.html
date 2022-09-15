@@ -7,6 +7,13 @@
 <form action="" method="post">
     {% csrf_token %}
 
+    {{ form.non_field_errors }}
+
+    {% for hidden_field in form.hidden_fields %}
+    {{ hidden_field.errors }}
+    {{ hidden_field }}
+    {% endfor %}
+
 <p>You are about to submit a ServiceNow Incident.  The Incident will be populated with the information below.
     Please select a criticality level and the group you wish to submit the request to.
 </p>
@@ -44,6 +51,12 @@
     <textarea class="form-control" rows="3" placeholder="Enter..."></textarea>
 </div>
 
+<div class="form-group">
+    <label>{{ form.description.label }}</label>
+    {{ form.description }}
+</div>
+<p>{{ form.description.errors }}</p>
+
 <div class="row">
     <div class="col-2">
         <p>Assignment Group</p>
@@ -62,6 +75,11 @@
             <label class="btn btn-outline-primary">
                 <input type="radio" name="options" id="SoM" autocomplete="off"> SoM
             </label>
+            {% for radio in form.assignment_group %}
+            <label class="btn btn-outline-primary">
+                {{ radio }}
+            </label>
+            {% endfor %}
         </div>
     </div>
 </div>

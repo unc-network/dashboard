@@ -14,8 +14,9 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from .models import Summary, Unreachable, Device, WebhookMessage
+from .forms import IncidentForm
 from .task import example_task
-from .utils import AKIPS
+from .utils import AKIPS, ServiceNow
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
@@ -163,6 +164,7 @@ class IncidentView(LoginRequiredMixin, View):
         checkboxes = request.GET.getlist('event')
         logger.debug("Got list {}".format(checkboxes))
 
+        context['form'] = IncidentForm()
         summaries = Summary.objects.filter(id__in=checkboxes)
         context['summaries'] = summaries
 
@@ -170,6 +172,11 @@ class IncidentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         context = {}
+
+        servicenow = ServiceNow()
+        incident = servicenow.create_incident()
+        if incident:
+            logger.debug("created {}".format(incident['number']))
 
         return render(request, self.template_name, context=context)
 

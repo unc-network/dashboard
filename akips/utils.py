@@ -283,3 +283,104 @@ class NIT:
             logger.debug('API request finished successfully, response code: %i %s'
                         % (r.status_code, r.reason))
             return json.loads(r.text)
+
+class ServiceNow:
+    # Class to handle interactions with ServiceNow
+    url = os.getenv('SN_URL', '')
+    username = os.getenv('SN_USERNAME', '')
+    password = os.getenv('SN_PASSWORD', '')
+    session = requests.Session()
+
+    def create_incident(self, group, description, work_notes=None):
+        ''' Create a new SN incident '''
+        # Set proper headers
+        headers = {"Content-Type":"application/json", "Accept":"application/json"}
+
+        data = {
+            # Required fields
+            'u_assignment_group': group,
+            'u_caller_id': self.username,
+            'u_short_description': description,
+
+            # Optional fields
+            #'u_business_service': 'Network: IP Services',
+            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
+            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
+            #'u_opened_by': user,             # optional
+            #'u_work_notes': '',            # optional
+
+            # u_category is not listed in API doc as supported on create,
+            # but it is required to close an incident and can be set here
+            'u_category': 'Network',     # optional
+        }
+        if work_notes:
+            data['u_work_notes'] = work_notes
+
+        # Do the HTTP request
+        response = requests.post(self.url, auth=(self.username,self.password), headers=headers ,data=json.dumps(data))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        for entry in result_data['result']:
+            logger.debug("Result: {}".format(entry))
+            # Example entry for success
+            # {
+            #     "display_name": "number",
+            #     "display_value": "INC0319066",
+            #     "record_link": "https://uncchdev.service-now.com/api/now/table/incident/08bd97cc970ad5502d6274671153af52",
+            #     "status": "inserted",
+            #     "sys_id": "08bd97cc970ad5502d6274671153af52",
+            #     "table": "incident",
+            #     "transform_map": "Incident In"
+            # }
+            if entry['status'] == 'error':
+                logger.error("Failed to create ServiceNow Incident {}".format(entry['error_message']))
+                return 
+            else:
+                return {'number': entry['display_value'], 'link': entry['record_link']}
+
+    def update_incident(self, number, work_notes):
+        ''' Update an existing SN incident '''
+
+        # Set proper headers
+        headers = {"Content-Type":"application/json", "Accept":"application/json"}
+
+        # Resolving is not allowed by the API
+        data = {
+            'u_number': number,
+            #'u_category': 'Network',     # optional
+            #'u_state': 'In Progress',    # optional: New, In Progress, On Hold, Resolved, Canceled
+                                        # resolved requires fields we can't set in the api
+            ### create fields below are optional
+            #'u_assignment_group': 'IP-Services',
+            #'u_caller_id': "wew",
+            #'u_short_description': "create test",
+            #'u_business_service': 'Network: IP Services',
+            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
+            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
+            #'u_opened_by': 'wew',
+            'u_work_notes': work_notes,
+        }
+
+        # Do the HTTP request
+        response = requests.post(self.url, auth=(self.username, self.password), headers=headers ,data=json.dumps(data))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        for entry in result_data['result']:
+            logger.debug("Result: {}".format(entry))
+            if entry['status'] == 'error':
+                logger.error("Failed to update ServiceNow Incident {}".format(entry['error_message']))
+                return 
+            else:
+                return {'number': entry['display_value'], 'link': entry['record_link']}
