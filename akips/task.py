@@ -190,7 +190,7 @@ def refresh_unreachable():
             time.sleep(0.05)
 
         # Remove stale entries
-        Unreachable.objects.exclude(last_refresh__gte=now).update(status='Closed')
+        Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
         # Calculate device totals
         #unreachables = Unreachable.objects.exclude(device__maintenance=True)
@@ -215,16 +215,18 @@ def refresh_unreachable():
                 }
 
             # Identify tier and building devices
-            logger.debug("checking {}".format(tier_name))
-            if entry.device.tier not in tier_count:
+            logger.debug("checking tier {} for {}".format(tier_name,entry.device.name))
+            #if entry.device.tier not in tier_count:
+            if tier_name not in tier_count:
                 tier_count[ tier_name ] = {
                     'SWITCH': 0,
                     'AP': 0,
                     'UPS': 0,
                     'TOTAL': 0,
                 }
-            logger.debug("checking {}".format(bldg_name))
-            if entry.device.building_name not in bldg_count:
+            logger.debug("checking bldg {} for {}".format(bldg_name,entry.device.name))
+            #if entry.device.building_name not in bldg_count:
+            if bldg_name not in bldg_count:
                 bldg_count[ bldg_name ] = {
                     'SWITCH': 0,
                     'AP': 0,
