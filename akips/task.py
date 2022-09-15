@@ -261,7 +261,7 @@ def refresh_unreachable():
                     last_event = now,
                     trend = 'New',
                 )
-                # event.unreachables.add( Unreachable.objects.get(device__name=crit_name,last_refresh=now))
+                event.unreachables.add( Unreachable.objects.get(device__name=crit_name,last_refresh=now))
             else:
                 # This is a update event
                 event = summary_search[0]

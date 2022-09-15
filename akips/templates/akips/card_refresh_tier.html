@@ -30,7 +30,15 @@
             <td>{% widthratio tier.percent_down 1 100 %}%</td>
             <td>{{ tier.last_event }}</td>
             <td class="akips_trend">{{ tier.trend }}</td>
-            <td>{{ tier.incident }}</td>
+            <td class="text-center">
+                {% if tier.incident %}
+                {{ tier.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="incident_{{ tier.id }}">
+                </div>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

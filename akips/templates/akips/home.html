@@ -7,6 +7,9 @@
 {% endblock %}
 
 {% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+
 <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
     <div class="card-body table-responsive p-0">
     </div>
@@ -39,14 +42,18 @@
                 <tr>
                     <td>
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
+                            <input type="checkbox" class="form-check-input" id="ack_trap_{{ trap.id }}">
                         </div>
                     </td>
-                    <td>dummy row</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td>152.2.255.101</td>
+                    <td>SNMPv2-MIB.snmpTrapOID: OSPF-TRAP-MIB.ospfNbrStateChange</td>
+                    <td>Sept. 15, 2022, 8:33 a.m.</td>
+                    <td class="text-center">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="incident_{{ trap.id }}">
+                        </div>
+                    </td>
+                    <td><button type="button" class="btn btn-primary btn-sm">Clear Trap</button></td>
                 </tr>
                 {% for trap in traps %}
                 <tr>
@@ -63,8 +70,13 @@
     </div>
 </div>
 
+<div class="text-right">
+    <button type="submit" class="btn btn-primary">Create Incident</button>
+</div>
+
 <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
 <a href="javascript:play_single_sound();">Test sound</a>
+</form>
 {% endblock %}
 
 {% block js %}

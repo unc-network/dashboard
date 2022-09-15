@@ -30,7 +30,15 @@
             <td>{% widthratio bldg.percent_down 1 100 %}%</td>
             <td>{{ bldg.last_event }}</td>
             <td class="akips_trend">{{ bldg.trend }}</td>
-            <td>{{ bldg.incident }}</td>
+            <td class="text-center">
+                {% if bldg.incident %}
+                {{ bldg.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="incident_{{ bldg.id }}">
+                </div>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
