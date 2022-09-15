@@ -151,7 +151,9 @@ class AKIPS:
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
         params = {
-            'cmds': 'mget * * ping4 PING.icmpState value /down/',
+            #'cmds': 'mget * * ping4 PING.icmpState value /down/',
+            'cmds': 'mget * * /ping4|sys/ * value /down/',
+            #'cmds': 'mget * * /ping4|sys/ /PING.icmpState|SNMP.snmpState/ value /down/'
         }
         text = self.get(params=params)
         if text:

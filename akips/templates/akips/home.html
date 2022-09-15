@@ -40,8 +40,15 @@
             <tbody>
                 <tr>
                     <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_trap_{{ trap.id }}">
+                        <div class="custom-control custom-switch">
+                            {% if bldg.ack %}
+                            <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-1" data-url="{% url 'ack' 1 %}" checked>
+                            {% else %}
+                            <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-1" data-url="{% url 'ack' 1 %}" >
+                            {% endif %}
+                            <label class="custom-control-label" for="ack-switch-1"></label>
+                        <!-- <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="ack_trap_{{ trap.id }}"> -->
                         </div>
                     </td>
                     <td>152.2.255.101</td>
@@ -128,6 +135,18 @@
         var intervalId = window.setInterval(function(){
             refresh_cards();
         }, refresh_seconds);
+
+        // Bind to the document so dynamicly added content will still work
+        $(document).on('change', 'input.ack-switch', function() {
+            var url = $(this).data("url");
+            if(this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "ack": 'True'})
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "ack": 'False'})
+            }
+        });
 
         $('button').click(function() {
             checked = $("input[name=event]:checked").length;

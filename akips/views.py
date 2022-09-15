@@ -204,25 +204,31 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
-# class AKIPSListener(LoginRequiredMixin, View):
-#     ''' accept inbound webhooks '''
-#     pretty_print = True
+class AckView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
 
-#     def get(self, request, *args, **kwargs):
-#         pass
+    def get(self, request, *args, **kwargs):
+        summary_id = self.kwargs.get('summary_id', None)
+        ack = request.GET.get('ack',None)  # Required
+        logger.debug("Got ack for {}".format(summary_id))
+        result = {}
 
-#     @method_decorator(ensure_csrf_cookie)
-#     def post(self, request, *args, **kwargs):
-#         jsondata = request.body
-#         data = json.loads(jsondata)
-#         logger.info("Webhook provided: {}".format(data))
+        summary = Summary.objects.get(id=summary_id)
+        if ack == 'True':
+            summary.ack = True
+        else:
+            summary.ack = False
+        summary.save()
 
-#         result = {'status': 'it worked'}
-#         # Return the results
-#         if self.pretty_print:
-#             return JsonResponse(result, json_dumps_params={'indent': 4})
-#         else:
-#             return JsonResponse(result)
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+
+### functional views ###
 
 @csrf_exempt
 @require_POST

@@ -19,8 +19,13 @@
         {% for bldg in bldgs %}
         <tr>
             <td>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
+                <div class="custom-control custom-switch">
+                {% if bldg.ack %}
+                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ bldg.id}}" data-url="{% url 'ack' bldg.id %}" checked>
+                {% else %}
+                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ bldg.id}}" data-url="{% url 'ack' bldg.id %}" >
+                {% endif %}
+                <label class="custom-control-label" for="ack-switch-{{ bldg.id }}"></label>
                 </div>
             </td>
             <td><a href="{% url 'building' bldg.name %}">{{ bldg.name }}</a></td>

@@ -16,8 +16,14 @@
         {% for crit in critical %}
         <tr>
             <td>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ack_crit_{{ crit.id }}">
+                <div class="custom-control custom-switch">
+                    {% if crit.ack %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ crit.id}}" data-url="{% url 'ack' crit.id %}" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ crit.id}}" data-url="{% url 'ack' crit.id %}" >
+                    {% endif %}
+                    <label class="custom-control-label" for="ack-switch-{{ crit.id }}"></label>
+                    </div>
                 </div>
             </td>
             <td><a href="{% url 'device' crit.name %}">{{ crit.name }}</a></td>

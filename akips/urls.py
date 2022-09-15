@@ -12,13 +12,14 @@ urlpatterns = [
     path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
+    # Dynamic Content AJAX Views
+    path('ajax/critcard/', views.CritCard.as_view(), name='crit_card'),
+    path('ajax/tiercard/', views.TierCard.as_view(), name='tier_card'),
+    path('ajax/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
+
     # API Update Views
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
-
-    # Dynamic Card Views
-    path('api/critcard/', views.CritCard.as_view(), name='crit_card'),
-    path('api/tiercard/', views.TierCard.as_view(), name='tier_card'),
-    path('api/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
+    path('ack/<summary_id>', views.AckView.as_view(), name='ack'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
