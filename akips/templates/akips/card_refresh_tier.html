@@ -35,7 +35,7 @@
                 {{ tier.incident }}
                 {% else %}
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="incident_{{ tier.id }}">
+                    <input type="checkbox" class="form-check-input" name="event" value="{{ tier.id }}">
                 </div>
                 {% endif %}
             </td>

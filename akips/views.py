@@ -160,6 +160,11 @@ class IncidentView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        checkboxes = request.GET.getlist('event')
+        logger.debug("Got list {}".format(checkboxes))
+
+        summaries = Summary.objects.filter(id__in=checkboxes)
+        context['summaries'] = summaries
 
         return render(request, self.template_name, context=context)
 
