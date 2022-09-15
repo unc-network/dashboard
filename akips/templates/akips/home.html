@@ -42,13 +42,11 @@
                     <td>
                         <div class="custom-control custom-switch">
                             {% if bldg.ack %}
-                            <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-1" data-url="{% url 'ack' 1 %}" checked>
+                            <input type="checkbox" class="custom-control-input" id="ack-switch-1" data-url="{% url 'ack' 1 %}" checked>
                             {% else %}
-                            <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-1" data-url="{% url 'ack' 1 %}" >
+                            <input type="checkbox" class="custom-control-input" id="ack-switch-1" data-url="{% url 'ack' 1 %}" >
                             {% endif %}
                             <label class="custom-control-label" for="ack-switch-1"></label>
-                        <!-- <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_trap_{{ trap.id }}"> -->
                         </div>
                     </td>
                     <td>152.2.255.101</td>
