@@ -128,6 +128,14 @@
         var intervalId = window.setInterval(function(){
             refresh_cards();
         }, refresh_seconds);
+
+        $('button').click(function() {
+            checked = $("input[name=event]:checked").length;
+            if (!checked) {
+                alert("Please select one summary to create an incident.");
+                return false;
+            }
+        });
     })
 </script>
 {% endblock %}
