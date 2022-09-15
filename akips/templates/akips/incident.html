@@ -14,6 +14,10 @@
     {{ hidden_field }}
     {% endfor %}
 
+{% if create_message %}
+<p>{{ create_message }}</p>
+{% endif %}
+
 <p>You are about to submit a ServiceNow Incident.  The Incident will be populated with the information below.
     Please select a criticality level and the group you wish to submit the request to.
 </p>
@@ -47,11 +51,6 @@
 
 <p>Please enter any comments about this event below.</p>
 <div class="form-group">
-    <label>Description</label>
-    <textarea class="form-control" rows="3" placeholder="Enter..."></textarea>
-</div>
-
-<div class="form-group">
     <label>{{ form.description.label }}</label>
     {{ form.description }}
 </div>
@@ -63,24 +62,14 @@
     </div>
     <div class="col-10">
         <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
-            <label class="btn btn-outline-primary active">
-                <input type="radio" name="options" id="Deployment" autocomplete="off" checked> Deployment
-            </label>
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="options" id="Engineering" autocomplete="off"> Engineering
-            </label>
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="options" id="Wireless" autocomplete="off"> Wireless
-            </label>
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="options" id="SoM" autocomplete="off"> SoM
-            </label>
             {% for radio in form.assignment_group %}
-            <label class="btn btn-outline-primary">
-                {{ radio }}
+            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                {{ radio.choice_label }}
+                {{ radio.tag }}
             </label>
             {% endfor %}
         </div>
+        <p>{{ form.assignment_group.errors }}</p>
     </div>
 </div>
 
@@ -90,12 +79,12 @@
     </div>
     <div class="col-10">
         <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
-            <label class="btn btn-outline-primary active">
-                <input type="radio" name="options" id="Normal" autocomplete="off" checked> Normal
+            {% for radio in form.criticality %}
+            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                {{ radio.choice_label }}
+                {{ radio.tag }}
             </label>
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="options" id="Critical" autocomplete="off"> Critical
-            </label>
+            {% endfor %}
         </div>
     </div>
 </div>

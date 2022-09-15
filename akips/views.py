@@ -164,20 +164,46 @@ class IncidentView(LoginRequiredMixin, View):
         checkboxes = request.GET.getlist('event')
         logger.debug("Got list {}".format(checkboxes))
 
-        context['form'] = IncidentForm()
         summaries = Summary.objects.filter(id__in=checkboxes)
         context['summaries'] = summaries
+        
+        initial = {
+            'summary_events': ','.join(checkboxes)
+        }
+        context['form'] = IncidentForm(initial=initial)
 
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
         context = {}
 
-        servicenow = ServiceNow()
-        incident = servicenow.create_incident()
-        if incident:
-            logger.debug("created {}".format(incident['number']))
+        form = IncidentForm(request.POST)
+        if form.is_valid():
 
+            # Get the summaries
+            summary_ids = form.cleaned_data.get('summary_events').split(',')
+
+            # Create the ServiceNow Incident
+            servicenow = ServiceNow()
+            incident = servicenow.create_incident(
+                form.cleaned_data.get('assignment_group'),
+                'akips dashboard'
+            )
+            if incident:
+                context['create_message'] = "Incident {} was created.".format(incident['number'])
+                logger.debug("created {}".format(incident['number']))
+                for id in summary_ids:
+                    summary = Summary.objects.get(id=id)
+                    summary.incident = incident['number']
+                    summary.save()
+            else:
+                context['create_message'] = "Incident creation failed."
+
+            return render(request, self.template_name, context=context)
+
+        else:
+            # Form is invalid
+            context['form'] = form
         return render(request, self.template_name, context=context)
 
 class SetMaintenanceView(LoginRequiredMixin, View):
