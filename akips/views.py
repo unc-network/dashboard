@@ -5,13 +5,16 @@ from secrets import compare_digest
 from django.conf import settings
 from django.shortcuts import render
 from django.views.generic import View
-from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+from django.utils import timezone
+
 #from django.utils.decorators import method_decorator
 from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.utils import timezone
 
 from .models import Summary, Unreachable, Device, WebhookMessage
 from .forms import IncidentForm
@@ -196,8 +199,10 @@ class IncidentView(LoginRequiredMixin, View):
                     summary = Summary.objects.get(id=id)
                     summary.incident = incident['number']
                     summary.save()
+                messages.success(request, "ServiceNow Incident {} was created.".format(incident['number']))
+                return HttpResponseRedirect(reverse('home'))
             else:
-                context['create_message'] = "Incident creation failed."
+                messages.error(request, "ServiceNow Incident creation failed.")
 
             return render(request, self.template_name, context=context)
 

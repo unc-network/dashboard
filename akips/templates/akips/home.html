@@ -75,7 +75,7 @@
 </div>
 
 <div class="text-right">
-    <button type="submit" class="btn btn-primary">Create Incident</button>
+    <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
 </div>
 
 <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
@@ -96,6 +96,7 @@
         $('.event-card').each(function( index ) {
             var url = $(this).data("url");
             var body = $(this).find(".card-body");
+            var body_clone = body.clone();
             body.append(overlay);
 
             $.ajax({
@@ -105,16 +106,13 @@
             data: {},
             success: function (result, status, xhr) {
                 body.html(result);
-                //console.log("ajax success ")
-
-               //$('.akips_trend:contains(New)').each(function( index ) {
                 body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
                     document.getElementById('audiotag1').play();
-                    //console.log( index + ": found New in " + $( this ).text() );
                 });
             },
             error: function (xhr, status, error) {
-                console.log("ajax failed")
+                body.replaceWith(body_clone);
+                body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
             }
             });
         });
@@ -146,7 +144,7 @@
             }
         });
 
-        $('button').click(function() {
+        $('#incident_button').click(function() {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
                 alert("Please select one summary to create an incident.");
