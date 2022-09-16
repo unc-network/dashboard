@@ -162,27 +162,28 @@ def refresh_nit():
 
 @shared_task
 def refresh_unreachable():
-    logger.debug("refreshing unreachable")
+    logger.debug("AKIPS unreachable refresh starting")
     now = timezone.now()
 
-
     akips = AKIPS()
-    devices = akips.get_unreachable()
-    if devices:
-        for key, value in devices.items():
-            logger.debug("{}: {}".format(key, value))
+    unreachables = akips.get_unreachable()
+    if unreachables:
+        #for key, value in devices.items():
+        for entry in unreachables:
+            logger.debug("{}".format(entry))
             Unreachable.objects.update_or_create(
-                device = Device.objects.get(name=key),
-                event_start = datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
+                device = Device.objects.get(name= entry['name']),
+                child = entry['child'],
+                event_start = datetime.fromtimestamp( int(entry['event_start']), tz=timezone.get_current_timezone() ),
                 defaults = {
                     # 'name': key,                        # akips device name
-                    'child': value['child'],            # ping4
-                    'attribute': value['attribute'],    # PING.icmpState
-                    'index': value['index'],            # 1
-                    'state': value['state'],            # down
-                    'device_added': datetime.fromtimestamp( int(value['device_added']), tz=timezone.get_current_timezone()),
+                    #'child': value['child'],            # ping4
+                    'attribute': entry['attribute'],    # PING.icmpState
+                    'index': entry['index'],            # 1
+                    'state': entry['state'],            # down
+                    'device_added': datetime.fromtimestamp( int(entry['device_added']), tz=timezone.get_current_timezone()),
                     #'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
-                    'ip4addr': value['ip4addr'],
+                    'ip4addr': entry['ip4addr'],
                     'last_refresh': now,
                     'status': 'Open',
                 }
@@ -192,183 +193,306 @@ def refresh_unreachable():
         # Remove stale entries
         Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
-        # Calculate device totals
-        #unreachables = Unreachable.objects.exclude(device__maintenance=True)
-        unreachables = Unreachable.objects.filter(status='Open',device__maintenance=False)
-        crit_count = {}
-        tier_count = {}
-        bldg_count = {}
-        for entry in unreachables:
-            if entry.device.tier:
-                tier_name = entry.device.tier
-            else:
-                tier_name = 'Unknown'
-            if entry.device.building_name:
-                bldg_name = entry.device.building_name
-            else:
-                bldg_name = 'Unknown'
-
-            # Identify critical devices
-            if entry.device.critical:
-                crit_count[ entry.device.name ] = {
-                    'TOTAL': 1,
-                }
-
-            # Identify tier and building devices
-            logger.debug("checking tier {} for {}".format(tier_name,entry.device.name))
-            #if entry.device.tier not in tier_count:
-            if tier_name not in tier_count:
-                tier_count[ tier_name ] = {
-                    'SWITCH': 0,
-                    'AP': 0,
-                    'UPS': 0,
-                    'TOTAL': 0,
-                }
-            logger.debug("checking bldg {} for {}".format(bldg_name,entry.device.name))
-            #if entry.device.building_name not in bldg_count:
-            if bldg_name not in bldg_count:
-                bldg_count[ bldg_name ] = {
-                    'SWITCH': 0,
-                    'AP': 0,
-                    'UPS': 0,
-                    'TOTAL': 0,
-                }
-            if entry.device.type in ['SWITCH','AP','UPS']:
-                tier_count[ tier_name ][ entry.device.type ] += 1
-                bldg_count[ bldg_name ][ entry.device.type ] += 1
-            tier_count[ tier_name ][ 'TOTAL' ] += 1
-            bldg_count[ bldg_name ][ 'TOTAL' ] += 1
-
-        logger.debug("crit count {}".format(crit_count))
-        logger.debug("tier count {}".format(tier_count))
-        logger.debug("bldg count {}".format(bldg_count))
-
-        # Update critical type summary events
-        for crit_name in crit_count.keys():
-            summary_search = Summary.objects.filter(
-                type = 'Critical',
-                name = crit_name,
-                status = 'Open'
-            )
-            if not summary_search:
-                # This is a new event
-                event = Summary.objects.create(
-                    type = 'Critical',
-                    name = crit_name,
-                    device = Device.objects.get(name=crit_name),
-                    status = 'Open',
-                    max_count = 1,
-                    total_count = 1,
-                    first_event = now,
-                    last_event = now,
-                    trend = 'New',
-                )
-                event.unreachables.add( Unreachable.objects.get(device__name=crit_name,last_refresh=now))
-            else:
-                # This is a update event
-                event = summary_search[0]
-                event.trend = 'Stable'
-                event.last_event = now
-                event.save()
-
-        # Close critical type events open with no down devices
-        Summary.objects.filter(type='Critical',status='Open').exclude(name__in=crit_count.keys()).update(status='Closed')
-
-        # Update distribution type summary events
-        for tier_name in tier_count.keys():
-            summary_search = Summary.objects.filter(
-                type = 'Distribution',
-                name = tier_name,
-                status = 'Open'
-            )
-            if not summary_search:
-                # This is a new event
-                if tier_name == 'Unknown':
-                    tier_device_total = Device.objects.filter(tier='').count()
-                else:
-                    tier_device_total = Device.objects.filter(tier=tier_name).count()
-                tier_percent_down = round( tier_count[tier_name]['TOTAL'] / tier_device_total, 3)
-                event = Summary.objects.create(
-                    type = 'Distribution',
-                    name = tier_name,
-                    status = 'Open',
-                    switch_count = tier_count[tier_name]['SWITCH'],
-                    ap_count = tier_count[tier_name]['AP'],
-                    ups_count = tier_count[tier_name]['UPS'],
-                    total_count = tier_count[tier_name]['TOTAL'],
-                    max_count = tier_device_total,
-                    percent_down = tier_percent_down,
-                    first_event = now,
-                    last_event = now,
-                    trend = 'New',
-                )
-            else:
-                # This is a update event
-                event = summary_search[0]
-                event.switch_count = tier_count[tier_name]['SWITCH']
-                event.ap_count = tier_count[tier_name]['AP']
-                event.ups_count = tier_count[tier_name]['UPS']
-                event.percent_down = round( tier_count[tier_name]['TOTAL'] / event.max_count, 3)
-                if tier_count[tier_name]['TOTAL'] ==  event.total_count:
-                    event.trend = 'Stable'
-                elif tier_count[tier_name]['TOTAL'] > event.total_count:
-                    event.trend = 'Increasing'
-                elif tier_count[tier_name]['TOTAL'] < event.total_count:
-                    event.trend = 'Decreasing'
-                event.total_count = tier_count[tier_name]['TOTAL']
-                event.last_event = now
-                event.save()
-
-        # Close distribution type events open with no down devices
-        Summary.objects.filter(type='Distribution',status='Open').exclude(name__in=tier_count.keys()).update(status='Closed')
-
-        # Update building type summary events
-        for bldg_name in bldg_count.keys():
-            summary_search = Summary.objects.filter(
-                type = 'Building',
-                name = bldg_name,
-                status = 'Open'
-            )
-            if not summary_search:
-                # This is a new event
-                if bldg_name == 'Unknown':
-                    bldg_device_total = Device.objects.filter(building_name='').count()
-                else:
-                    bldg_device_total = Device.objects.filter(building_name=bldg_name).count()
-                bldg_percent_down = round( bldg_count[bldg_name]['TOTAL'] / bldg_device_total, 3)
-                event = Summary.objects.create(
-                    type = 'Building',
-                    name = bldg_name,
-                    status = 'Open',
-                    switch_count = bldg_count[bldg_name]['SWITCH'],
-                    ap_count = bldg_count[bldg_name]['AP'],
-                    ups_count = bldg_count[bldg_name]['UPS'],
-                    total_count = bldg_count[bldg_name]['TOTAL'],
-                    max_count = bldg_device_total,
-                    percent_down = bldg_percent_down,
-                    first_event = now,
-                    last_event = now,
-                    trend = 'New',
-                )
-            else:
-                # This is a update event
-                event = summary_search[0]
-                event.switch_count = bldg_count[bldg_name]['SWITCH']
-                event.ap_count = bldg_count[bldg_name]['AP']
-                event.ups_count = bldg_count[bldg_name]['UPS']
-                event.percent_down = round( bldg_count[bldg_name]['TOTAL'] / event.max_count, 3)
-                if bldg_count[bldg_name]['TOTAL'] ==  event.total_count:
-                    event.trend = 'Stable'
-                elif bldg_count[bldg_name]['TOTAL'] > event.total_count:
-                    event.trend = 'Increasing'
-                elif bldg_count[bldg_name]['TOTAL'] < event.total_count:
-                    event.trend = 'Decreasing'
-                event.total_count = bldg_count[bldg_name]['TOTAL']
-                event.last_event = now
-                event.save()
-
-        # Close building type events open with no down devices
-        Summary.objects.filter(type='Building',status='Open').exclude(name__in=bldg_count.keys()).update(status='Closed')
-
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
+
+# @shared_task
+# def refresh_summary():
+    logger.debug("AKIPS summary refresh starting")
+    now = timezone.now()
+
+    unreachables = Unreachable.objects.filter(status='Open',device__maintenance=False)
+    for unreachable in unreachables:
+        logger.debug("Processing unreachable {}".format(unreachable))
+
+        # Handle blank tier or building names
+        if unreachable.device.tier:
+            tier_name = unreachable.device.tier
+        else:
+            tier_name = 'Unknown'
+        if unreachable.device.building_name:
+            bldg_name = unreachable.device.building_name
+        else:
+            bldg_name = 'Unknown'
+
+        # Find the crit summary to update
+        if unreachable.device.critical:
+            c_summary, c_created = Summary.objects.get_or_create(
+                type='Critical',
+                name=unreachable.device.name,
+                status='Open',
+                defaults = {
+                    'first_event': now,
+                    'last_event': now,
+                    'max_count': 1
+                }
+            )
+            if c_created:
+                logger.debug("Crit summary created {}".format(unreachable.device.name))
+            else:
+                c_summary.last_event = now
+                c_summary.save()
+            c_summary.unreachables.add( unreachable )
+
+        # Find the tier summary to update
+        t_summary, t_created = Summary.objects.get_or_create(
+            type='Distribution',
+            name=tier_name,
+            status='Open',
+            defaults = {
+                'first_event': now,
+                'last_event': now,
+                'max_count': Device.objects.filter(tier= unreachable.device.tier ).count()
+            }
+        )
+        if t_created:
+            logger.debug("Tier summary created {}".format(tier_name))
+        else:
+            t_summary.last_event = now
+            t_summary.save()
+        t_summary.unreachables.add( unreachable )
+
+        # Find the building summary to update
+        b_summary, b_created = Summary.objects.get_or_create(
+            type='Building',
+            name=bldg_name,
+            status='Open',
+            defaults = {
+                'first_event': now,
+                'last_event': now,
+                'max_count': Device.objects.filter(building_name= unreachable.device.building_name ).count()
+            }
+        )
+        if b_created:
+            logger.debug("Building summary created {}".format(bldg_name))
+        else:
+            b_summary.last_event = now
+            b_summary.save()
+        b_summary.unreachables.add( unreachable )
+
+        time.sleep(0.05)
+
+    # Calculate summary counts
+    summaries = Summary.objects.filter(status='Open')
+    for summary in summaries:
+        logger.debug("Updating counts on {}".format(summary))
+
+        count = {
+            'SWITCH': {},
+            'AP': {},
+            'UPS': {},
+            'UNKNOWN': {},
+            'TOTAL':{}, 
+        }
+        unreachables = summary.unreachables.all()
+        for unreachable in unreachables:
+            if unreachable.device.maintenance == False:
+                if unreachable.device.type in ['SWITCH','AP','UPS']:
+                    count[ unreachable.device.type ][ unreachable.device.name ] = True
+                else:
+                    count[ 'UNKNOWN' ][ unreachable.device.name ] = True
+                count[ 'TOTAL' ][ unreachable.device.name ] = True
+        logger.debug("Counts {} are {}".format(summary.name,count))
+
+        summary.switch_count = len( count['SWITCH'].keys() )
+        summary.ap_count = len( count['AP'].keys() )
+        summary.ups_count = len( count['UPS'].keys() )
+        total_count = len( count['TOTAL'].keys() )
+        percent_down = round( total_count / summary.max_count, 3)
+
+        if summary.total_count == total_count:
+            summary.trend = 'Stable'
+        elif summary.total_count < total_count:
+            summary.trend = 'Increasing'
+        elif summary.total_count > total_count:
+            summary.trend = 'Decreasing'
+        summary.total_count = total_count
+        summary.percent_down = percent_down
+
+        summary.save()
+
+        # # Calculate device totals
+        # #unreachables = Unreachable.objects.exclude(device__maintenance=True)
+        # unreachables = Unreachable.objects.filter(status='Open',device__maintenance=False)
+        # crit_count = {}
+        # tier_count = {}
+        # bldg_count = {}
+        # for entry in unreachables:
+        #     if entry.device.tier:
+        #         tier_name = entry.device.tier
+        #     else:
+        #         tier_name = 'Unknown'
+        #     if entry.device.building_name:
+        #         bldg_name = entry.device.building_name
+        #     else:
+        #         bldg_name = 'Unknown'
+
+        #     # Identify critical devices
+        #     if entry.device.critical:
+        #         crit_count[ entry.device.name ] = {
+        #             'TOTAL': 1,
+        #         }
+
+        #     # Identify tier and building devices
+        #     logger.debug("checking tier {} for {}".format(tier_name,entry.device.name))
+        #     #if entry.device.tier not in tier_count:
+        #     if tier_name not in tier_count:
+        #         tier_count[ tier_name ] = {
+        #             'SWITCH': 0,
+        #             'AP': 0,
+        #             'UPS': 0,
+        #             'TOTAL': 0,
+        #         }
+        #     logger.debug("checking bldg {} for {}".format(bldg_name,entry.device.name))
+        #     #if entry.device.building_name not in bldg_count:
+        #     if bldg_name not in bldg_count:
+        #         bldg_count[ bldg_name ] = {
+        #             'SWITCH': 0,
+        #             'AP': 0,
+        #             'UPS': 0,
+        #             'TOTAL': 0,
+        #         }
+        #     if entry.device.type in ['SWITCH','AP','UPS']:
+        #         tier_count[ tier_name ][ entry.device.type ] += 1
+        #         bldg_count[ bldg_name ][ entry.device.type ] += 1
+        #     tier_count[ tier_name ][ 'TOTAL' ] += 1
+        #     bldg_count[ bldg_name ][ 'TOTAL' ] += 1
+
+        # logger.debug("crit count {}".format(crit_count))
+        # logger.debug("tier count {}".format(tier_count))
+        # logger.debug("bldg count {}".format(bldg_count))
+
+        # # Update critical type summary events
+        # for crit_name in crit_count.keys():
+        #     summary_search = Summary.objects.filter(
+        #         type = 'Critical',
+        #         name = crit_name,
+        #         status = 'Open'
+        #     )
+        #     if not summary_search:
+        #         # This is a new event
+        #         event = Summary.objects.create(
+        #             type = 'Critical',
+        #             name = crit_name,
+        #             device = Device.objects.get(name=crit_name),
+        #             status = 'Open',
+        #             max_count = 1,
+        #             total_count = 1,
+        #             first_event = now,
+        #             last_event = now,
+        #             trend = 'New',
+        #         )
+        #         event.unreachables.add( Unreachable.objects.get(device__name=crit_name,last_refresh=now))
+        #     else:
+        #         # This is a update event
+        #         event = summary_search[0]
+        #         event.trend = 'Stable'
+        #         event.last_event = now
+        #         event.save()
+
+        # # Close critical type events open with no down devices
+        # Summary.objects.filter(type='Critical',status='Open').exclude(name__in=crit_count.keys()).update(status='Closed')
+
+        # # Update distribution type summary events
+        # for tier_name in tier_count.keys():
+        #     summary_search = Summary.objects.filter(
+        #         type = 'Distribution',
+        #         name = tier_name,
+        #         status = 'Open'
+        #     )
+        #     if not summary_search:
+        #         # This is a new event
+        #         if tier_name == 'Unknown':
+        #             tier_device_total = Device.objects.filter(tier='').count()
+        #         else:
+        #             tier_device_total = Device.objects.filter(tier=tier_name).count()
+        #         tier_percent_down = round( tier_count[tier_name]['TOTAL'] / tier_device_total, 3)
+        #         event = Summary.objects.create(
+        #             type = 'Distribution',
+        #             name = tier_name,
+        #             status = 'Open',
+        #             switch_count = tier_count[tier_name]['SWITCH'],
+        #             ap_count = tier_count[tier_name]['AP'],
+        #             ups_count = tier_count[tier_name]['UPS'],
+        #             total_count = tier_count[tier_name]['TOTAL'],
+        #             max_count = tier_device_total,
+        #             percent_down = tier_percent_down,
+        #             first_event = now,
+        #             last_event = now,
+        #             trend = 'New',
+        #         )
+        #     else:
+        #         # This is a update event
+        #         event = summary_search[0]
+        #         event.switch_count = tier_count[tier_name]['SWITCH']
+        #         event.ap_count = tier_count[tier_name]['AP']
+        #         event.ups_count = tier_count[tier_name]['UPS']
+        #         event.percent_down = round( tier_count[tier_name]['TOTAL'] / event.max_count, 3)
+        #         if tier_count[tier_name]['TOTAL'] ==  event.total_count:
+        #             event.trend = 'Stable'
+        #         elif tier_count[tier_name]['TOTAL'] > event.total_count:
+        #             event.trend = 'Increasing'
+        #         elif tier_count[tier_name]['TOTAL'] < event.total_count:
+        #             event.trend = 'Decreasing'
+        #         event.total_count = tier_count[tier_name]['TOTAL']
+        #         event.last_event = now
+        #         event.save()
+
+        # # Close distribution type events open with no down devices
+        # Summary.objects.filter(type='Distribution',status='Open').exclude(name__in=tier_count.keys()).update(status='Closed')
+
+        # # Update building type summary events
+        # for bldg_name in bldg_count.keys():
+        #     summary_search = Summary.objects.filter(
+        #         type = 'Building',
+        #         name = bldg_name,
+        #         status = 'Open'
+        #     )
+        #     if not summary_search:
+        #         # This is a new event
+        #         if bldg_name == 'Unknown':
+        #             bldg_device_total = Device.objects.filter(building_name='').count()
+        #         else:
+        #             bldg_device_total = Device.objects.filter(building_name=bldg_name).count()
+        #         bldg_percent_down = round( bldg_count[bldg_name]['TOTAL'] / bldg_device_total, 3)
+        #         event = Summary.objects.create(
+        #             type = 'Building',
+        #             name = bldg_name,
+        #             status = 'Open',
+        #             switch_count = bldg_count[bldg_name]['SWITCH'],
+        #             ap_count = bldg_count[bldg_name]['AP'],
+        #             ups_count = bldg_count[bldg_name]['UPS'],
+        #             total_count = bldg_count[bldg_name]['TOTAL'],
+        #             max_count = bldg_device_total,
+        #             percent_down = bldg_percent_down,
+        #             first_event = now,
+        #             last_event = now,
+        #             trend = 'New',
+        #         )
+        #     else:
+        #         # This is a update event
+        #         event = summary_search[0]
+        #         event.switch_count = bldg_count[bldg_name]['SWITCH']
+        #         event.ap_count = bldg_count[bldg_name]['AP']
+        #         event.ups_count = bldg_count[bldg_name]['UPS']
+        #         event.percent_down = round( bldg_count[bldg_name]['TOTAL'] / event.max_count, 3)
+        #         if bldg_count[bldg_name]['TOTAL'] ==  event.total_count:
+        #             event.trend = 'Stable'
+        #         elif bldg_count[bldg_name]['TOTAL'] > event.total_count:
+        #             event.trend = 'Increasing'
+        #         elif bldg_count[bldg_name]['TOTAL'] < event.total_count:
+        #             event.trend = 'Decreasing'
+        #         event.total_count = bldg_count[bldg_name]['TOTAL']
+        #         event.last_event = now
+        #         event.save()
+
+        # # Close building type events open with no down devices
+        # Summary.objects.filter(type='Building',status='Open').exclude(name__in=bldg_count.keys()).update(status='Closed')
+
+        time.sleep(0.05)
+
+    # Close building type events open with no down devices
+    Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
+
+    finish_time = timezone.now()
+    logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))

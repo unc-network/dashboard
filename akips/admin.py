@@ -12,7 +12,7 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
-    list_display = ['device', 'ip4addr', 'event_start', 'last_refresh', 'status']
+    list_display = ['device', 'attribute', 'ip4addr', 'event_start', 'last_refresh', 'status']
     list_filter = ['status', 'last_refresh']
     search_fields = ['ip4addr']
 

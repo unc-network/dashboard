@@ -37,12 +37,12 @@ class Unreachable(models.Model):
     state = models.CharField(max_length=255)    # extracted from value
     device_added = models.DateTimeField()       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
-    ip4addr = models.GenericIPAddressField()    # extracted from value
+    ip4addr = models.GenericIPAddressField(blank=True,null=True)    # extracted from value
     last_refresh = models.DateTimeField()
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     class Meta:
-        ordering = ['event_start']
+        ordering = ['device', 'event_start']
 
     def __str__(self):
         return str(self.device)
@@ -68,15 +68,15 @@ class Summary(models.Model):
     ups_count = models.IntegerField(default=0)
     total_count = models.IntegerField(default=0)
     max_count = models.IntegerField(default=0)
-    percent_down = models.DecimalField(default=0,max_digits=3,decimal_places=3)
+    percent_down = models.DecimalField(default=0,max_digits=4,decimal_places=3)
     first_event = models.DateTimeField()
-    trend = models.CharField(max_length=255)
+    trend = models.CharField(default='New',max_length=255)
     incident = models.CharField(blank=True,max_length=255)
     last_event = models.DateTimeField()
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     class Meta:
-        ordering = ['first_event']
+        ordering = ['type', 'name', 'first_event']
 
     def __str__(self):
         return str(self.name)

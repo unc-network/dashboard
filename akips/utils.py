@@ -157,34 +157,34 @@ class AKIPS:
         }
         text = self.get(params=params)
         if text:
-            data = {} 
+            data = []
             # Data comes back as 'plain/text' type so we have to parse it
             # Example output, data on each line:
-            # 152.19.198.33 ping4 PING.icmpState = 1,down,1519844016,1646695881,152.19.198.33
-            # 152.19.198.37 ping4 PING.icmpState = 1,down,1519844016,1642967467,152.19.198.37
-            # 172.22.37.68 ping4 PING.icmpState = 1,down,1443798140,1659405567,172.22.37.68
+            # 172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
+            # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+            # CrN-082-SmithCenter-AP_Stats_Table ping4 PING.icmpState = 1,down,1605595895,1656331597,172.29.94.63
+            # CrN-082-SmithCenter-AP_Talent_Table ping4 PING.icmpState = 1,down,1641624705,1646101757,172.29.94.112
             #
             # Example child attribute values
             # ping4	PING.icmpState	1,down,1575702020,1662054938,172.29.172.68
             # sys	SNMP.snmpState	1,down,1575702020,1662054911,
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)$", line)
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
                 if match:
-                    if match.group(1) not in data:
-                        # Populate a default entry for all desired fields
-                        data[ match.group(1) ] = {
-                            'child': match.group(2),
-                            'attribute': match.group(3),
-                            'index': match.group(4),
-                            'state': match.group(5),
-                            'device_added': match.group(6), # epoch in local timezone
-                            'event_start': match.group(7),  # epoch in local timezone
-                            'ip4addr': match.group(8),
-                        }
-                    # Save this attribute value to data
-                    #data[ match.group(1) ][ match.group(3) ] = match.group(4)
-            logger.debug("Found {} devices in akips".format( len( data.keys() )))
+                    entry = {
+                        'name': match.group(1),
+                        'child': match.group(2),
+                        'attribute': match.group(3),
+                        'index': match.group(4),
+                        'state': match.group(5),
+                        'device_added': match.group(6), # epoch in local timezone
+                        'event_start': match.group(7),  # epoch in local timezone
+                    }
+                    if len(match.groups()) == 8:
+                        entry['ip4addr'] = match.group(8)
+                    data.append(entry)
+            logger.debug("Found {} devices in akips".format( len( data )))
             return data
         return None
 
