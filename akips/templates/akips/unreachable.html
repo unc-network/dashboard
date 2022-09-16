@@ -10,18 +10,18 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Attribute</th>
                     <th>IP Address</th>
+                    <th>Down</th>
                     <th>sysName</th>
                     <th>Last Event</th>
                 </tr>
             </thead>
             <tbody>
-                {% for unreachable in devices %}
+                {% for unreachable in unreachables %}
                 <tr>
                     <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
-                    <td>{{ unreachable.attribute }}</td>
                     <td>{{ unreachable.device.ip4addr }}</td>
+                    <td>{{ unreachable.attribute }}</td>
                     <td>{{ unreachable.device.sysName }}</td>
                     <td>{{ unreachable.last_refresh }}</td>
                 </tr>
