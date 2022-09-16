@@ -1,0 +1,76 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES {{ summary.name }}{% endblock %}
+{% block page_name %}Event Focus | {{ summary.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-6">
+                <dl class="row">
+                    <dt class="col-sm-6">Type</dt>
+                    <dd class="col-sm-6">{{ summary.type }}</dd>
+                    <dt class="col-sm-6">Name</dt>
+                    <dd class="col-sm-6">{{ summary.name }}</dd>
+                    <dt class="col-sm-6">Switch Count</dt>
+                    <dd class="col-sm-6">{{ summary.switch_count }}</dd>
+                    <dt class="col-sm-6">AP Count</dt>
+                    <dd class="col-sm-6">{{ summary.ap_count }}</dd>
+                    <dt class="col-sm-6">UPs Count</dt>
+                    <dd class="col-sm-6">{{ summary.ups_count }}</dd>
+                    <dt class="col-sm-6">Total Count</dt>
+                    <dd class="col-sm-6">{{ summary.total_count }}</dd>
+                </dl>
+            </div>
+            <div class="col-6">
+                <dl class="row">
+                    <dt class="col-sm-6">First Event</dt>
+                    <dd class="col-sm-6">{{ summary.first_event }}</dd>
+                    <dt class="col-sm-6">Last Event</dt>
+                    <dd class="col-sm-6">{{ summary.last_event }}</dd>
+                    <dt class="col-sm-6">Trend</dt>
+                    <dd class="col-sm-6">{{ summary.trend }}</dd>
+                    <dt class="col-sm-6">Status</dt>
+                    <dd class="col-sm-6">{{ summary.status }}</dd>
+                    <dt class="col-sm-6">Possible Devices</dt>
+                    <dd class="col-sm-6">{{ summary.max_count }}</dd>
+                    <dt class="col-sm-6">Percent Affected</dt>
+                    <dd class="col-sm-6">{% widthratio summary.percent_down 1 100 %}%</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+ <div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Description</th>
+                    <th>First Event</th>
+                    <th>Last Event</th>
+                    <th>Status</th>
+                    <th>Hibernate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unreachable in summary.unreachables.all %}
+                <tr>
+                    <td>{{ unreachable.device.name }}</a></td>
+                    <td>{{ unreachable.device.ip4addr }}</td>
+                    <td>{{ unreachable.device.sysDescr }}</td>
+                    <td>{{ unreachable.event_start }}</td>
+                    <td>{{ unreachable.last_refresh }}</td>
+                    <td>{{ unreachable.status }}</td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

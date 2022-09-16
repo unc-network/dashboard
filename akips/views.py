@@ -3,7 +3,7 @@ import json
 from secrets import compare_digest
 
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.urls import reverse
@@ -100,6 +100,19 @@ class UnreachableView(LoginRequiredMixin, View):
         #devices = Unreachable.objects.exclude(status='Closed').exclude(device__maintenance=True)
         devices = Unreachable.objects.filter(status='Open',device__maintenance=False)
         context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
+
+class SummaryView(LoginRequiredMixin, View):
+    ''' Generic summary view '''
+    template_name = 'akips/summary.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        summary_id = self.kwargs.get('id', None)
+
+        summary = get_object_or_404(Summary,id=summary_id)
+        context['summary'] = summary
 
         return render(request, self.template_name, context=context)
 
