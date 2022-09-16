@@ -19,14 +19,7 @@
         {% for tier in tiers %}
         <tr>
             <td>
-                <div class="custom-control custom-switch">
-                    {% if tier.ack %}
-                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ tier.id}}" data-url="{% url 'ack' tier.id %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ tier.id}}" data-url="{% url 'ack' tier.id %}" >
-                    {% endif %}
-                    <label class="custom-control-label" for="ack-switch-{{ tier.id }}"></label>
-                </div>
+
             </td>
             <td><a href="{% url 'tier' tier.name %}">{{ tier.name }}</a></td>
             <td>{{ tier.switch_count }}</td>
@@ -36,13 +29,6 @@
             <td>{{ tier.last_event }}</td>
             <td class="akips_trend">{{ tier.trend }}</td>
             <td class="text-center">
-                {% if tier.incident %}
-                {{ tier.incident }}
-                {% else %}
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" name="event" value="{{ tier.id }}">
-                </div>
-                {% endif %}
             </td>
         </tr>
         {% endfor %}
