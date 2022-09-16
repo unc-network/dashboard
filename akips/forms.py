@@ -4,6 +4,7 @@ DEPT_CHOICES = (
     ('ITS-Net-Deployment','Deployment'),
     ('ITS-Networking','Engineering'),
     ('ITS-Net-WIFI','Wireless'),
+    ('IP-Services','IP Services'),
     ('SoM','SoM'),
 )
 
