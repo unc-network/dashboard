@@ -69,7 +69,7 @@ class CritCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['critical'] = Summary.objects.filter(type='Critical',status='Open').order_by('name')
+        context['summaries'] = Summary.objects.filter(type='Critical',status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
 class TierCard(LoginRequiredMixin, View):
@@ -78,7 +78,7 @@ class TierCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['tiers'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
+        context['summaries'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
 class BuildingCard(LoginRequiredMixin, View):
@@ -87,7 +87,7 @@ class BuildingCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['bldgs'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
+        context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
 class UnreachableView(LoginRequiredMixin, View):

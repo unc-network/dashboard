@@ -16,31 +16,31 @@
         </tr>
     </thead>
     <tbody>
-        {% for bldg in bldgs %}
+        {% for summary in summaries %}
         <tr>
             <td>
                 <div class="custom-control custom-switch">
-                {% if bldg.ack %}
-                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ bldg.id}}" data-url="{% url 'ack' bldg.id %}" checked>
+                {% if summary.ack %}
+                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" checked>
                 {% else %}
-                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ bldg.id}}" data-url="{% url 'ack' bldg.id %}" >
+                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" >
                 {% endif %}
-                <label class="custom-control-label" for="ack-switch-{{ bldg.id }}"></label>
+                <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
                 </div>
             </td>
-            <td><a href="{% url 'building' bldg.name %}">{{ bldg.name }}</a></td>
-            <td>{{ bldg.switch_count }}</td>
-            <td>{{ bldg.ap_count }}</td>
-            <td>{{ bldg.ups_count }}</td>
-            <td>{% widthratio bldg.percent_down 1 100 %}%</td>
-            <td>{{ bldg.last_event }}</td>
-            <td class="akips_trend">{{ bldg.trend }}</td>
+            <td><a href="{% url 'building' summary.name %}">{{ summary.name }}</a></td>
+            <td>{{ summary.switch_count }}</td>
+            <td>{{ summary.ap_count }}</td>
+            <td>{{ summary.ups_count }}</td>
+            <td>{% widthratio summary.percent_down 1 100 %}%</td>
+            <td>{{ summary.last_event }}</td>
+            <td class="akips_trend">{{ summary.trend }}</td>
             <td class="text-center">
-                {% if bldg.incident %}
-                {{ bldg.incident }}
+                {% if summary.incident %}
+                {{ summary.incident }}
                 {% else %}
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" name="event" value="{{ bldg.id }}">
+                    <input type="checkbox" class="form-check-input" name="event" value="{{ summary.id }}">
                 </div>
                 {% endif %}
             </td>
