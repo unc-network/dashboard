@@ -8,8 +8,10 @@ DEPT_CHOICES = (
 )
 
 CRITICAL_CHOICES = (
-    ('Normal','Normal'),
     ('Critical','Critical'),
+    ('High','High'),
+    ('Moderate','Moderate'),
+    ('Low','Low'),
 )
 
 class IncidentForm(forms.Form):

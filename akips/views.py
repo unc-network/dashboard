@@ -185,12 +185,18 @@ class IncidentView(LoginRequiredMixin, View):
 
             # Get the summaries
             summary_ids = form.cleaned_data.get('summary_events').split(',')
+            summaries = Summary.objects.filter(id__in=summary_ids)
+            dashboard_overview = ''
+            for summary in summaries:
+                dashboard_overview += "{} {}\n".format(summary.type, summary.name)
 
             # Create the ServiceNow Incident
             servicenow = ServiceNow()
             incident = servicenow.create_incident(
                 form.cleaned_data.get('assignment_group'),
-                'akips dashboard'
+                form.cleaned_data.get('description'),
+                severity=form.cleaned_data.get('criticality'),
+                work_notes=dashboard_overview
             )
             if incident:
                 context['create_message'] = "Incident {} was created.".format(incident['number'])

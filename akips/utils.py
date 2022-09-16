@@ -291,7 +291,7 @@ class ServiceNow:
     password = os.getenv('SN_PASSWORD', '')
     session = requests.Session()
 
-    def create_incident(self, group, description, work_notes=None):
+    def create_incident(self, group, description, severity=None, work_notes=None):
         ''' Create a new SN incident '''
         # Set proper headers
         headers = {"Content-Type":"application/json", "Accept":"application/json"}
@@ -313,9 +313,27 @@ class ServiceNow:
             # but it is required to close an incident and can be set here
             'u_category': 'Network',     # optional
         }
+        if severity == 'Critical':
+            # "1 - Critical" servicenow priority
+            data['u_impact'] = '1'
+            data['u_urgency'] = '1'
+        elif severity == 'High':
+            # "2 - High" servicenow priority
+            data['u_impact'] = '1'
+            data['u_urgency'] = '2'
+        elif severity == 'Moderate':
+            # "3 - Moderate" servicenow priority
+            data['u_impact'] = '2'
+            data['u_urgency'] = '2'
+        elif severity == 'Low':
+            # "4 - Low" servicenow priority
+            data['u_impact'] = '3'
+            data['u_urgency'] = '2'
+
         if work_notes:
             data['u_work_notes'] = work_notes
 
+        logger.debug("data: {}".format(data))
         # Do the HTTP request
         response = requests.post(self.url, auth=(self.username,self.password), headers=headers ,data=json.dumps(data))
 
