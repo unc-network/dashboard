@@ -205,18 +205,8 @@ def refresh_unreachable():
     for unreachable in unreachables:
         logger.debug("Processing unreachable {}".format(unreachable))
 
-        # Handle blank tier or building names
-        if unreachable.device.tier:
-            tier_name = unreachable.device.tier
-        else:
-            tier_name = 'Unknown'
-        if unreachable.device.building_name:
-            bldg_name = unreachable.device.building_name
-        else:
-            bldg_name = 'Unknown'
-
-        # Find the crit summary to update
         if unreachable.device.critical:
+            # Handle Critical devices
             c_summary, c_created = Summary.objects.get_or_create(
                 type='Critical',
                 name=unreachable.device.name,
@@ -234,41 +224,54 @@ def refresh_unreachable():
                 c_summary.save()
             c_summary.unreachables.add( unreachable )
 
-        # Find the tier summary to update
-        t_summary, t_created = Summary.objects.get_or_create(
-            type='Distribution',
-            name=tier_name,
-            status='Open',
-            defaults = {
-                'first_event': now,
-                'last_event': now,
-                'max_count': Device.objects.filter(tier= unreachable.device.tier ).count()
-            }
-        )
-        if t_created:
-            logger.debug("Tier summary created {}".format(tier_name))
         else:
-            t_summary.last_event = now
-            t_summary.save()
-        t_summary.unreachables.add( unreachable )
+            # Handle Non-Critical devices
 
-        # Find the building summary to update
-        b_summary, b_created = Summary.objects.get_or_create(
-            type='Building',
-            name=bldg_name,
-            status='Open',
-            defaults = {
-                'first_event': now,
-                'last_event': now,
-                'max_count': Device.objects.filter(building_name= unreachable.device.building_name ).count()
-            }
-        )
-        if b_created:
-            logger.debug("Building summary created {}".format(bldg_name))
-        else:
-            b_summary.last_event = now
-            b_summary.save()
-        b_summary.unreachables.add( unreachable )
+            # Handle blank tier or building names
+            if unreachable.device.tier:
+                tier_name = unreachable.device.tier
+            else:
+                tier_name = 'Unknown'
+            if unreachable.device.building_name:
+                bldg_name = unreachable.device.building_name
+            else:
+                bldg_name = 'Unknown'
+
+            # Find the tier summary to update
+            t_summary, t_created = Summary.objects.get_or_create(
+                type='Distribution',
+                name=tier_name,
+                status='Open',
+                defaults = {
+                    'first_event': now,
+                    'last_event': now,
+                    'max_count': Device.objects.filter(tier= unreachable.device.tier ).count()
+                }
+            )
+            if t_created:
+                logger.debug("Tier summary created {}".format(tier_name))
+            else:
+                t_summary.last_event = now
+                t_summary.save()
+            t_summary.unreachables.add( unreachable )
+
+            # Find the building summary to update
+            b_summary, b_created = Summary.objects.get_or_create(
+                type='Building',
+                name=bldg_name,
+                status='Open',
+                defaults = {
+                    'first_event': now,
+                    'last_event': now,
+                    'max_count': Device.objects.filter(building_name= unreachable.device.building_name ).count()
+                }
+            )
+            if b_created:
+                logger.debug("Building summary created {}".format(bldg_name))
+            else:
+                b_summary.last_event = now
+                b_summary.save()
+            b_summary.unreachables.add( unreachable )
 
         time.sleep(0.05)
 
