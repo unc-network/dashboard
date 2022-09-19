@@ -152,6 +152,19 @@ class BuildingView(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class RecentSummaryView(LoginRequiredMixin, View):
+    ''' Generic recent summary view '''
+    template_name = 'akips/recent.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        date_from = timezone.now() - timezone.timedelta(days=1)
+        summaries = Summary.objects.filter(last_event__gte=date_from).order_by('-last_event')
+        context['summaries'] = summaries
+
+        return render(request, self.template_name, context=context)
+
 class DeviceView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/device.html'

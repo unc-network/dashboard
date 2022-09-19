@@ -8,10 +8,11 @@ urlpatterns = [
     path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # Event Focus Views
-    path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
     path('tier/<tier>/', views.TierView.as_view(), name='tier'),
     path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
+    path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
+    path('recent/', views.RecentSummaryView.as_view(), name='recent'),
 
     # Dynamic Content AJAX Views
     path('ajax/critcard/', views.CritCard.as_view(), name='crit_card'),
