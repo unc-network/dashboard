@@ -60,7 +60,7 @@
             <tbody>
                 {% for unreachable in summary.unreachables.all %}
                 <tr>
-                    <td><a href="{% url 'device' summary.name %}">{{ unreachable.device.name }}</a></td>
+                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                     <td>{{ unreachable.device.ip4addr }}</td>
                     <td>{{ unreachable.device.sysDescr }}</td>
                     <td>{{ unreachable.event_start }}</td>
