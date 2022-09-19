@@ -178,9 +178,9 @@ class DeviceView(LoginRequiredMixin, View):
         context['name'] = device_name
 
         context['device'] = Device.objects.get(name=device_name)
-        #devices = Unreachable.objects.filter(device__name=device_name)
-        devices = Unreachable.objects.filter(status='Open',device__name=device_name)
-        context['devices'] = devices
+        unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
+        #devices = Unreachable.objects.filter(status='Open',device__name=device_name)
+        context['unreachables'] = unreachables
 
         return render(request, self.template_name, context=context)
 

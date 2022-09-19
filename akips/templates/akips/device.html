@@ -53,19 +53,19 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>IP Address</th>
+                    <th>Down</th>
                     <th>Start Event</th>
                     <th>Last Event</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                {% for device in devices %}
+                {% for unreachable in unreachables %}
                 <tr>
-                    <td>{{ device.device.name }}</td>
-                    <td>{{ device.device.ip4addr }}</td>
-                    <td>{{ device.event_start }}</td>
-                    <td>{{ device.last_refresh }}</td>
+                    <td>{{ unreachable.attribute }}</td>
+                    <td>{{ unreachable.event_start }}</td>
+                    <td>{{ unreachable.last_refresh }}</td>
+                    <td>{{ unreachable.status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
