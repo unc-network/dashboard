@@ -287,7 +287,7 @@ def refresh_unreachable():
             'UNKNOWN': {},
             'TOTAL':{}, 
         }
-        unreachables = summary.unreachables.all()
+        unreachables = summary.unreachables.filter(status='Open')
         for unreachable in unreachables:
             if unreachable.device.maintenance == False:
                 if unreachable.device.type in ['SWITCH','AP','UPS']:
