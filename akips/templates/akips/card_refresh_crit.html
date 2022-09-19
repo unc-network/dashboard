@@ -26,9 +26,9 @@
                     </div>
                 </div>
             </td>
-            <td><a href="{% url 'device' summary.name %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}"><i class="fas fa-info-circle"></i></a></td>
-            <td>{% for unreachable in summary.unreachables.all %}{{ unreachable.device.ip4addr }}{% endfor %}</td>
-            <td>{% for unreachable in summary.unreachables.all %}{{ unreachable.device.sysDescr }}{% endfor %}</td>
+            <td><a href="{% url 'device' summary.name %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}"></a></td>
+            <td>{% with summary.unreachables.all|first as u %}{{ u.device.ip4addr }}{% endwith %}</td>
+            <td>{% with summary.unreachables.all|first as u %}{{ u.device.sysDescr }}{% endwith %}</td>
             <td>{{ summary.last_event }}</td>
             <td class="text-center">
                 {% if summary.incident %}
