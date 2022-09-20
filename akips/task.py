@@ -168,22 +168,22 @@ def refresh_unreachable():
     akips = AKIPS()
     unreachables = akips.get_unreachable()
     if unreachables:
-        #for key, value in devices.items():
-        for entry in unreachables:
-            logger.debug("{}".format(entry))
+        for k,v in unreachables.items():
+            logger.debug("{}".format(v['name']))
             Unreachable.objects.update_or_create(
-                device = Device.objects.get(name= entry['name']),
-                child = entry['child'],
-                event_start = datetime.fromtimestamp( int(entry['event_start']), tz=timezone.get_current_timezone() ),
+                device = Device.objects.get(name= v['name']),
+                status = 'Open',
+                #child = entry['child'],
+                #event_start = datetime.fromtimestamp( int(entry['event_start']), tz=timezone.get_current_timezone() ),
                 defaults = {
                     # 'name': key,                        # akips device name
-                    #'child': value['child'],            # ping4
-                    'attribute': entry['attribute'],    # PING.icmpState
-                    'index': entry['index'],            # 1
-                    'state': entry['state'],            # down
-                    'device_added': datetime.fromtimestamp( int(entry['device_added']), tz=timezone.get_current_timezone()),
-                    #'event_start': datetime.fromtimestamp( int(value['event_start']), tz=timezone.get_current_timezone() ),
-                    'ip4addr': entry['ip4addr'],
+                    'child': v['child'],            # ping4
+                    'ping_state': v['ping_state'],            # down
+                    'snmp_state': v['snmp_state'],            # down
+                    'index': v['index'],            # 1
+                    'device_added': datetime.fromtimestamp( int(v['device_added']), tz=timezone.get_current_timezone()),
+                    'event_start': datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
+                    'ip4addr': v['ip4addr'],
                     'last_refresh': now,
                     'status': 'Open',
                 }
@@ -198,6 +198,7 @@ def refresh_unreachable():
 
 # @shared_task
 # def refresh_summary():
+
     logger.debug("AKIPS summary refresh starting")
     now = timezone.now()
 

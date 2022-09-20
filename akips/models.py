@@ -29,12 +29,19 @@ class Unreachable(models.Model):
         ('Open', 'Open'),
         ('Closed', 'Closed'),
     )
+    STATE_CHOICES = (
+        ('up','up'),
+        ('down','down'),
+        ('unreported','unreported'),
+    )
     # Unreachable devices from akips
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
+    ping_state = models.CharField(max_length=32,choices=STATE_CHOICES,default='unreported')
+    snmp_state = models.CharField(max_length=32,choices=STATE_CHOICES,default='unreported')
     index = models.CharField(max_length=255)    # extracted from value
-    state = models.CharField(max_length=255)    # extracted from value
+    #state = models.CharField(max_length=255)    # extracted from value
     device_added = models.DateTimeField()       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
     ip4addr = models.GenericIPAddressField(blank=True,null=True)    # extracted from value

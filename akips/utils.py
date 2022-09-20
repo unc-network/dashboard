@@ -157,7 +157,8 @@ class AKIPS:
         }
         text = self.get(params=params)
         if text:
-            data = []
+            #data = []
+            data = {}
             # Data comes back as 'plain/text' type so we have to parse it
             # Example output, data on each line:
             # 172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
@@ -172,18 +173,29 @@ class AKIPS:
             for line in lines:
                 match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
                 if match:
-                    entry = {
-                        'name': match.group(1),
-                        'child': match.group(2),
-                        'attribute': match.group(3),
-                        'index': match.group(4),
-                        'state': match.group(5),
-                        'device_added': match.group(6), # epoch in local timezone
-                        'event_start': match.group(7),  # epoch in local timezone
-                    }
-                    if len(match.groups()) == 8:
-                        entry['ip4addr'] = match.group(8)
-                    data.append(entry)
+                    name = match.group(1)
+                    if name not in data:
+                        # populate a starting point for this device
+                        data[name] = { 
+                            'name': match.group(1),
+                            'ping_state': 'up',
+                            'snmp_state': 'unreported',
+                        }
+                    attribute = match.group(3)
+                    if attribute == 'PING.icmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['ping_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['ip4addr'] = match.group(8)
+                    elif attribute == 'SNMP.snmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['snmp_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['ip4addr'] = None
             logger.debug("Found {} devices in akips".format( len( data )))
             return data
         return None
