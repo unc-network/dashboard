@@ -188,10 +188,15 @@ class AKIPS:
             return data
         return None
 
-    def get_threshold_events(self, period='last1h'):
-        ''' Pull a list of unreachable IPv4 ping devices '''
+    def get_events(self, type='all', period='last1h'):
+        ''' Pull a list of events.  Command syntax:
+            mget event {all,critical,enum,threshold,uptime}
+            time {time filter} [{parent regex} {child regex}
+            {attribute regex}] [profile {profile name}]
+            [any|all|not group {group name} ...] '''
+
         params = {
-            'cmds': 'mget event threshold time last1h'
+            'cmds': 'mget event {} time {}'.format(type,period)
         }
         text = self.get(params=params)
         if text:
@@ -199,25 +204,27 @@ class AKIPS:
             # Data comes back as 'plain/text' type so we have to parse it.  Format expected:
             # {epoch} {parent} {child} {attribute} threshold {flags} {rule exceeded} [{child description}]
             # Example output, data on each line:
-            # 1662741840 172.29.149.209 cpu.196609 HOST-RESOURCES-MIB.hrProcessorLoad threshold warning,above last5m,avg,90 GenuineIntel: Intel(R) Xeon(R) CPU E5-2658 v2 @ 2.40GHz
             # 1662741900 172.29.170.78 ping4 PING.icmpRtt threshold warning,below last30m,avg,20000 172.29.170.78
-            # 1662741960 172.29.149.209 cpu.1.49.2 F5-BIGIP-SYSTEM-MIB.sysMultiHostCpuUsageRatio1m threshold warning,above last5m,avg,90 1
+            # 1663646539 CrNR-136-HortonRHHJNO-AP_336 ping4 PING.icmpState enum warning down 172.29.69.6
+            # 1663661689 MetE-371-CLLCRH-AP_2 ap.168.189.39.203.11.228 WLSX-WLAN-MIB.wlanAPUpTime uptime warning 5053738
             lines = text.split('\n')
             for line in lines:
-                match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\sthreshold\s(?P<flags>\S+)\s(?P<rule_exceeded>\S+)\s(?P<child_description>.*)$', line)
+                #match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\sthreshold\s(?P<flags>\S+)\s(?P<rule_exceeded>\S+)\s(?P<child_description>.*)$', line)
+                match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\s(?P<type>\S+)\s(?P<flags>\S+)\s(?P<details>.*)$', line)
                 if match:
                     entry = {
                         'epoch': match.group('epoch'),
                         'parent': match.group('parent'),
                         'child': match.group('child'),
                         'attribute': match.group('attribute'),
+                        'type': match.group('type'),
                         'flags': match.group('flags'),
-                        'rule_exceeded': match.group('rule_exceeded'),
+                        'details': match.group('details'),
                     }
-                    if match.group('child_description'):
-                        entry['child_description'] = match.group('child_description'),
+                    #if match.group('child_description'):
+                    #    entry['child_description'] = match.group('child_description'),
                     data.append(entry)
-            logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("Found {} events of type {} in akips".format( len( data ), type))
             return data
         return None
 
