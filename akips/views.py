@@ -111,6 +111,9 @@ class SummaryView(LoginRequiredMixin, View):
         summary_id = self.kwargs.get('id', None)
 
         summary = get_object_or_404(Summary,id=summary_id)
+
+        context['u_open'] = summary.unreachables.filter(status='Open').order_by('device__name')
+        context['u_closed'] = summary.unreachables.filter(status='Closed').order_by('device__name')
         context['summary'] = summary
 
         return render(request, self.template_name, context=context)
