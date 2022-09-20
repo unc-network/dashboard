@@ -68,7 +68,7 @@ class Summary(models.Model):
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
     name = models.CharField(max_length=255)
     ack = models.BooleanField(default=False)
-    device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)
+    #device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)
     unreachables = models.ManyToManyField(Unreachable)
     switch_count = models.IntegerField(default=0)
     ap_count = models.IntegerField(default=0)
