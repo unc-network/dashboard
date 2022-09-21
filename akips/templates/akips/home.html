@@ -94,6 +94,19 @@
             }
         });
 
+        // Bind to the document so dynamicly added content will still work
+        $(document).on('click', 'button.trap-clear', function() {
+            //$(this).prop('disabled', true);
+            var tr = $(this).closest('tr');
+            var url = $(this).data("url");
+            $.get(url, {})
+
+            tr.css("background-color","#FF3700");
+            tr.fadeOut(400, function() {
+                tr.remove();
+            });
+        });
+
         $('#incident_button').click(function() {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
