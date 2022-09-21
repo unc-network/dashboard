@@ -95,7 +95,7 @@ class WebhookMessage(models.Model):
     #updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.id
+        return str(self.id)
 
 class SNMPTrap(models.Model):
     tt = models.DateTimeField()
@@ -107,4 +107,4 @@ class SNMPTrap(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.id
+        return str(self.id)

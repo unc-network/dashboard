@@ -320,7 +320,7 @@ def akips_webhook(request):
         )
 
     payload = json.loads(request.body)
-    WebhookMessage.objects.create( message=payload )
+    #WebhookMessage.objects.create( message=payload )
     process_webhook_payload(payload)
     return HttpResponse("Message received.", content_type="text/plain")
 
