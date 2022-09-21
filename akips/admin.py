@@ -28,6 +28,6 @@ class WebhookMessageAdmin(admin.ModelAdmin):
 
 @admin.register(SNMPTrap)
 class SNMPTrapAdmin(admin.ModelAdmin):
-    list_display = ['tt', 'device', 'ipaddr', 'trap_oid', 'created_at']
+    list_display = ['trap_oid', 'device', 'ipaddr', 'tt']
     list_filter = ['trap_oid']
-    search_fields = ['trap_oid']
+    search_fields = ['trap_oid', 'ipaddr']
