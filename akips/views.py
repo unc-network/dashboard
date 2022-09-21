@@ -341,7 +341,7 @@ class AckTrapView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         trap_id = self.kwargs.get('trap_id', None)
         ack = request.GET.get('ack',None)  # Required
-        logger.debug("Got ack for trap {}".format(trap_id))
+        logger.debug("Got ack {} for trap {}".format(ack,trap_id))
         result = {}
 
         trap = SNMPTrap.objects.get(id=trap_id)

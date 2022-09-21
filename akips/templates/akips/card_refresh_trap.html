@@ -17,7 +17,7 @@
         <tr>
             <td>
                 <div class="custom-control custom-switch">
-                    {% if summary.ack %}
+                    {% if trap.ack %}
                     <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack_trap' trap.id %}" checked>
                     {% else %}
                     <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack_trap' trap.id %}" >
