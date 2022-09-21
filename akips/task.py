@@ -244,6 +244,7 @@ def refresh_unreachable():
                 name=tier_name,
                 status='Open',
                 defaults = {
+                    'tier': tier_name,
                     'first_event': now,
                     'last_event': now,
                     'max_count': Device.objects.filter(tier= unreachable.device.tier ).count()
@@ -262,6 +263,7 @@ def refresh_unreachable():
                 name=bldg_name,
                 status='Open',
                 defaults = {
+                    'tier': tier_name,
                     'first_event': now,
                     'last_event': now,
                     'max_count': Device.objects.filter(building_name= unreachable.device.building_name ).count()

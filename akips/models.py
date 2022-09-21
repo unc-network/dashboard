@@ -66,6 +66,7 @@ class Summary(models.Model):
         ('Closed', 'Closed'),
     )
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    tier = models.CharField(max_length=255,blank=True)
     name = models.CharField(max_length=255)
     ack = models.BooleanField(default=False)
     #device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)

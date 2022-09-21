@@ -87,7 +87,9 @@ class BuildingCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
+        #context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
+        types = ['Distribution', 'Building']
+        context['summaries'] = Summary.objects.filter(type__in=types,status='Open').order_by('tier','-type','name')
         return render(request, self.template_name, context=context)
 
 class UnreachableView(LoginRequiredMixin, View):
