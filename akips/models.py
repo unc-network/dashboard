@@ -96,3 +96,15 @@ class WebhookMessage(models.Model):
 
     def __str__(self):
         return self.id
+
+class SNMPTrap(models.Model):
+    tt = models.DateTimeField()
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    ipaddr = models.GenericIPAddressField()
+    trap_oid = models.CharField(max_length=255)
+    uptime = models.CharField(max_length=255)
+    oids = models.CharField(max_length=1024)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.id

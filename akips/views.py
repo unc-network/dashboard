@@ -16,7 +16,7 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import Summary, Unreachable, Device, WebhookMessage
+from .models import Summary, Unreachable, Device, WebhookMessage, SNMPTrap
 from .forms import IncidentForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow
@@ -325,4 +325,12 @@ def akips_webhook(request):
 
 @atomic
 def process_webhook_payload(payload):
-    pass
+    ''' Add it to the database '''
+    SNMPTrap.objects.create(
+        tt = payload['tt'],
+        device =  Device.objects.get(name=payload['device']),
+        ipaddr = payload['ipaddr'],
+        trap_oid = payload['trap_oid'],
+        uptime = payload['uptime'],
+        oids = payload['oids']
+    )
