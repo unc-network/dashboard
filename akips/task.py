@@ -245,7 +245,7 @@ def refresh_unreachable():
                 status='Open',
                 defaults = {
                     'tier': tier_name,
-                    'first_event': now,
+                    'first_event': unreachable.event_start,
                     'last_event': now,
                     'max_count': Device.objects.filter(tier= unreachable.device.tier ).count()
                 }
@@ -253,6 +253,8 @@ def refresh_unreachable():
             if t_created:
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
+                if t_summary.first_event > unreachable.event_start:
+                    t_summary.first_event = unreachable.event_start
                 t_summary.last_event = now
                 t_summary.save()
             t_summary.unreachables.add( unreachable )
@@ -264,7 +266,7 @@ def refresh_unreachable():
                 status='Open',
                 defaults = {
                     'tier': tier_name,
-                    'first_event': now,
+                    'first_event': unreachable.event_start,
                     'last_event': now,
                     'max_count': Device.objects.filter(building_name= unreachable.device.building_name ).count()
                 }
@@ -272,6 +274,8 @@ def refresh_unreachable():
             if b_created:
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
+                if b_summary.first_event > unreachable.event_start:
+                    b_summary.first_event = unreachable.event_start
                 b_summary.last_event = now
                 b_summary.save()
             b_summary.unreachables.add( unreachable )
