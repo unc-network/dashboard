@@ -56,7 +56,7 @@ class Home(LoginRequiredMixin, View):
         context['tiers'] = Summary.objects.filter(type='Distribution',status='Open').order_by('name')
         context['bldgs'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
 
-        context['traps'] = SNMPTrap.objects.all()[:50]
+        context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
 
         return render(request, self.template_name, context=context)
 
