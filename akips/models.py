@@ -90,12 +90,18 @@ class Summary(models.Model):
         return str(self.name)
 
 class SNMPTrap(models.Model):
+    STATUS_CHOICES = (
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    )
     tt = models.DateTimeField()
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     ipaddr = models.GenericIPAddressField()
     trap_oid = models.CharField(max_length=255)
     uptime = models.CharField(max_length=255)
     oids = models.CharField(max_length=1024)
+    ack = models.BooleanField(default=False)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
