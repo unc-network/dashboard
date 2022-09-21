@@ -84,7 +84,7 @@ class Summary(models.Model):
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     class Meta:
-        ordering = ['type', 'name', 'first_event']
+        ordering = ['tier','-type','name','first_event']
 
     def __str__(self):
         return str(self.name)
