@@ -334,6 +334,30 @@ class ClearTrapView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
+class AckTrapView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        trap_id = self.kwargs.get('trap_id', None)
+        ack = request.GET.get('ack',None)  # Required
+        logger.debug("Got ack for trap {}".format(trap_id))
+        result = {}
+
+        trap = SNMPTrap.objects.get(id=trap_id)
+        if ack == 'True':
+            trap.ack = True
+        else:
+            trap.ack = False
+        trap.save()
+
+        result = {"ack": trap.ack}
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
 
 ### functional views ###
 

@@ -23,8 +23,8 @@ urlpatterns = [
     # API Update Views
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('ack/<summary_id>', views.AckView.as_view(), name='ack'),
+    path('trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
     path('trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),
-    #path('trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),

@@ -95,6 +95,18 @@
         });
 
         // Bind to the document so dynamicly added content will still work
+        $(document).on('change', 'input.ack-trap', function() {
+            var url = $(this).data("url");
+            if(this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "ack": 'True'})
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "ack": 'False'})
+            }
+        });
+
+        // Bind to the document so dynamicly added content will still work
         $(document).on('click', 'button.trap-clear', function() {
             //$(this).prop('disabled', true);
             var tr = $(this).closest('tr');
