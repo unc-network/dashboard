@@ -15,12 +15,30 @@
     <tbody>
         {% for trap in traps %}
         <tr>
-            <td></td>
+            <td>
+                <div class="custom-control custom-switch">
+                    {% if summary.ack %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack' trap.id %}" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack' trap.id %}" >
+                    {% endif %}
+                    <label class="custom-control-label" for="ack-switch-{{ trap.id }}"></label>
+                    </div>
+                </div>
+            </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
             <td>{{ trap.trap_oid }}</td>
             <td>{{ trap.tt }}</td>
-            <td></td>
-            <td></td>
+            <td class="text-center">
+                {% if summary.incident %}
+                {{ summary.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="event" value="{{ trap.id }}">
+                </div>
+                {% endif %}
+            </td>
+            <td><button type="button" class="btn btn-primary btn-sm">Clear Trap</button></td>
         </tr>
         {% endfor %}
     </tbody>
