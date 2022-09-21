@@ -95,6 +95,15 @@ class BuildingCard(LoginRequiredMixin, View):
         context['summaries'] = Summary.objects.filter(type__in=types,status='Open').order_by('tier','-type','name')
         return render(request, self.template_name, context=context)
 
+class TrapCard(LoginRequiredMixin, View):
+    ''' Generic card refresh view '''
+    template_name = 'akips/card_refresh_trap.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context['traps'] = SNMPTrap.objects.filter(status='Open').order_by('-tt')[:50]
+        return render(request, self.template_name, context=context)
+
 class UnreachableView(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/unreachable.html'

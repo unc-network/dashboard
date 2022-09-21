@@ -18,6 +18,7 @@ urlpatterns = [
     path('ajax/critcard/', views.CritCard.as_view(), name='crit_card'),
     path('ajax/tiercard/', views.TierCard.as_view(), name='tier_card'),
     path('ajax/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
+    path('ajax/trapcard/', views.TrapCard.as_view(), name='trap_card'),
 
     # API Update Views
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
