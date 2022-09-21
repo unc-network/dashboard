@@ -33,33 +33,12 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <div class="custom-control custom-switch">
-                            {% if bldg.ack %}
-                            <input type="checkbox" class="custom-control-input" id="ack-switch-1" data-url="{% url 'ack' 1 %}" checked>
-                            {% else %}
-                            <input type="checkbox" class="custom-control-input" id="ack-switch-1" data-url="{% url 'ack' 1 %}" >
-                            {% endif %}
-                            <label class="custom-control-label" for="ack-switch-1"></label>
-                        </div>
-                    </td>
-                    <td>152.2.255.101</td>
-                    <td>SNMPv2-MIB.snmpTrapOID: OSPF-TRAP-MIB.ospfNbrStateChange</td>
-                    <td>Sept. 15, 2022, 8:33 a.m.</td>
-                    <td class="text-center">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="incident_{{ trap.id }}">
-                        </div>
-                    </td>
-                    <td><button type="button" class="btn btn-primary btn-sm">Clear Trap</button></td>
-                </tr>
                 {% for trap in traps %}
                 <tr>
                     <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td>{{ trap.device }}</td>
+                    <td>{{ trap.trap_oid }}</td>
+                    <td>{{ trap.tt }}</td>
                     <td></td>
                     <td></td>
                 </tr>
