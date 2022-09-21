@@ -6,10 +6,11 @@
         <tr>
             <th>Ack</th>
             <th>Tier / Building</th>
-            <th>Switch Count</th>
-            <th>AP Count</th>
-            <th>UPS Count</th>
-            <th>Percent Down</th>
+            <th>Switch</th>
+            <th>AP</th>
+            <th>UPS</th>
+            <th>All</th>
+            <th>% Affected</th>
             <th>First Event</th>
             <th>Trend</th>
             <th>Incident Request</th>
@@ -38,6 +39,7 @@
             <td>{{ summary.switch_count }}</td>
             <td>{{ summary.ap_count }}</td>
             <td>{{ summary.ups_count }}</td>
+            <td>{{ summary.total_count }}</td>
             <td>{% widthratio summary.percent_down 1 100 %}%</td>
             <td>{{ summary.first_event }}</td>
             <td class="akips_trend">{{ summary.trend }}</td>
