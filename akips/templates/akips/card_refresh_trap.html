@@ -27,7 +27,7 @@
                 </div>
             </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
-            <td>{{ trap.trap_oid }}</td>
+            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
             <td>{{ trap.tt }}</td>
             <td class="text-center">
                 {% if summary.incident %}

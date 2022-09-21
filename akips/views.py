@@ -201,6 +201,23 @@ class DeviceView(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class TrapView(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/trap.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        trap_id = self.kwargs.get('trap_id', None)
+        if trap_id is None:
+            raise Http404("Invalid Device Name")
+
+        trap = SNMPTrap.objects.get(id=trap_id)
+        trap_oids = json.loads(trap.oids)
+        context['trap'] = trap
+        context['trap_oids'] = trap_oids
+
+        return render(request, self.template_name, context=context)
+
 class IncidentView(LoginRequiredMixin, View):
     ''' Create Incidents '''
     template_name = 'akips/incident.html'
@@ -386,7 +403,7 @@ def process_webhook_payload(payload):
         tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
         device =  Device.objects.get(name=payload['device']),
         ipaddr = payload['ipaddr'],
-        trap_oid = payload['trap_oid'],
+        trap_oid = json.dumps(payload['trap_oid']),
         uptime = payload['uptime'],
         oids = payload['oids']
     )

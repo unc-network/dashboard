@@ -11,6 +11,7 @@ urlpatterns = [
     path('tier/<tier>/', views.TierView.as_view(), name='tier'),
     path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
+    path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
     path('recent/', views.RecentSummaryView.as_view(), name='recent'),
 
