@@ -19,7 +19,7 @@
     <tbody>
         {% for summary in summaries %}
         {% if summary.type == 'Distribution' %}
-        <tr class="table-warning">
+        <tr>
             <td></td>
         {% else %}
         <tr>
@@ -35,11 +35,15 @@
             </td>
         {% endif %}
             <!-- <td><a href="{% url 'building' summary.name %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}">*</a></td> -->
-            <td>{% if summary.type == 'Distribution' %}
-                <a href="{% url 'summary' summary.id %}">Tier1: {{ summary.name }}</a></td>
-                {% else %}
-                <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a></td>
-                {% endif %}
+            {% if summary.type == 'Distribution' %}
+            <td class="font-weight-bold">
+                <a href="{% url 'summary' summary.id %}">{{ summary.name }} <i class="fas fa-sitemap"></i></a>
+            </td>
+            {% else %}
+            <td>
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a>
+            </td>
+            {% endif %}
             <td>{{ summary.switch_count }}</td>
             <td>{{ summary.ap_count }}</td>
             <td>{{ summary.ups_count }}</td>
