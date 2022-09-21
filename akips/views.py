@@ -1,5 +1,6 @@
 import logging
 import json
+from datetime import datetime
 from secrets import compare_digest
 
 from django.conf import settings
@@ -327,7 +328,7 @@ def akips_webhook(request):
 def process_webhook_payload(payload):
     ''' Add it to the database '''
     SNMPTrap.objects.create(
-        tt = timezone.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
+        tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
         device =  Device.objects.get(name=payload['device']),
         ipaddr = payload['ipaddr'],
         trap_oid = payload['trap_oid'],
