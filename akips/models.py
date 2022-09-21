@@ -89,14 +89,6 @@ class Summary(models.Model):
     def __str__(self):
         return str(self.name)
 
-class WebhookMessage(models.Model):
-    message = models.JSONField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    #updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return str(self.id)
-
 class SNMPTrap(models.Model):
     tt = models.DateTimeField()
     device = models.ForeignKey(Device, on_delete=models.CASCADE)

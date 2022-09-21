@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, WebhookMessage
+from akips.models import Device, SNMPTrap, Unreachable, Summary
 
 # Register your models here.
 
@@ -21,10 +21,6 @@ class SummaryAdmin(admin.ModelAdmin):
     list_display = ['name', 'type', 'total_count', 'max_count', 'status', 'first_event', 'last_event']
     list_filter = ['status', 'type']
     search_fields = ['name']
-
-@admin.register(WebhookMessage)
-class WebhookMessageAdmin(admin.ModelAdmin):
-    list_display = ['id', 'message', 'created_at']
 
 @admin.register(SNMPTrap)
 class SNMPTrapAdmin(admin.ModelAdmin):
