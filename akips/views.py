@@ -408,7 +408,7 @@ def process_webhook_payload(payload):
             tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
             device = device,
             ipaddr = payload['ipaddr'],
-            trap_oid = json.dumps(payload['trap_oid']),
+            trap_oid = payload['trap_oid'],
             uptime = payload['uptime'],
-            oids = payload['oids']
+            oids = json.dumps(payload['oids'])
         )
