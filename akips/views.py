@@ -433,13 +433,13 @@ def process_webhook_payload(payload):
         device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
         logger.warn("Trap {} received from unknown device {} with address {}".format( payload['trap_oid'], payload['device'], payload['ipaddr'] )) 
+        return
 
-    if device:
-        SNMPTrap.objects.create(
-            tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
-            device = device,
-            ipaddr = payload['ipaddr'],
-            trap_oid = payload['trap_oid'],
-            uptime = payload['uptime'],
-            oids = json.dumps(payload['oids'])
-        )
+    SNMPTrap.objects.create(
+        tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
+        device = device,
+        ipaddr = payload['ipaddr'],
+        trap_oid = payload['trap_oid'],
+        uptime = payload['uptime'],
+        oids = json.dumps(payload['oids'])
+    )
