@@ -102,6 +102,7 @@ class SNMPTrap(models.Model):
     oids = models.CharField(max_length=1024)
     ack = models.BooleanField(default=False)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
+    incident = models.CharField(blank=True,max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

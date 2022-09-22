@@ -22,7 +22,8 @@
     Please select a criticality level and the group you wish to submit the request to.
 </p>
 
-<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+{% if summaries %}
+<div class="card card-primary">
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-sm">
             <thead>
@@ -31,7 +32,7 @@
                     <th>Switch Count</th>
                     <th>AP Count</th>
                     <th>UPS Count</th>
-                    <th>Last Event</th>
+                    <th>First Event</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,13 +42,39 @@
                     <td>{{ summary.switch_count }}</td>
                     <td>{{ summary.ap_count }}</td>
                     <td>{{ summary.ups_count }}</td>
-                    <td>{{ summary.last_event }}</td>
+                    <td>{{ summary.first_event }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endif %}
+
+{% if traps %}
+<div class="card card-primary">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Trap</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trap in traps %}
+                <tr>
+                    <td>{{ trap.device }}</td>
+                    <td>{{ trap.trap_oid }}</td>
+                    <td>{{ trap.tt }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <p>Please enter any comments about this event below.</p>
 <div class="form-group">

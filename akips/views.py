@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 from datetime import datetime
 from secrets import compare_digest
 
@@ -228,11 +229,25 @@ class IncidentView(LoginRequiredMixin, View):
         checkboxes = request.GET.getlist('event')
         logger.debug("Got list {}".format(checkboxes))
 
-        summaries = Summary.objects.filter(id__in=checkboxes)
-        context['summaries'] = summaries
-        
+        summary_ids = []
+        trap_ids = []
+        for check in checkboxes:
+            match = re.match(r'^(?P<type>(summary|trap))_(?P<id>\d+)$',check)
+            if match and match.group('type') == 'summary':
+                summary_ids.append( match.group('id') )
+                logger.debug("got summary {}".format(check))
+            elif match and match.group('type') == 'trap':
+                trap_ids.append( match.group('id') )
+                logger.debug("got trap {}".format(check))
+
+        if summary_ids:
+            context['summaries'] = Summary.objects.filter(id__in=summary_ids)
+        if trap_ids:
+            context['traps'] = SNMPTrap.objects.filter(id__in=trap_ids)
+
         initial = {
-            'summary_events': ','.join(checkboxes)
+            'summary_events': ','.join(summary_ids),
+            'trap_events': ','.join(trap_ids)
         }
         context['form'] = IncidentForm(initial=initial)
 
@@ -245,11 +260,22 @@ class IncidentView(LoginRequiredMixin, View):
         if form.is_valid():
 
             # Get the summaries
-            summary_ids = form.cleaned_data.get('summary_events').split(',')
-            summaries = Summary.objects.filter(id__in=summary_ids)
-            dashboard_overview = ''
-            for summary in summaries:
-                dashboard_overview += "{} {}\n".format(summary.type, summary.name)
+            summary_ids = []
+            if form.cleaned_data.get('summary_events'):
+                summary_ids = form.cleaned_data.get('summary_events').split(',')
+                summaries = Summary.objects.filter(id__in=summary_ids)
+                dashboard_overview = ''
+                for summary in summaries:
+                    dashboard_overview += "Unreachable {} {}\n".format(summary.type, summary.name)
+
+            # Get the traps
+            trap_ids = []
+            if form.cleaned_data.get('trap_events'):
+                trap_ids = form.cleaned_data.get('trap_events').split(',')
+                traps = SNMPTrap.objects.filter(id__in=trap_ids)
+                dashboard_overview = ''
+                for trap in traps:
+                    dashboard_overview += "Trap {} {}\n".format(trap.device, trap.trap_oid)
 
             # Create the ServiceNow Incident
             servicenow = ServiceNow()
@@ -266,6 +292,10 @@ class IncidentView(LoginRequiredMixin, View):
                     summary = Summary.objects.get(id=id)
                     summary.incident = incident['number']
                     summary.save()
+                for id in trap_ids:
+                    trap = SNMPTrap.objects.get(id=id)
+                    trap.incident = incident['number']
+                    trap.save()
                 messages.success(request, "ServiceNow Incident {} was created.".format(incident['number']))
                 return HttpResponseRedirect(reverse('home'))
             else:
