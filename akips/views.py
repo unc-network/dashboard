@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 from .models import Summary, Unreachable, Device, SNMPTrap
 from .forms import IncidentForm
 from .task import example_task
-from .utils import AKIPS, ServiceNow
+from .utils import AKIPS, ServiceNow, pretty_duration
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
@@ -214,6 +214,7 @@ class TrapView(LoginRequiredMixin, View):
         trap = SNMPTrap.objects.get(id=trap_id)
         trap_oids = json.loads(trap.oids)
         context['trap'] = trap
+        context['uptime'] = pretty_duration(trap.uptime)
         context['trap_oids'] = trap_oids
 
         return render(request, self.template_name, context=context)
