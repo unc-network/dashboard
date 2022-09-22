@@ -195,10 +195,15 @@ class DeviceView(LoginRequiredMixin, View):
             raise Http404("Invalid Device Name")
         context['name'] = device_name
 
-        context['device'] = Device.objects.get(name=device_name)
-        unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
-        #devices = Unreachable.objects.filter(status='Open',device__name=device_name)
+        device = Device.objects.get(name=device_name)
+        context['device'] = device
+
+        #unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
+        unreachables = Unreachable.objects.filter(device=device).order_by('-last_refresh')
         context['unreachables'] = unreachables
+
+        traps = SNMPTrap.objects.filter(device=device)
+        context['traps'] = traps
 
         return render(request, self.template_name, context=context)
 

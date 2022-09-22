@@ -56,6 +56,7 @@
                     <th>Down</th>
                     <th>Start Event</th>
                     <th>Last Event</th>
+                    <th>Incident</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -65,7 +66,36 @@
                     <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                     <td>{{ unreachable.event_start }}</td>
                     <td>{{ unreachable.last_refresh }}</td>
+                    <td>{{ unreachable.incident }}</td>
                     <td>{{ unreachable.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Trap History</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Trap</th>
+                    <th>Recorded</th>
+                    <th>Incident</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trap in traps %}
+                <tr>
+                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
+                    <td>{{ trap.tt }}</td>
+                    <td>{{ trap.incident }}</td>
+                    <td>{{ trap.status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
