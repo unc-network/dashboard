@@ -37,7 +37,7 @@
             <!-- <td><a href="{% url 'building' summary.name %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}">*</a></td> -->
             {% if summary.type == 'Distribution' %}
             <td class="font-weight-bold">
-                <a href="{% url 'summary' summary.id %}">{{ summary.name }} <i class="fas fa-sitemap"></i></a>
+                <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>
             </td>
             {% else %}
             <td>
