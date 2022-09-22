@@ -78,6 +78,9 @@
 		//     document.getElementById('audiotag1').play();
         // });
 
+        var msg = new SpeechSynthesisUtterance("Greetings human.");
+        speechSynthesis.speak(msg);
+
         var intervalId = window.setInterval(function(){
             refresh_cards();
         }, refresh_seconds);

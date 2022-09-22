@@ -107,3 +107,12 @@ class SNMPTrap(models.Model):
 
     def __str__(self):
         return str(self.id)
+
+class UserAlert(models.Model):
+    message = models.CharField(max_length=1024)
+    sound = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.id)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary
+from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert
 
 # Register your models here.
 
@@ -27,3 +27,7 @@ class SNMPTrapAdmin(admin.ModelAdmin):
     list_display = ['trap_oid', 'device', 'ipaddr', 'tt']
     list_filter = ['trap_oid']
     search_fields = ['trap_oid', 'ipaddr']
+
+@admin.register(UserAlert)
+class UserAlertAdmin(admin.ModelAdmin):
+    list_display = ['message', 'created_at']
