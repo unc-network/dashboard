@@ -45,64 +45,70 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Unreachable History</h3>
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Unreachable History ({{ unreachables|length }})</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Trap History ({{ traps|length }})</a>
+    </li>
+  </ul>
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Down</th>
+                            <th>Start Event</th>
+                            <th>Last Event</th>
+                            <th>Incident</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unreachable in unreachables %}
+                        <tr>
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.event_start }}</td>
+                            <td>{{ unreachable.last_refresh }}</td>
+                            <td>{{ unreachable.incident }}</td>
+                            <td>{{ unreachable.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Down</th>
-                    <th>Start Event</th>
-                    <th>Last Event</th>
-                    <th>Incident</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for unreachable in unreachables %}
-                <tr>
-                    <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                    <td>{{ unreachable.event_start }}</td>
-                    <td>{{ unreachable.last_refresh }}</td>
-                    <td>{{ unreachable.incident }}</td>
-                    <td>{{ unreachable.status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Trap</th>
+                            <th>Recorded</th>
+                            <th>Incident</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trap in traps %}
+                        <tr>
+                            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
+                            <td>{{ trap.tt }}</td>
+                            <td>{{ trap.incident }}</td>
+                            <td>{{ trap.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Trap History</h3>
-    </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Trap</th>
-                    <th>Recorded</th>
-                    <th>Incident</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for trap in traps %}
-                <tr>
-                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
-                    <td>{{ trap.tt }}</td>
-                    <td>{{ trap.incident }}</td>
-                    <td>{{ trap.status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block js %}
