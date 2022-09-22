@@ -392,18 +392,23 @@ def akips_webhook(request):
         )
 
     payload = json.loads(request.body)
-    #WebhookMessage.objects.create( message=payload )
     process_webhook_payload(payload)
     return HttpResponse("Message received.", content_type="text/plain")
 
 @atomic
 def process_webhook_payload(payload):
     ''' Add it to the database '''
-    SNMPTrap.objects.create(
-        tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
-        device =  Device.objects.get(name=payload['device']),
-        ipaddr = payload['ipaddr'],
-        trap_oid = json.dumps(payload['trap_oid']),
-        uptime = payload['uptime'],
-        oids = payload['oids']
-    )
+    try:
+        device = Device.objects.get(name=payload['device'])
+    except Device.DoesNotExist:
+        logger.warn("Trap {} received from unknown device {} with address {}".format( payload['trap_oid'], payload['device'], payload['ipaddr'] )) 
+
+    if device:
+        SNMPTrap.objects.create(
+            tt = datetime.fromtimestamp( int( payload['tt'] ), tz=timezone.get_current_timezone()),
+            device = device,
+            ipaddr = payload['ipaddr'],
+            trap_oid = json.dumps(payload['trap_oid']),
+            uptime = payload['uptime'],
+            oids = payload['oids']
+        )
