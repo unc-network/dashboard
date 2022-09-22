@@ -43,71 +43,74 @@
     </div>
 </div>
 
-{% if u_open %}
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Current Unreachables</h3>
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Current Unreachables ({{ u_open|length }})</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Past Unreachables ({{ u_closed|length }})</a>
+    </li>
+  </ul>
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Down</th>
+                            <th>Description</th>
+                            <th>First Event</th>
+                            <th>Last Event</th>
+                            <th>Hibernate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unreachable in u_open %}
+                        <tr>
+                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.device.sysDescr }}</td>
+                            <td>{{ unreachable.event_start }}</td>
+                            <td>{{ unreachable.last_refresh }}</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Down</th>
-                    <th>Description</th>
-                    <th>First Event</th>
-                    <th>Last Event</th>
-                    <th>Hibernate</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for unreachable in u_open %}
-                <tr>
-                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
-                    <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                    <td>{{ unreachable.device.sysDescr }}</td>
-                    <td>{{ unreachable.event_start }}</td>
-                    <td>{{ unreachable.last_refresh }}</td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Down</th>
+                            <th>Description</th>
+                            <th>First Event</th>
+                            <th>Last Event</th>
+                            <th>Hibernate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unreachable in u_closed %}
+                        <tr>
+                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.device.sysDescr }}</td>
+                            <td>{{ unreachable.event_start }}</td>
+                            <td>{{ unreachable.last_refresh }}</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-{% endif %}
-
-{% if u_closed %}
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Past Unreachables</h3>
-    </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Down</th>
-                    <th>Description</th>
-                    <th>First Event</th>
-                    <th>Last Event</th>
-                    <th>Hibernate</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for unreachable in u_closed %}
-                <tr>
-                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
-                    <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                    <td>{{ unreachable.device.sysDescr }}</td>
-                    <td>{{ unreachable.event_start }}</td>
-                    <td>{{ unreachable.last_refresh }}</td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
