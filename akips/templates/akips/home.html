@@ -78,7 +78,8 @@
 		//     document.getElementById('audiotag1').play();
         // });
 
-        var msg = new SpeechSynthesisUtterance("Greetings human.");
+        var username = $('#username').text()
+        var msg = new SpeechSynthesisUtterance("Greetings " + username);
         speechSynthesis.speak(msg);
 
         var intervalId = window.setInterval(function(){
