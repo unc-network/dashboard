@@ -95,7 +95,8 @@
                         <a href="#" class="dropdown-item">
                             <!-- Message Start -->
                             <div class="media">
-                                <img src="{%avatar_url size=128 %}" alt="User Avatar" class="img-size-50 mr-3 img-circle">
+                                <!-- <img src="{%avatar_url size=128 %}" alt="User Avatar" class="img-size-50 mr-3 img-circle"> -->
+                                <div class="mr-3"><i class="far fa-id-badge fa-2x"></i></div>
                                 <div class="media-body">
                                     <h3 class="dropdown-item-title">
                                             {% firstof request.user.get_short_name request.user.get_username %}
