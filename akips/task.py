@@ -2,12 +2,12 @@ from celery import shared_task
 import logging
 import time
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Summary, UserAlert
+from .models import Device, Unreachable, Summary, SNMPTrap, UserAlert
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -331,3 +331,15 @@ def refresh_unreachable():
 
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
+
+@shared_task
+def clear_traps():
+    logger.debug("Clear traps is starting")
+    now = timezone.now()
+
+    # Close trap events older than some time period
+    cutoff = now - timedelta(days=1)
+    SNMPTrap.objects.filter(status='Open').exclude(tt__gt=cutoff).update(status='Closed')
+
+    finish_time = timezone.now()
+    logger.info("Clear traps runtime {}".format(finish_time - now))

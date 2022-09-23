@@ -5,27 +5,29 @@ from django.dispatch import receiver
 
 # Create your models here.
 
+
 class Device(models.Model):
     # devices from akips
     name = models.CharField(max_length=255, unique=True)
     ip4addr = models.GenericIPAddressField()
-    sysName = models.CharField(max_length=255,blank=True)
-    sysDescr = models.CharField(max_length=255,blank=True)
-    sysLocation = models.CharField(max_length=255,blank=True)
+    sysName = models.CharField(max_length=255, blank=True)
+    sysDescr = models.CharField(max_length=255, blank=True)
+    sysLocation = models.CharField(max_length=255, blank=True)
     critical = models.BooleanField(default=False)
-    tier = models.CharField(max_length=255,blank=True)
-    building_name = models.CharField(max_length=255,blank=True)
-    hierarcy = models.CharField(max_length=255,blank=True)
-    type = models.CharField(max_length=255,blank=True)
+    tier = models.CharField(max_length=255, blank=True)
+    building_name = models.CharField(max_length=255, blank=True)
+    hierarcy = models.CharField(max_length=255, blank=True)
+    type = models.CharField(max_length=255, blank=True)
     maintenance = models.BooleanField(default=False)
     last_refresh = models.DateTimeField()
 
     class Meta:
         ordering = ['name']
-        indexes = [ models.Index(fields=['ip4addr'])]
+        indexes = [models.Index(fields=['ip4addr'])]
 
     def __str__(self):
         return str(self.name)
+
 
 class Unreachable(models.Model):
     STATUS_CHOICES = (
@@ -33,22 +35,26 @@ class Unreachable(models.Model):
         ('Closed', 'Closed'),
     )
     STATE_CHOICES = (
-        ('up','up'),
-        ('down','down'),
-        ('unreported','unreported'),
+        ('up', 'up'),
+        ('down', 'down'),
+        ('unreported', 'unreported'),
     )
     # Unreachable devices from akips
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
-    ping_state = models.CharField(max_length=32,choices=STATE_CHOICES,default='unreported')
-    snmp_state = models.CharField(max_length=32,choices=STATE_CHOICES,default='unreported')
+    ping_state = models.CharField(
+        max_length=32, choices=STATE_CHOICES, default='unreported')
+    snmp_state = models.CharField(
+        max_length=32, choices=STATE_CHOICES, default='unreported')
     index = models.CharField(max_length=255)    # extracted from value
-    #state = models.CharField(max_length=255)    # extracted from value
+    # state = models.CharField(max_length=255)    # extracted from value
     device_added = models.DateTimeField()       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
-    ip4addr = models.GenericIPAddressField(blank=True,null=True)    # extracted from value
+    ip4addr = models.GenericIPAddressField(
+        blank=True, null=True)    # extracted from value
     last_refresh = models.DateTimeField()
+    comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     class Meta:
@@ -56,6 +62,7 @@ class Unreachable(models.Model):
 
     def __str__(self):
         return str(self.device)
+
 
 class Summary(models.Model):
     ''' Summarized view of unreachable devices '''
@@ -69,7 +76,7 @@ class Summary(models.Model):
         ('Closed', 'Closed'),
     )
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
-    tier = models.CharField(max_length=255,blank=True)
+    tier = models.CharField(max_length=255, blank=True)
     name = models.CharField(max_length=255)
     ack = models.BooleanField(default=False)
     #device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.CASCADE)
@@ -79,18 +86,21 @@ class Summary(models.Model):
     ups_count = models.IntegerField(default=0)
     total_count = models.IntegerField(default=0)
     max_count = models.IntegerField(default=0)
-    percent_down = models.DecimalField(default=0,max_digits=4,decimal_places=3)
+    percent_down = models.DecimalField(
+        default=0, max_digits=4, decimal_places=3)
     first_event = models.DateTimeField()
-    trend = models.CharField(default='New',max_length=255)
-    incident = models.CharField(blank=True,max_length=255)
+    trend = models.CharField(default='New', max_length=255)
     last_event = models.DateTimeField()
+    comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    incident = models.CharField(blank=True, max_length=255)
 
     class Meta:
-        ordering = ['tier','-type','name','first_event']
+        ordering = ['tier', '-type', 'name', 'first_event']
 
     def __str__(self):
         return str(self.name)
+
 
 class SNMPTrap(models.Model):
     STATUS_CHOICES = (
@@ -104,12 +114,15 @@ class SNMPTrap(models.Model):
     uptime = models.CharField(max_length=255)
     oids = models.CharField(max_length=1024)
     ack = models.BooleanField(default=False)
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
-    incident = models.CharField(blank=True,max_length=255)
+    comment = models.CharField(max_length=1024, blank=True)
+    status = models.CharField(
+        max_length=32, choices=STATUS_CHOICES, default='Open')
+    incident = models.CharField(blank=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return str(self.id)
+
 
 class UserAlert(models.Model):
     message = models.CharField(max_length=1024)
@@ -120,6 +133,7 @@ class UserAlert(models.Model):
     def __str__(self):
         return str(self.id)
 
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     voice_enabled = models.BooleanField(default=True)
@@ -127,13 +141,15 @@ class Profile(models.Model):
     def __str__(self):
         return str(self.pid)
 
+
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
 
+
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):
-    if not hasattr(instance,'profile'):
+    if not hasattr(instance, 'profile'):
         Profile.objects.create(user=instance)
     instance.profile.save()
