@@ -69,34 +69,7 @@ class Home(LoginRequiredMixin, View):
 
         context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
 
-        day_ago = now - timedelta(days=1)
-        dataset = Unreachable.objects.filter(event_start__gt=day_ago).order_by('event_start').annotate(
-            time_series=TruncHour('event_start')
-        ).values(
-            'time_series'
-        ).annotate(
-            device_count=Count('device')
-        ).order_by('time_series')
-        counts = {}
-        for entry in dataset:
-            counts[ entry['time_series'].strftime("%H:%M") ] = entry['device_count']
-            logger.debug("data hour {} count {}".format( entry['time_series'].time(), entry['device_count'] ))
-        context['counts'] = counts
-        chart_labels = []
-        chart_data = []
-        index = 0
-        while index < 24:
-            logger.debug("Checking index {}".format(index))
-            point = now - timedelta(hours=index)
-            label = point.strftime("%H:00")
-            chart_labels.append( label )
-            if label in counts:
-                chart_data.append( counts[ label ])
-            else:
-                chart_data.append( 0 )
-            index += 1
-        context['chart_labels'] = ",".join(chart_labels)
-        context['chart_data'] = chart_data
+
 
         return render(request, self.template_name, context=context)
 
@@ -482,6 +455,54 @@ class AckTrapView(LoginRequiredMixin, View):
         trap.save()
 
         result = {"ack": trap.ack}
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+class ChartDataView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        now = timezone.now()
+        day_ago = now - timedelta(days=1)
+        dataset = Unreachable.objects.filter(event_start__gt=day_ago).order_by('event_start').annotate(
+            time_series=TruncHour('event_start')
+        ).values(
+            'time_series'
+        ).annotate(
+            device_count=Count('device')
+        ).order_by('time_series')
+        counts = {}
+        for entry in dataset:
+            label = timezone.localtime( entry['time_series'] ).strftime("%H:00")
+            #label = timezone.utc( entry['time_series'] ).strftime("%Z%H:00")
+            counts[ label ] = entry['device_count']
+            logger.debug("data hour {} count {}".format( label, entry['device_count'] ))
+
+        chart_labels = []
+        chart_data = []
+        index = 23 
+        logger.debug("now hour {}".format( timezone.localtime(now).strftime("%H:00")))
+        while index >= 0:
+            point = now - timedelta(hours=index)
+            #label = point.strftime("%H:00")
+            label = timezone.localtime(point).strftime("%H:00")
+            logger.debug("Checking index {} and label {}".format(index,label))
+            chart_labels.append( label )
+            if label in counts:
+                chart_data.append( counts[ label ])
+            else:
+                chart_data.append( 0 )
+            index -= 1
+
+        result = {
+            'chart_labels': chart_labels,
+            'chart_data': chart_data,
+        }
+
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
