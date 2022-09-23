@@ -31,12 +31,15 @@
                 </dl>
             </div>
             <div class="col-4">
-                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a>
+                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View
+                    in AKiPS</a>
                 <div class="custom-control custom-switch">
                     {% if device.maintenance %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" checked>
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                        data-url="{% url 'set_maintenance' %}" checked>
                     {% else %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" >
+                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                        data-url="{% url 'set_maintenance' %}">
                     {% endif %}
                     <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
                 </div>
@@ -47,12 +50,14 @@
 
 <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
-      <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Unreachable History ({{ unreachables|length }})</a>
+        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
+            aria-selected="true">Unreachable History ({{ unreachables|length }})</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Trap History ({{ traps|length }})</a>
+        <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
+            aria-selected="false">Trap History ({{ traps|length }})</a>
     </li>
-  </ul>
+</ul>
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
         <div class="card">
@@ -70,7 +75,8 @@
                     <tbody>
                         {% for unreachable in unreachables %}
                         <tr>
-                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state ==
+                                'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                             <td>{{ unreachable.incident }}</td>
@@ -113,26 +119,26 @@
 
 {% block js %}
 <script type="text/javascript">
-	function toggle_maintenance_mode() {
+    function toggle_maintenance_mode() {
         console.log("NYI")
-	}
+    }
 </script>
 <script type="text/javascript">
-$(document).ready(function() {
+    $(document).ready(function () {
 
-    $('#maintSwitch1').change(function() {
-        var url = $(this).data("url");
-        var name = $(this).data("name");
-        if(this.checked) {
-            //var returnVal = confirm("Are you sure?");
-            //$(this).prop("checked", returnVal);
-            console.log("maint checkbox on");
-            $.get(url, { "device_name": name, "maintenance_mode": 'True'})
-        } else {
-            console.log("maint checkbox off")
-            $.get(url, { "device_name": name, "maintenance_mode": 'False'})
-        }
+        $('#maintSwitch1').change(function () {
+            var url = $(this).data("url");
+            var name = $(this).data("name");
+            if (this.checked) {
+                //var returnVal = confirm("Are you sure?");
+                //$(this).prop("checked", returnVal);
+                console.log("maint checkbox on");
+                $.get(url, { "device_name": name, "maintenance_mode": 'True' })
+            } else {
+                console.log("maint checkbox off")
+                $.get(url, { "device_name": name, "maintenance_mode": 'False' })
+            }
+        });
     });
-});
 </script>
 {% endblock %}

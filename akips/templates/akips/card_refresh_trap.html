@@ -18,12 +18,14 @@
             <td>
                 <div class="custom-control custom-switch">
                     {% if trap.ack %}
-                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack_trap' trap.id %}" checked>
+                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                        data-url="{% url 'ack_trap' trap.id %}" checked>
                     {% else %}
-                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}" data-url="{% url 'ack_trap' trap.id %}" >
+                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                        data-url="{% url 'ack_trap' trap.id %}">
                     {% endif %}
                     <label class="custom-control-label" for="ack-switch-{{ trap.id }}"></label>
-                    </div>
+                </div>
                 </div>
             </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
@@ -38,7 +40,8 @@
                 </div>
                 {% endif %}
             </td>
-            <td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="{% url 'clear_trap' trap.id %}">Clear Trap</button></td>
+            <td><button type="button" class="btn btn-primary btn-sm trap-clear"
+                    data-url="{% url 'clear_trap' trap.id %}">Clear Trap</button></td>
         </tr>
         {% endfor %}
     </tbody>

@@ -21,19 +21,21 @@
         {% if summary.type == 'Distribution' %}
         <tr>
             <td></td>
-        {% else %}
+            {% else %}
         <tr>
             <td>
                 <div class="custom-control custom-switch">
-                {% if summary.ack %}
-                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" checked>
-                {% else %}
-                <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" >
-                {% endif %}
-                <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
+                    {% if summary.ack %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                        data-url="{% url 'ack' summary.id %}" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                        data-url="{% url 'ack' summary.id %}">
+                    {% endif %}
+                    <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
                 </div>
             </td>
-        {% endif %}
+            {% endif %}
             <!-- <td><a href="{% url 'building' summary.name %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}">*</a></td> -->
             {% if summary.type == 'Distribution' %}
             <td class="font-weight-bold">

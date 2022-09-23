@@ -9,45 +9,46 @@
 {% block content %}
 <form method="get" action="/incident/">
 
-<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
-    <div class="card-body table-responsive p-0">
+    <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
     </div>
-</div>
 
-<div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
-    <div class="card-body table-responsive p-0">
+    <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
     </div>
-</div>
 
-<div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
-    <div class="card-body table-responsive p-0">
+    <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
     </div>
-</div>
 
-<div class="text-right">
-    <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
-</div>
+    <div class="text-right">
+        <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
+    </div>
 
-<audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
-<a href="javascript:play_single_sound();">Test sound</a>
+    <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}"
+        preload="auto"></audio>
+    <a href="javascript:play_single_sound();">Test sound</a>
 </form>
 {% endblock %}
 
 {% block js %}
 <script type="text/javascript">
-	function play_single_sound() {
-		document.getElementById('audiotag1').play();
-	}
+    function play_single_sound() {
+        document.getElementById('audiotag1').play();
+    }
     function voice_alert(text) {
         var msg = new SpeechSynthesisUtterance(text);
         speechSynthesis.speak(msg);
     }
 </script>
 <script type="text/javascript">
-	function refresh_cards() {
+    function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
 
-        $('.event-card').each(function( index ) {
+        $('.event-card').each(function (index) {
             var id = this.id;
             var url = $(this).data("url");
             var body = $(this).find(".card-body");
@@ -55,99 +56,99 @@
             body.append(overlay);
 
             $.ajax({
-            type: "GET",
-            url: url,
-            dataType: "html",
-            data: {},
-            success: function (result, status, xhr) {
-                body.html(result);
-                var new_event = body.find('.akips_trend:contains(New)').length;
-                var inc_event = body.find('.akips_trend:contains(Increasing)').length;
-                var stable_event = body.find('.akips_trend:contains(Stable)').length;
-                if ( id == 'crit_card') {
-                    if ( new_event > 0 ) {
-                        voice_alert("There are " + new_event + " new critical alerts.");
+                type: "GET",
+                url: url,
+                dataType: "html",
+                data: {},
+                success: function (result, status, xhr) {
+                    body.html(result);
+                    var new_event = body.find('.akips_trend:contains(New)').length;
+                    var inc_event = body.find('.akips_trend:contains(Increasing)').length;
+                    var stable_event = body.find('.akips_trend:contains(Stable)').length;
+                    if (id == 'crit_card') {
+                        if (new_event > 0) {
+                            voice_alert("There are " + new_event + " new critical alerts.");
+                        }
+                    } else if (id == 'bldg_card') {
+                        if (new_event > 0) {
+                            voice_alert("There are " + new_event + " new building alerts.");
+                        }
+                        if (inc_event > 0) {
+                            voice_alert("There are " + inc_event + " increasing building alerts.");
+                        }
+                    } else if (id == 'trap_card') {
+                        if (new_event > 0) {
+                            voice_alert("There are " + new_event + " new trap alerts.");
+                        }
                     }
-                } else if ( id == 'bldg_card') {
-                    if ( new_event > 0 ) {
-                        voice_alert("There are " + new_event + " new building alerts.");
-                    }
-                    if ( inc_event > 0 ) {
-                        voice_alert("There are " + inc_event + " increasing building alerts.");
-                    }
-                } else if ( id == 'trap_card') {
-                    if ( new_event > 0 ) {
-                        voice_alert("There are " + new_event + " new trap alerts.");
-                    }
+                    // body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
+                    //     document.getElementById('audiotag1').play();
+                    // });
+                },
+                error: function (xhr, status, error) {
+                    body.replaceWith(body_clone);
+                    body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
                 }
-                // body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
-                //     document.getElementById('audiotag1').play();
-                // });
-            },
-            error: function (xhr, status, error) {
-                body.replaceWith(body_clone);
-                body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
-            }
             });
         });
-	}
+    }
 </script>
 <script type="text/javascript">
-    $(document).ready(function() {
+    $(document).ready(function () {
         var refresh_seconds = 30000;
 
         refresh_cards();
 
         // $('.akips_trend:contains(New)').each(function( index ) {
-		//     document.getElementById('audiotag1').play();
+        //     document.getElementById('audiotag1').play();
         // });
 
         var username = $('#username').text()
         var msg = new SpeechSynthesisUtterance("Greetings " + username);
         //speechSynthesis.speak(msg);
 
-        var intervalId = window.setInterval(function(){
+        var intervalId = window.setInterval(function () {
             refresh_cards();
         }, refresh_seconds);
 
         // Bind to the document so dynamicly added content will still work
-        $(document).on('change', 'input.ack-switch', function() {
+        $(document).on('change', 'input.ack-switch', function () {
             var url = $(this).data("url");
-            if(this.checked) {
+            if (this.checked) {
                 console.log("ack checkbox on");
-                $.get(url, { "ack": 'True'})
+                $.get(url, { "ack": 'True' })
             } else {
                 console.log("ack checkbox off")
-                $.get(url, { "ack": 'False'})
+                $.get(url, { "ack": 'False' })
             }
         });
 
         // Bind to the document so dynamicly added content will still work
-        $(document).on('change', 'input.ack-trap', function() {
+        $(document).on('change', 'input.ack-trap', function () {
             var url = $(this).data("url");
-            if(this.checked) {
+            if (this.checked) {
                 console.log("ack checkbox on");
-                $.get(url, { "ack": 'True'})
+                $.get(url, { "ack": 'True' })
             } else {
                 console.log("ack checkbox off")
-                $.get(url, { "ack": 'False'})
+                $.get(url, { "ack": 'False' })
             }
         });
 
         // Bind to the document so dynamicly added content will still work
-        $(document).on('click', 'button.trap-clear', function() {
+        $(document).on('click', 'button.trap-clear', function () {
             //$(this).prop('disabled', true);
             var tr = $(this).closest('tr');
             var url = $(this).data("url");
             $.get(url, {})
 
-            tr.css("background-color","#FF3700");
-            tr.fadeOut(400, function() {
+            tr.css("background-color", "#FF3700");
+            tr.fadeOut(400, function () {
                 tr.remove();
             });
         });
 
-        $('#incident_button').click(function() {
+        $('#incident_button').click(function () {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
                 alert("Please select one summary to create an incident.");
