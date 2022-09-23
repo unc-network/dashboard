@@ -1,7 +1,7 @@
 import logging
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from secrets import compare_digest
 
 from django.conf import settings
@@ -12,6 +12,9 @@ from django.urls import reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
+
+from django.db.models import Count
+from django.db.models.functions import TruncHour
 
 #from django.utils.decorators import method_decorator
 from django.db.transaction import atomic, non_atomic_requests
@@ -53,6 +56,7 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        now = timezone.now()
 
         context['user_alerts'] = UserAlert.objects.all()
 
@@ -64,6 +68,35 @@ class Home(LoginRequiredMixin, View):
             type='Building', status='Open').order_by('name')
 
         context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
+
+        day_ago = now - timedelta(days=1)
+        dataset = Unreachable.objects.filter(event_start__gt=day_ago).order_by('event_start').annotate(
+            time_series=TruncHour('event_start')
+        ).values(
+            'time_series'
+        ).annotate(
+            device_count=Count('device')
+        ).order_by('time_series')
+        counts = {}
+        for entry in dataset:
+            counts[ entry['time_series'].strftime("%H:%M") ] = entry['device_count']
+            logger.debug("data hour {} count {}".format( entry['time_series'].time(), entry['device_count'] ))
+        context['counts'] = counts
+        chart_labels = []
+        chart_data = []
+        index = 0
+        while index < 24:
+            logger.debug("Checking index {}".format(index))
+            point = now - timedelta(hours=index)
+            label = point.strftime("%H:00")
+            chart_labels.append( label )
+            if label in counts:
+                chart_data.append( counts[ label ])
+            else:
+                chart_data.append( 0 )
+            index += 1
+        context['chart_labels'] = ",".join(chart_labels)
+        context['chart_data'] = chart_data
 
         return render(request, self.template_name, context=context)
 
