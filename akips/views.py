@@ -464,10 +464,11 @@ class AckTrapView(LoginRequiredMixin, View):
 class ChartDataView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
+    hours = 2
 
     def get(self, request, *args, **kwargs):
         now = timezone.now()
-        day_ago = now - timedelta(days=1)
+        day_ago = now - timedelta(hours=self.hours)
         dataset = Unreachable.objects.filter(event_start__gt=day_ago).order_by('event_start').annotate(
             time_series=TruncHour('event_start')
         ).values(
@@ -484,7 +485,7 @@ class ChartDataView(LoginRequiredMixin, View):
 
         chart_labels = []
         chart_data = []
-        index = 23 
+        index = self.hours 
         logger.debug("now hour {}".format( timezone.localtime(now).strftime("%H:00")))
         while index >= 0:
             point = now - timedelta(hours=index)
