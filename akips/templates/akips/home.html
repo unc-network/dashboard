@@ -9,6 +9,25 @@
 {% block content %}
 <form method="get" action="/incident/">
 
+    <div id="chart" class="card">
+        <div class="card-header">
+            <h3 class="card-title">Event Trends</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="chart">
+                <div class="chartjs-size-monitor">
+                    <div class="chartjs-size-monitor-expand">
+                        <div class=""></div>
+                    </div>
+                    <div class="chartjs-size-monitor-shrink">
+                        <div class=""></div>
+                    </div>
+                </div>
+            <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas>
+            </div>
+        </div>
+    </div>
+
     <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
         <div class="card-body table-responsive p-0">
         </div>
@@ -32,26 +51,6 @@
         preload="auto"></audio>
     <a href="javascript:play_single_sound();">Test sound</a> -->
 </form>
-
-
-<div id="chart" class="card">
-    <div class="card-header">
-        <h3 class="card-title">Event Trends</h3>
-    </div>
-    <div class="card-body p-0">
-        <div class="chart">
-            <div class="chartjs-size-monitor">
-                <div class="chartjs-size-monitor-expand">
-                    <div class=""></div>
-                </div>
-                <div class="chartjs-size-monitor-shrink">
-                    <div class=""></div>
-                </div>
-            </div>
-        <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block js %}
@@ -90,8 +89,8 @@
                 pointStrokeColor    : 'rgba(60,141,188,1)',
                 pointHighlightFill  : '#fff',
                 pointHighlightStroke: 'rgba(60,141,188,1)',
-                data                : [28, 48, 40, 19, 86, 27, 90]
-                //data                : [0]
+                //data                : [28, 48, 40, 19, 86, 27, 90]
+                data                : []
             },
             ]
         }
@@ -129,9 +128,8 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
-                console.log(result);
+                //console.log(result);
                 chart.data = {
-                    //labels  : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '00:00'],
                     labels  : result['chart_labels'],
                     datasets: [
                     {
@@ -143,7 +141,6 @@
                         pointStrokeColor    : 'rgba(60,141,188,1)',
                         pointHighlightFill  : '#fff',
                         pointHighlightStroke: 'rgba(60,141,188,1)',
-                        //data                : [28, 48, 40, 19, 86, 27, 90]
                         data                : result['chart_data']
                     },
                     ]
@@ -223,6 +220,7 @@
 
         var intervalId = window.setInterval(function () {
             refresh_cards();
+            update_chart();
         }, refresh_seconds);
 
         // Bind to the document so dynamicly added content will still work
