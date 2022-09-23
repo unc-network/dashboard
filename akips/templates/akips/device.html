@@ -75,8 +75,8 @@
                     <tbody>
                         {% for unreachable in unreachables %}
                         <tr>
-                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state ==
-                                'down' %}snmp{% endif %}</td>
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
+                                {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                             <td>{{ unreachable.incident }}</td>
