@@ -24,17 +24,97 @@
         </div>
     </div>
 
-    <div class="text-right">
+    <div class="text-right p-3">
         <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
     </div>
 
-    <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}"
+    <!-- <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}"
         preload="auto"></audio>
-    <a href="javascript:play_single_sound();">Test sound</a>
+    <a href="javascript:play_single_sound();">Test sound</a> -->
 </form>
+
+
+<div id="chart" class="card">
+    <div class="card-header">
+        <h3 class="card-title">Event Trends</h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="chart">
+            <div class="chartjs-size-monitor">
+                <div class="chartjs-size-monitor-expand">
+                    <div class=""></div>
+                </div>
+                <div class="chartjs-size-monitor-shrink">
+                    <div class=""></div>
+                </div>
+            </div>
+        <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block js %}
+<script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+    $(function () {
+      /* ChartJS
+       * -------
+       * Here we will create a few charts using ChartJS
+       */
+  
+      //--------------
+      //- AREA CHART -
+      //--------------
+  
+      // Get context with jQuery - using jQuery's .get() method.
+      var areaChartCanvas = $('#areaChart').get(0).getContext('2d')
+  
+      var areaChartData = {
+        labels  : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '00:00'],
+        datasets: [
+          {
+            label               : 'Digital Goods',
+            backgroundColor     : 'rgba(60,141,188,0.9)',
+            borderColor         : 'rgba(60,141,188,0.8)',
+            pointRadius          : false,
+            pointColor          : '#3b8bba',
+            pointStrokeColor    : 'rgba(60,141,188,1)',
+            pointHighlightFill  : '#fff',
+            pointHighlightStroke: 'rgba(60,141,188,1)',
+            data                : [28, 48, 40, 19, 86, 27, 90]
+          },
+        ]
+      }
+  
+      var areaChartOptions = {
+        maintainAspectRatio : false,
+        responsive : true,
+        legend: {
+          display: false
+        },
+        scales: {
+          xAxes: [{
+            gridLines : {
+              display : false,
+            }
+          }],
+          yAxes: [{
+            gridLines : {
+              display : false,
+            }
+          }]
+        }
+      }
+  
+      // This will get the first returned node in the jQuery collection.
+      new Chart(areaChartCanvas, {
+        type: 'line',
+        data: areaChartData,
+        options: areaChartOptions
+      })
+    })
+</script>
 <script type="text/javascript">
     function play_single_sound() {
         document.getElementById('audiotag1').play();
