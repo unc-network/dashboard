@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert
+from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert, Profile
 
 # Register your models here.
 
@@ -31,3 +31,7 @@ class SNMPTrapAdmin(admin.ModelAdmin):
 @admin.register(UserAlert)
 class UserAlertAdmin(admin.ModelAdmin):
     list_display = ['message', 'created_at']
+
+@admin.register(Profile)
+class ProfieleAdmin(admin.ModelAdmin):
+    list_display = ['user', 'voice_enabled']
