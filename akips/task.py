@@ -51,31 +51,28 @@ def refresh_akips_devices():
                     tier = ''
                 bldg_name = ''
 
+            defaults = {
+                # 'name': key,
+                'ip4addr': value['ip4addr'],
+                'sysName': value['SNMPv2-MIB.sysName'],
+                'sysDescr': value['SNMPv2-MIB.sysDescr'],
+                'sysLocation': value['SNMPv2-MIB.sysLocation'],
+                # 'tier': tier,
+                # 'building_name': bldg_name,
+                #'type': type,
+                'last_refresh': now
+            }
+            # Do not set or change type unless we can tell by the name
             if re.search(r'-(ups[0-9]*)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
-                type = 'UPS'
+                defaults['type'] = 'UPS'
             elif re.search(r'-(ap)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
-                type = 'AP'
+                defaults['type'] = 'AP'
             elif re.search(r'-(tier1|bes|sw[0-9]*|spine|pod[a-z]*)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
-                type = 'SWITCH'
+                defaults['type'] = 'SWITCH'
             elif re.search(r'-(legacy|agg|arista)[-]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
-                type = 'SWITCH'
-            else:
-                type = ''
-            Device.objects.update_or_create(
-                #ip4addr = value['ip4addr'],
-                name=key,
-                defaults={
-                    # 'name': key,
-                    'ip4addr': value['ip4addr'],
-                    'sysName': value['SNMPv2-MIB.sysName'],
-                    'sysDescr': value['SNMPv2-MIB.sysDescr'],
-                    'sysLocation': value['SNMPv2-MIB.sysLocation'],
-                    # 'tier': tier,
-                    # 'building_name': bldg_name,
-                    'type': type,
-                    'last_refresh': now
-                }
-            )
+                defaults['type'] = 'SWITCH'
+            Device.objects.update_or_create( name=key, defaults=defaults)
+
             time.sleep(0.05)
 
         # Remove stale entries

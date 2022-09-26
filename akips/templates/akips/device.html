@@ -6,33 +6,49 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-body">
+    <div class="card-body table-responsive">
         <div class="row">
             <div class="col-8">
-                <dl class="row">
-                    <dt class="col-sm-2">Name</dt>
-                    <dd class="col-sm-10">{{ device.sysName }}</dd>
-                    <dt class="col-sm-2">Address</dt>
-                    <dd class="col-sm-10">{{ device.ip4addr }}</dd>
-                    <dt class="col-sm-2">sysName</dt>
-                    <dd class="col-sm-10">{{ device.sysName }}</dd>
-                    <dt class="col-sm-2">sysLocation</dt>
-                    <dd class="col-sm-10">{{ device.sysLocation }}</dd>
-                    <dt class="col-sm-2">sysDescr</dt>
-                    <dd class="col-sm-10">{{ device.sysDescr }}</dd>
-                    <dt class="col-sm-2">Tier</dt>
-                    <dd class="col-sm-10">{{ device.tier }}</dd>
-                    <dt class="col-sm-2">Building</dt>
-                    <dd class="col-sm-10">{{ device.building_name }}</dd>
-                    <dt class="col-sm-2">Type</dt>
-                    <dd class="col-sm-10">{{ device.type }}</dd>
-                    <dt class="col-sm-2">Last Refresh</dt>
-                    <dd class="col-sm-10">{{ device.last_refresh }}</dd>
-                </dl>
+                <table class="table table-sm">
+                    <tr>
+                        <th>AKiPS Name</th>
+                        <td><a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">{{ device.name }}</a></td>
+                    </tr>
+                    <tr>
+                        <th>Address</th>
+                        <td>{{ device.ip4addr }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysName</th>
+                        <td>{{ device.sysName }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysLocation</th>
+                        <td>{{ device.sysLocation }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysDescr</th>
+                        <td>{{ device.sysDescr }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tier</th>
+                        <td>{{ device.tier }}</td>
+                    </tr>
+                    <tr>
+                        <th>Building</th>
+                        <td>{{ device.building_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ device.type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Refresh</th>
+                        <td>{{ device.last_refresh }}</td>
+                    </tr>
+                </table>
             </div>
-            <div class="col-4">
-                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View
-                    in AKiPS</a>
+            <div class="col-4 text-center">
                 <div class="custom-control custom-switch">
                     {% if device.maintenance %}
                     <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"

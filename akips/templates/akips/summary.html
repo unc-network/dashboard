@@ -8,36 +8,60 @@
     <div class="card-body">
         <div class="row">
             <div class="col-6">
-                <dl class="row">
-                    <dt class="col-sm-6">Type</dt>
-                    <dd class="col-sm-6">{{ summary.type }}</dd>
-                    <dt class="col-sm-6">Name</dt>
-                    <dd class="col-sm-6">{{ summary.name }}</dd>
-                    <dt class="col-sm-6">Switch Count</dt>
-                    <dd class="col-sm-6">{{ summary.switch_count }}</dd>
-                    <dt class="col-sm-6">AP Count</dt>
-                    <dd class="col-sm-6">{{ summary.ap_count }}</dd>
-                    <dt class="col-sm-6">UPs Count</dt>
-                    <dd class="col-sm-6">{{ summary.ups_count }}</dd>
-                    <dt class="col-sm-6">Total Count</dt>
-                    <dd class="col-sm-6">{{ summary.total_count }}</dd>
-                </dl>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ summary.type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Name</th>
+                        <td>{{ summary.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>First Event</th>
+                        <td>{{ summary.first_event }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Event</th>
+                        <td>{{ summary.last_event }}</td>
+                    </tr>
+                    <tr>
+                        <th>Trend</th>
+                        <td>{{ summary.trend }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>{{ summary.status }}</td>
+                    </tr>
+                </table>
             </div>
             <div class="col-6">
-                <dl class="row">
-                    <dt class="col-sm-6">First Event</dt>
-                    <dd class="col-sm-6">{{ summary.first_event }}</dd>
-                    <dt class="col-sm-6">Last Event</dt>
-                    <dd class="col-sm-6">{{ summary.last_event }}</dd>
-                    <dt class="col-sm-6">Trend</dt>
-                    <dd class="col-sm-6">{{ summary.trend }}</dd>
-                    <dt class="col-sm-6">Status</dt>
-                    <dd class="col-sm-6">{{ summary.status }}</dd>
-                    <dt class="col-sm-6">Possible Devices</dt>
-                    <dd class="col-sm-6">{{ summary.max_count }}</dd>
-                    <dt class="col-sm-6">Percent Affected</dt>
-                    <dd class="col-sm-6">{% widthratio summary.percent_down 1 100 %}%</dd>
-                </dl>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Switch Count</th>
+                        <td>{{ summary.switch_count }}</td>
+                    </tr>
+                    <tr>
+                        <th>AP Count</th>
+                        <td>{{ summary.ap_count }}</td>
+                    </tr>
+                    <tr>
+                        <th>UPS Count</th>
+                        <td>{{ summary.ups_count }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Count</th>
+                        <td>{{ summary.total_count }}</td>
+                    </tr>
+                    <tr>
+                        <th>Possible Devices</th>
+                        <td>{{ summary.max_count }}</td>
+                    </tr>
+                    <tr>
+                        <th>Percent Affected</th>
+                        <td>{% widthratio summary.percent_down 1 100 %}%</td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
@@ -71,7 +95,7 @@
                         <tr>
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <td>{{ unreachable.device.sysDescr }}</td>
+                            <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                             <td></td>
@@ -101,7 +125,7 @@
                         <tr>
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <td>{{ unreachable.device.sysDescr }}</td>
+                            <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                             <td></td>
