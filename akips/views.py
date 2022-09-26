@@ -3,6 +3,7 @@ import json
 import re
 from datetime import datetime, timedelta
 from secrets import compare_digest
+import math
 
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404
@@ -468,8 +469,22 @@ class ChartDataView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         now = timezone.now()
-        day_ago = now - timedelta(hours=self.hours)
-        dataset = Unreachable.objects.filter(event_start__gt=day_ago).order_by('event_start').annotate(
+        oldest = now - timedelta(hours=self.hours)
+
+        # Define graph time periods
+        # keyList = []
+
+        # Initalize the graph time periods
+        # periods = {}
+        # for i in keyList:
+        #     periods[i] = 0
+
+        # Increment sums for unreachable events in each period
+        # unreachables = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start')
+        # for unreachable in unreachables:
+        #     pass
+
+        dataset = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start').annotate(
             time_series=TruncHour('event_start')
         ).values(
             'time_series'
@@ -509,6 +524,25 @@ class ChartDataView(LoginRequiredMixin, View):
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
+
+    def datetime_range(self, start, end, delta):
+        ''' return a generator of times at each delta '''
+        current = start
+        while current < end:
+            yield current
+            current += delta
+
+    def round_dt(self, dt, delta):
+        ''' Round datetime to nearest 'delta' minutes '''
+        return datetime.min + round((dt - datetime.min) / delta) * delta
+
+    def round_dt_up(self, dt, delta):
+        ''' Round datetime up to nearest 'delta' minutes '''
+        return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
+
+    def round_dt_up(self, dt, delta):
+        ''' Round datetime down to nearest 'delta' minutes '''
+        return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
 
 
 ### functional views ###
