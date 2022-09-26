@@ -182,9 +182,9 @@ def refresh_unreachable():
             logger.debug("{}".format(v['name']))
             Unreachable.objects.update_or_create(
                 device=Device.objects.get(name=v['name']),
-                status='Open',
+                #status='Open',
                 #child = entry['child'],
-                #event_start = datetime.fromtimestamp( int(entry['event_start']), tz=timezone.get_current_timezone() ),
+                event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
                 defaults={
                     # 'name': key,                        # akips device name
                     'child': v['child'],            # ping4
@@ -237,6 +237,8 @@ def refresh_unreachable():
                 logger.debug("Crit summary created {}".format(
                     unreachable.device.name))
             else:
+                if c_summary.first_event > unreachable.event_start:
+                    c_summary.first_event = unreachable.event_start
                 c_summary.last_event = now
                 c_summary.save()
             c_summary.unreachables.add(unreachable)
