@@ -13,6 +13,7 @@ from akips.utils import AKIPS, NIT
 # Get an isntace of a logger
 logger = logging.getLogger(__name__)
 
+SLEEP_DELAY = 0.05
 
 @shared_task
 def example_task():
@@ -73,7 +74,7 @@ def refresh_akips_devices():
                 defaults['type'] = 'SWITCH'
             Device.objects.update_or_create( name=key, defaults=defaults)
 
-            time.sleep(0.05)
+            time.sleep(SLEEP_DELAY)
 
         # Remove stale entries
         Device.objects.exclude(last_refresh__gte=now).delete()
@@ -92,7 +93,12 @@ def refresh_akips_devices():
     if group_membership:
         for key, value in group_membership.items():
             logger.debug("{}: {}".format(key, value))
-            device = Device.objects.get(name=key)
+            try:
+                device = Device.objects.get(name=key)
+            except Device.DoesNotExist:
+                logger.warn("Attempting to set group membership for unknown device {}".format(key))
+                continue
+
             critical = False
             tier = ''
             bldg = ''
@@ -121,10 +127,10 @@ def refresh_akips_devices():
             logger.debug("Set {} to critical {}, tier {}, and building {}".format(
                 device, critical, tier, bldg))
 
-            time.sleep(0.05)
+            time.sleep(SLEEP_DELAY)
 
     finish_time = timezone.now()
-    logger.info("AKIPS deivce refresh runtime {}".format(finish_time - now))
+    logger.info("AKIPS device refresh runtime {}".format(finish_time - now))
 
 
 @shared_task
@@ -161,7 +167,7 @@ def refresh_nit():
                 # type=device['hierarchy'].upper()
             )
             #logger.debug("Found devices {}".format(devices))
-            time.sleep(0.05)
+            time.sleep(SLEEP_DELAY)
 
     finish_time = timezone.now()
     logger.info("NIT refresh runtime {}".format(finish_time - now))
@@ -177,8 +183,14 @@ def refresh_unreachable():
     if unreachables:
         for k, v in unreachables.items():
             logger.debug("{}".format(v['name']))
+            try:
+                device = Device.objects.get(name=v['name']),
+            except Device.DoesNotExist:
+                logger.warn("Attempting to create unreachable data for unknown device {}".format(v['name']))
+                continue
+
             Unreachable.objects.update_or_create(
-                device=Device.objects.get(name=v['name']),
+                device=device,
                 #status='Open',
                 #child = entry['child'],
                 event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
@@ -195,7 +207,8 @@ def refresh_unreachable():
                     'status': 'Open',
                 }
             )
-            time.sleep(0.05)
+
+            time.sleep(SLEEP_DELAY)
 
         # Remove stale entries
         Unreachable.objects.filter(status='Open').exclude(
@@ -299,7 +312,7 @@ def refresh_unreachable():
                 b_summary.save()
             b_summary.unreachables.add(unreachable)
 
-        time.sleep(0.05)
+        time.sleep(SLEEP_DELAY)
 
     # Calculate summary counts
     summaries = Summary.objects.filter(status='Open')
@@ -340,7 +353,7 @@ def refresh_unreachable():
 
         summary.save()
 
-        time.sleep(0.05)
+        time.sleep(SLEEP_DELAY)
 
     # Close building type events open with no down devices
     Summary.objects.filter(status='Open').exclude(

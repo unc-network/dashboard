@@ -228,7 +228,8 @@ class DeviceView(LoginRequiredMixin, View):
             raise Http404("Invalid Device Name")
         context['name'] = device_name
 
-        device = Device.objects.get(name=device_name)
+        device = get_object_or_404(Device, name=device_name)
+        #device = Device.objects.get(name=device_name)
         context['device'] = device
 
         #unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
@@ -252,7 +253,9 @@ class TrapView(LoginRequiredMixin, View):
         if trap_id is None:
             raise Http404("Invalid Device Name")
 
-        trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(SNMPTrap, id=trap_id)
+        #trap = SNMPTrap.objects.get(id=trap_id)
+
         trap_oids = json.loads(trap.oids)
         context['trap'] = trap
         context['uptime'] = pretty_duration(trap.uptime)
@@ -369,7 +372,8 @@ class SetMaintenanceView(LoginRequiredMixin, View):
             raise Http404("Missing device name or maintenance mode setting")
 
         # Update local database
-        device = Device.objects.get(name=device_name)
+        device = get_object_or_404(Device, name=device_name)
+        #device = Device.objects.get(name=device_name)
         if maintenance_mode == 'True':
             device.maintenance = True
         else:
@@ -400,7 +404,8 @@ class AckView(LoginRequiredMixin, View):
         logger.debug("Got ack for {}".format(summary_id))
         result = {}
 
-        summary = Summary.objects.get(id=summary_id)
+        summary = get_object_or_404(Summary, id=summary_id)
+        #summary = Summary.objects.get(id=summary_id)
         if ack == 'True':
             summary.ack = True
         else:
@@ -425,7 +430,8 @@ class ClearTrapView(LoginRequiredMixin, View):
 
         user = request.user
 
-        trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(SNMPTrap, id=trap_id)
+        #trap = SNMPTrap.objects.get(id=trap_id)
         trap.status = 'Closed'
         trap.comment = "Closed by {}".format(user)
         trap.save()
@@ -448,7 +454,8 @@ class AckTrapView(LoginRequiredMixin, View):
         logger.debug("Got ack {} for trap {}".format(ack, trap_id))
         result = {}
 
-        trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(SNMPTrap, id=trap_id)
+        #trap = SNMPTrap.objects.get(id=trap_id)
         if ack == 'True':
             trap.ack = True
         else:
