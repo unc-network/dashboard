@@ -4,6 +4,7 @@ import time
 import re
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
@@ -13,7 +14,6 @@ from akips.utils import AKIPS, NIT
 # Get an isntace of a logger
 logger = logging.getLogger(__name__)
 
-SLEEP_DELAY = 0.05
 
 @shared_task
 def example_task():
@@ -24,6 +24,13 @@ def example_task():
 def refresh_akips_devices():
     logger.debug("refreshing akips devices")
     now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     akips = AKIPS()
     devices = akips.get_devices()
@@ -74,7 +81,7 @@ def refresh_akips_devices():
                 defaults['type'] = 'SWITCH'
             Device.objects.update_or_create( name=key, defaults=defaults)
 
-            time.sleep(SLEEP_DELAY)
+            time.sleep(sleep_delay)
 
         # Remove stale entries
         Device.objects.exclude(last_refresh__gte=now).delete()
@@ -127,7 +134,7 @@ def refresh_akips_devices():
             logger.debug("Set {} to critical {}, tier {}, and building {}".format(
                 device, critical, tier, bldg))
 
-            time.sleep(SLEEP_DELAY)
+            time.sleep(sleep_delay)
 
     finish_time = timezone.now()
     logger.info("AKIPS device refresh runtime {}".format(finish_time - now))
@@ -137,6 +144,13 @@ def refresh_akips_devices():
 def refresh_nit():
     logger.debug("Refeshing nit device data")
     now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     nit = NIT()
     device_data = nit.get_device_data()
@@ -167,7 +181,7 @@ def refresh_nit():
                 # type=device['hierarchy'].upper()
             )
             #logger.debug("Found devices {}".format(devices))
-            time.sleep(SLEEP_DELAY)
+            time.sleep(sleep_delay)
 
     finish_time = timezone.now()
     logger.info("NIT refresh runtime {}".format(finish_time - now))
@@ -177,6 +191,13 @@ def refresh_nit():
 def refresh_unreachable():
     logger.debug("AKIPS unreachable refresh starting")
     now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     akips = AKIPS()
     unreachables = akips.get_unreachable()
@@ -208,7 +229,7 @@ def refresh_unreachable():
                 }
             )
 
-            time.sleep(SLEEP_DELAY)
+            time.sleep(sleep_delay)
 
         # Remove stale entries
         Unreachable.objects.filter(status='Open').exclude(
@@ -223,6 +244,13 @@ def refresh_unreachable():
 
     logger.debug("AKIPS summary refresh starting")
     now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     unreachables = Unreachable.objects.filter(
         status='Open', device__maintenance=False)
@@ -312,7 +340,7 @@ def refresh_unreachable():
                 b_summary.save()
             b_summary.unreachables.add(unreachable)
 
-        time.sleep(SLEEP_DELAY)
+        time.sleep(sleep_delay)
 
     # Calculate summary counts
     summaries = Summary.objects.filter(status='Open')
@@ -353,7 +381,7 @@ def refresh_unreachable():
 
         summary.save()
 
-        time.sleep(SLEEP_DELAY)
+        time.sleep(sleep_delay)
 
     # Close building type events open with no down devices
     Summary.objects.filter(status='Open').exclude(
