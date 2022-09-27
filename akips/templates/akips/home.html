@@ -145,7 +145,8 @@
             maintainAspectRatio : false,
             response : true,
             legend: {
-                display: false
+                position: 'right',
+                display: true,
             },
             datasetFill : false,
             scales: {
@@ -155,7 +156,8 @@
                 xAxes: [{
                     gridLines : {
                         display : true
-                    }
+                    },
+                    stacked: true
                 }],
                 yAxes: [{
                     // ticks: {
@@ -163,7 +165,8 @@
                     // },
                     gridLines : {
                         display : true
-                    }
+                    },
+                    stacked: true
                 }]
             }
         }
