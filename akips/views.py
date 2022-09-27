@@ -473,15 +473,16 @@ class ChartDataView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
     hours = 2
+    period_minutes = 5
 
     def get(self, request, *args, **kwargs):
         now = timezone.now()
         oldest = now - timedelta(hours=self.hours)
 
         # Define graph time periods
-        max_label = self.round_dt_down(now, timedelta(minutes=15))
+        max_label = self.round_dt_down(now, timedelta(minutes= self.period_minutes ))
         min_label = max_label - timedelta(hours=self.hours)
-        keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes=15)) ]
+        keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         logger.debug("time stamps {}".format(keyList))
 
         # Initalize the graph time periods
@@ -492,7 +493,7 @@ class ChartDataView(LoginRequiredMixin, View):
         # Increment sums for unreachable events in each period
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
         for unreachable in unreachables:
-            slot = self.round_dt_down( unreachable.event_start, timedelta(minutes=15) ) 
+            slot = self.round_dt_down( unreachable.event_start, timedelta(minutes= self.period_minutes) ) 
             this_label = timezone.localtime(slot).strftime('%H:%M')
             periods[this_label] += 1
 

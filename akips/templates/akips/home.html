@@ -23,7 +23,8 @@
                         <div class=""></div>
                     </div>
                 </div>
-            <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas>
+            <!-- <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas> -->
+            <canvas id="barChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 414px;" width="414" height="250" class="chartjs-render-monitor"></canvas>
             </div>
         </div>
     </div>
@@ -74,14 +75,14 @@
         //--------------
     
         // Get context with jQuery - using jQuery's .get() method.
-        var areaChartCanvas = $('#areaChart').get(0).getContext('2d')
+        //var areaChartCanvas = $('#areaChart').get(0).getContext('2d')
     
         var areaChartData = {
             //labels  : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '00:00'],
             labels  : [],
             datasets: [
             {
-                label               : 'Digital Goods',
+                label               : 'New Unreachables',
                 backgroundColor     : 'rgba(60,141,188,0.9)',
                 borderColor         : 'rgba(60,141,188,0.8)',
                 pointRadius          : false,
@@ -116,10 +117,36 @@
         }
     
         // This will get the first returned node in the jQuery collection.
-        var chart = new Chart(areaChartCanvas, {
-            type: 'line',
-            data: areaChartData,
-            options: areaChartOptions
+        // var chart = new Chart(areaChartCanvas, {
+        //     type: 'line',
+        //     data: areaChartData,
+        //     options: areaChartOptions
+        // })
+
+        // Bar Chart
+        var barChartCanvas = $('#barChart').get(0).getContext('2d');
+        var barChartData = $.extend(true, {}, areaChartData)
+        var temp0 = areaChartData.datasets[0]
+        var temp1 = areaChartData.datasets[1]
+        
+        var barChartOptions = {
+            maintainAspectRatio : false,
+            response : true,
+            legend: {
+                display: false
+            },
+            datasetFill : false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+
+        var barchart = new Chart(barChartCanvas, {
+            type: 'bar',
+            data: barChartData,
+            options: barChartOptions
         })
 
         $.ajax({
@@ -129,24 +156,28 @@
             data: {},
             success: function (result, status, xhr) {
                 //console.log(result);
-                chart.data = {
-                    labels  : result['chart_labels'],
-                    datasets: [
-                    {
-                        label               : 'Digital Goods',
-                        backgroundColor     : 'rgba(60,141,188,0.9)',
-                        borderColor         : 'rgba(60,141,188,0.8)',
-                        pointRadius          : false,
-                        pointColor          : '#3b8bba',
-                        pointStrokeColor    : 'rgba(60,141,188,1)',
-                        pointHighlightFill  : '#fff',
-                        pointHighlightStroke: 'rgba(60,141,188,1)',
-                        data                : result['chart_data']
-                    },
-                    ]
-                }
-                chart.labels = result['chart_labels'];
-                chart.update();
+                // chart.data = {
+                //     labels  : result['chart_labels'],
+                //     datasets: [
+                //     {
+                //         label               : 'Digital Goods',
+                //         backgroundColor     : 'rgba(60,141,188,0.9)',
+                //         borderColor         : 'rgba(60,141,188,0.8)',
+                //         pointRadius          : false,
+                //         pointColor          : '#3b8bba',
+                //         pointStrokeColor    : 'rgba(60,141,188,1)',
+                //         pointHighlightFill  : '#fff',
+                //         pointHighlightStroke: 'rgba(60,141,188,1)',
+                //         data                : result['chart_data']
+                //     },
+                //     ]
+                // }
+                // chart.labels = result['chart_labels'];
+                // chart.update();
+
+                barchart.data.labels = result['chart_labels'];
+                barchart.data.datasets[0].data = result['chart_data'];
+                barchart.update();
             },
             error: function (xhr, status, error) {
 
