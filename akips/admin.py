@@ -14,10 +14,10 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
-    list_display = ['device', 'ping_state', 'snmp_state',
+    list_display = ['id','device', 'ping_state', 'snmp_state',
                     'event_start', 'last_refresh', 'status']
     list_filter = ['status', 'last_refresh']
-    search_fields = ['ip4addr']
+    search_fields = ['id', 'ip4addr']
 
 
 @admin.register(Summary)

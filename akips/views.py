@@ -479,52 +479,65 @@ class ChartDataView(LoginRequiredMixin, View):
         oldest = now - timedelta(hours=self.hours)
 
         # Define graph time periods
-        # keyList = []
+        max_label = self.round_dt_down(now, timedelta(minutes=15))
+        min_label = max_label - timedelta(hours=self.hours)
+        keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes=15)) ]
+        logger.debug("time stamps {}".format(keyList))
 
         # Initalize the graph time periods
-        # periods = {}
-        # for i in keyList:
-        #     periods[i] = 0
+        periods = {}
+        for i in keyList:
+            periods[i] = 0
 
         # Increment sums for unreachable events in each period
-        # unreachables = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start')
-        # for unreachable in unreachables:
-        #     pass
+        unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
+        for unreachable in unreachables:
+            slot = self.round_dt_down( unreachable.event_start, timedelta(minutes=15) ) 
+            this_label = timezone.localtime(slot).strftime('%H:%M')
+            periods[this_label] += 1
 
-        dataset = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start').annotate(
-            time_series=TruncHour('event_start')
-        ).values(
-            'time_series'
-        ).annotate(
-            device_count=Count('device')
-        ).order_by('time_series')
-        counts = {}
-        for entry in dataset:
-            label = timezone.localtime( entry['time_series'] ).strftime("%H:00")
-            #label = timezone.utc( entry['time_series'] ).strftime("%Z%H:00")
-            counts[ label ] = entry['device_count']
-            logger.debug("data hour {} count {}".format( label, entry['device_count'] ))
-
-        chart_labels = []
-        chart_data = []
-        index = self.hours 
-        logger.debug("now hour {}".format( timezone.localtime(now).strftime("%H:00")))
-        while index >= 0:
-            point = now - timedelta(hours=index)
-            #label = point.strftime("%H:00")
-            label = timezone.localtime(point).strftime("%H:00")
-            logger.debug("Checking index {} and label {}".format(index,label))
-            chart_labels.append( label )
-            if label in counts:
-                chart_data.append( counts[ label ])
-            else:
-                chart_data.append( 0 )
-            index -= 1
-
+        logger.debug("periods {}".format(periods))
+        logger.debug("labels {}".format(periods.keys()))
+        logger.debug("values {}".format(periods.values()))
         result = {
-            'chart_labels': chart_labels,
-            'chart_data': chart_data,
+            'chart_labels': list( periods.keys() ),
+            'chart_data': list( periods.values() ),
         }
+
+        # dataset = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start').annotate(
+        #     time_series=TruncHour('event_start')
+        # ).values(
+        #     'time_series'
+        # ).annotate(
+        #     device_count=Count('device')
+        # ).order_by('time_series')
+        # counts = {}
+        # for entry in dataset:
+        #     label = timezone.localtime( entry['time_series'] ).strftime("%H:00")
+        #     #label = timezone.utc( entry['time_series'] ).strftime("%Z%H:00")
+        #     counts[ label ] = entry['device_count']
+        #     logger.debug("data hour {} count {}".format( label, entry['device_count'] ))
+
+        # chart_labels = []
+        # chart_data = []
+        # index = self.hours 
+        # logger.debug("now hour {}".format( timezone.localtime(now).strftime("%H:00")))
+        # while index >= 0:
+        #     point = now - timedelta(hours=index)
+        #     #label = point.strftime("%H:00")
+        #     label = timezone.localtime(point).strftime("%H:00")
+        #     logger.debug("Checking index {} and label {}".format(index,label))
+        #     chart_labels.append( label )
+        #     if label in counts:
+        #         chart_data.append( counts[ label ])
+        #     else:
+        #         chart_data.append( 0 )
+        #     index -= 1
+
+        # result = {
+        #     'chart_labels': chart_labels,
+        #     'chart_data': chart_data,
+        # }
 
         # Return the results
         if self.pretty_print:
@@ -535,7 +548,7 @@ class ChartDataView(LoginRequiredMixin, View):
     def datetime_range(self, start, end, delta):
         ''' return a generator of times at each delta '''
         current = start
-        while current < end:
+        while current <= end:
             yield current
             current += delta
 
@@ -547,9 +560,20 @@ class ChartDataView(LoginRequiredMixin, View):
         ''' Round datetime up to nearest 'delta' minutes '''
         return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
 
-    def round_dt_up(self, dt, delta):
+    def round_dt_down(self, dt, delta):
         ''' Round datetime down to nearest 'delta' minutes '''
-        return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
+        tzinfo, is_dst = dt.tzinfo, bool(dt.dst())
+        dt = dt.replace(tzinfo=None)
+        f = delta.total_seconds()
+        rounded_ordinal_seconds = f * math.floor((dt - dt.min).total_seconds() / f)
+        rounded_dt = dt.min + timedelta(seconds=rounded_ordinal_seconds)
+        localize = getattr(tzinfo, 'localize', None)
+        if localize:
+            rounded_dt = localize(rounded_dt, is_dst=is_dst)
+        else:
+            rounded_dt = rounded_dt.replace(tzinfo=tzinfo)
+        return rounded_dt
+        #return datetime.min + math.floor((dt - datetime.min) / delta) * delta
 
 
 ### functional views ###

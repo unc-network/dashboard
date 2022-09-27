@@ -81,6 +81,7 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            <!-- <th>id</th> -->
                             <th>Down</th>
                             <th>Start Event</th>
                             <th>Last Event</th>
@@ -91,6 +92,7 @@
                     <tbody>
                         {% for unreachable in unreachables %}
                         <tr>
+                            <!-- <td>{{ unreachable.id }}</td> -->
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
                                 {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.event_start }}</td>
