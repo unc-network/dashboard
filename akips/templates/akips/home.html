@@ -138,8 +138,21 @@
             datasetFill : false,
             scales: {
                 y: {
-                    beginAtZero: true
-                }
+                    suggestedMin: 0
+                },
+                xAxes: [{
+                    gridLines : {
+                        display : true
+                    }
+                }],
+                yAxes: [{
+                    // ticks: {
+                    //     stepSize: 1
+                    // },
+                    gridLines : {
+                        display : true
+                    }
+                }]
             }
         }
 
