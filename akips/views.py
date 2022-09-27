@@ -486,23 +486,33 @@ class ChartDataView(LoginRequiredMixin, View):
         logger.debug("time stamps {}".format(keyList))
 
         # Initalize the graph time periods
-        periods = {}
+        event_data = {}
+        trap_data = {}
         for i in keyList:
-            periods[i] = 0
+            event_data[i] = 0
+            trap_data[i] = 0
 
         # Increment sums for unreachable events in each period
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
         for unreachable in unreachables:
             slot = self.round_dt_down( unreachable.event_start, timedelta(minutes= self.period_minutes) ) 
             this_label = timezone.localtime(slot).strftime('%H:%M')
-            periods[this_label] += 1
+            event_data[this_label] += 1
 
-        logger.debug("periods {}".format(periods))
-        logger.debug("labels {}".format(periods.keys()))
-        logger.debug("values {}".format(periods.values()))
+        # Increment sums for unreachable events in each period
+        traps = SNMPTrap.objects.filter(tt__gte=min_label).order_by('tt')
+        for trap in traps:
+            slot = self.round_dt_down( trap.tt, timedelta(minutes= self.period_minutes) ) 
+            this_label = timezone.localtime(slot).strftime('%H:%M')
+            trap_data[this_label] += 1
+
+        logger.debug("periods {}".format(event_data.keys()))
+        logger.debug("event values {}".format(event_data.values()))
+        logger.debug("trap values {}".format(trap_data.values()))
         result = {
-            'chart_labels': list( periods.keys() ),
-            'chart_data': list( periods.values() ),
+            'chart_labels': list( event_data.keys() ),
+            'chart_event_data': list( event_data.values() ),
+            'chart_trap_data': list( trap_data.values() ),
         }
 
         # dataset = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start').annotate(

@@ -93,28 +93,40 @@
                 //data                : [28, 48, 40, 19, 86, 27, 90]
                 data                : []
             },
+            {
+                label               : 'New Traps',
+                backgroundColor     : 'rgba(210,214,222,1)',
+                borderColor         : 'rgba(210,214,222,1)',
+                pointRadius          : false,
+                pointColor          : 'rgba(210, 214, 222, 1)',
+                pointStrokeColor    : '#c1c7d1',
+                pointHighlightFill  : '#fff',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                //data                : [28, 48, 40, 19, 86, 27, 90]
+                data                : []
+            },
             ]
         }
     
-        var areaChartOptions = {
-            maintainAspectRatio : false,
-            responsive : true,
-            legend: {
-            display: false
-            },
-            scales: {
-                xAxes: [{
-                    gridLines : {
-                    display : false,
-                    }
-                }],
-                yAxes: [{
-                    gridLines : {
-                    display : false,
-                    }
-                }]
-            }
-        }
+        // var areaChartOptions = {
+        //     maintainAspectRatio : false,
+        //     responsive : true,
+        //     legend: {
+        //     display: false
+        //     },
+        //     scales: {
+        //         xAxes: [{
+        //             gridLines : {
+        //             display : false,
+        //             }
+        //         }],
+        //         yAxes: [{
+        //             gridLines : {
+        //             display : false,
+        //             }
+        //         }]
+        //     }
+        // }
     
         // This will get the first returned node in the jQuery collection.
         // var chart = new Chart(areaChartCanvas, {
@@ -168,28 +180,9 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
-                //console.log(result);
-                // chart.data = {
-                //     labels  : result['chart_labels'],
-                //     datasets: [
-                //     {
-                //         label               : 'Digital Goods',
-                //         backgroundColor     : 'rgba(60,141,188,0.9)',
-                //         borderColor         : 'rgba(60,141,188,0.8)',
-                //         pointRadius          : false,
-                //         pointColor          : '#3b8bba',
-                //         pointStrokeColor    : 'rgba(60,141,188,1)',
-                //         pointHighlightFill  : '#fff',
-                //         pointHighlightStroke: 'rgba(60,141,188,1)',
-                //         data                : result['chart_data']
-                //     },
-                //     ]
-                // }
-                // chart.labels = result['chart_labels'];
-                // chart.update();
-
                 barchart.data.labels = result['chart_labels'];
-                barchart.data.datasets[0].data = result['chart_data'];
+                barchart.data.datasets[0].data = result['chart_event_data'];
+                barchart.data.datasets[1].data = result['chart_trap_data'];
                 barchart.update();
             },
             error: function (xhr, status, error) {
@@ -252,22 +245,21 @@
     $(document).ready(function () {
         var refresh_seconds = 30000;
 
+        // Populate the page content for the first time
         refresh_cards();
+        update_chart();
 
         // $('.akips_trend:contains(New)').each(function( index ) {
         //     document.getElementById('audiotag1').play();
         // });
 
         var username = $('#username').text()
-        var msg = new SpeechSynthesisUtterance("Greetings " + username);
+        //var msg = new SpeechSynthesisUtterance("Greetings " + username);
+        var msg = new SpeechSynthesisUtterance("Kenan-Football-Center and Knapp-Sanders-Building");
         //speechSynthesis.speak(msg);
 
-        var intervalId = window.setInterval(function () {
-            refresh_cards();
-            update_chart();
-        }, refresh_seconds);
-
         // Bind to the document so dynamicly added content will still work
+        // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {
             var url = $(this).data("url");
             if (this.checked) {
@@ -280,6 +272,7 @@
         });
 
         // Bind to the document so dynamicly added content will still work
+        // Configure the ACK switch for traps
         $(document).on('change', 'input.ack-trap', function () {
             var url = $(this).data("url");
             if (this.checked) {
@@ -292,6 +285,7 @@
         });
 
         // Bind to the document so dynamicly added content will still work
+        // Configure the Clear Trap button for traps
         $(document).on('click', 'button.trap-clear', function () {
             //$(this).prop('disabled', true);
             var tr = $(this).closest('tr');
@@ -304,6 +298,7 @@
             });
         });
 
+        // Configure the Create Incident button for events and traps
         $('#incident_button').click(function () {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
@@ -312,8 +307,13 @@
             }
         });
 
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            refresh_cards();
+            update_chart();
+        }, refresh_seconds);
+
         // Chart section
-        update_chart();
 
     })
 </script>
