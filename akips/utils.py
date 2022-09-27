@@ -174,14 +174,16 @@ class AKIPS:
                 match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
                 if match:
                     name = match.group(1)
+                    attribute = match.group(3)
+                    event_start = match.group(7)    # epoch in local timezone
                     if name not in data:
                         # populate a starting point for this device
                         data[name] = { 
-                            'name': match.group(1),
+                            'name': name,
                             'ping_state': 'up',
                             'snmp_state': 'unreported',
+                            'event_start': event_start  # epoch in local timezone
                         }
-                    attribute = match.group(3)
                     if attribute == 'PING.icmpState':
                         data[name]['child'] = match.group(2),
                         data[name]['ping_state'] =  match.group(5)
@@ -196,6 +198,8 @@ class AKIPS:
                         data[name]['device_added'] = match.group(6) # epoch in local timezone
                         data[name]['event_start'] = match.group(7)  # epoch in local timezone
                         data[name]['ip4addr'] = None
+                    if event_start < data[name]['event_start']:
+                        data[name]['event_start'] = event_start
             logger.debug("Found {} devices in akips".format( len( data )))
             return data
         return None

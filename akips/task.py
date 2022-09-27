@@ -184,7 +184,7 @@ def refresh_unreachable():
         for k, v in unreachables.items():
             logger.debug("{}".format(v['name']))
             try:
-                device = Device.objects.get(name=v['name']),
+                device = Device.objects.get(name=v['name'])
             except Device.DoesNotExist:
                 logger.warn("Attempting to create unreachable data for unknown device {}".format(v['name']))
                 continue
