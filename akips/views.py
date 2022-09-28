@@ -210,8 +210,7 @@ class RecentSummaryView(LoginRequiredMixin, View):
 
         types = ['Critical', 'Building']
         date_from = timezone.now() - timezone.timedelta(days=1)
-        summaries = Summary.objects.filter(
-            type__in=types, last_event__gte=date_from).order_by('-last_event')
+        summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-last_event')
         context['summaries'] = summaries
 
         return render(request, self.template_name, context=context)
@@ -224,7 +223,7 @@ class RecentTrapsView(LoginRequiredMixin, View):
         context = {}
 
         date_from = timezone.now() - timezone.timedelta(days=1)
-        traps = SNMPTrap.objects.filter(tt__gte=date_from).order_by('-tt')
+        traps = SNMPTrap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
         context['traps'] = traps
 
         return render(request, self.template_name, context=context)
