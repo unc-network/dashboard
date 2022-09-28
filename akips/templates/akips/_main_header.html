@@ -23,10 +23,17 @@
             <a href="{% url 'home' %}" class="nav-link">Dashboard</a>
         </li>
         <li class="nav-item">
-            <a href="{% url 'recent' %}" class="nav-link">Recent Events</a>
+            <a href="{% url 'unreachable' %}" class="nav-link">Unreachables</a>
         </li>
-        <li class="nav-item">
-            <a href="{% url 'unreachable' %}" class="nav-link">Unreachable</a>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              View Recent
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="{% url 'recent' %}">Events</a>
+              <a class="dropdown-item" href="{% url 'recent_traps' %}">Traps</a>
+            </div>
+          </li>
         </li>
         {% if request.user.is_superuser %}
         <li class="nav-item">
