@@ -63,8 +63,11 @@
 </script>
 <script type="text/javascript">
     function voice_alert(text) {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         var msg = new SpeechSynthesisUtterance(text);
-        speechSynthesis.speak(msg);
+        if (alert_toggle) {
+            speechSynthesis.speak(msg);
+        }
     }
     function setup_chart() {
         /* ChartJS
@@ -215,9 +218,9 @@
         //     document.getElementById('audiotag1').play();
         // });
 
-        var username = $('#username').text()
+        //var username = $('#username').text()
+        //var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         //var msg = new SpeechSynthesisUtterance("Greetings " + username);
-        var msg = new SpeechSynthesisUtterance("Kenan-Football-Center and Knapp-Sanders-Building");
         //speechSynthesis.speak(msg);
 
         // Bind to the document so dynamicly added content will still work
