@@ -66,11 +66,8 @@
             {% block header_dropdowns %}
             <li class="nav-item">
                 <div class="navbar-text custom-control custom-switch">
-                    {% if request.user.profile.voice_enabled %}
-                    <input type="checkbox" class="custom-control-input voice-alert-toggle" id="voice-alert-toggle" data-url="{% url 'profile_api' %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input voice-alert-toggle" id="voice-alert-toggle" data-url="{% url 'profile_api' %}">
-                    {% endif %}
+                    <input type="checkbox" class="custom-control-input voice-alert-toggle" id="voice-alert-toggle" 
+                        data-url="{% url 'profile_api' %}" {% if request.user.profile.voice_enabled %}checked{% endif %}>
                     <label class="custom-control-label" for="voice-alert-toggle"><i class="fas fa-volume-up"></i></label>
                 </div>
             </li>
