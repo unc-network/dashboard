@@ -12,9 +12,10 @@
                     <th>Name</th>
                     <th>IP Address</th>
                     <th>Down</th>
-                    <th>Description</th>
+                    <!-- <th>Description</th> -->
                     <th>First Event</th>
                     <th>Last Event</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -23,9 +24,10 @@
                     <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                     <td>{{ unreachable.device.ip4addr }}</td>
                     <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                    <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td>
+                    <!-- <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td> -->
                     <td>{{ unreachable.event_start }}</td>
                     <td>{{ unreachable.last_refresh }}</td>
+                    <td>{{ unreachable.status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
