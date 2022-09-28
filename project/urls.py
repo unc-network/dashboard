@@ -19,6 +19,7 @@ from django.urls import include, path
 
 from welcome.views import index, health
 
+#handler400 = rp_views.handler400
 #handler403 = rp_views.handler403
 #handler404 = rp_views.handler404
 #handler500 = rp_views.handler500

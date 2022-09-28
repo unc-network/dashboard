@@ -10,6 +10,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.urls import reverse
+#from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
@@ -50,6 +51,11 @@ logger = logging.getLogger(__name__)
 
 #     return response
 
+# def login(request, *args, **kwargs):
+#     if request.method == 'POST':
+#         if not request.POST.get('remember_me', None):
+#             request.session.set_expiry(0)
+#     return auth_views.login(request, *args, **kwargs)
 
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
@@ -57,7 +63,10 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        now = timezone.now()
+        # now = timezone.now()
+        # request.session.set_expiry(0) # If value is 0, the user’s session cookie will expire when the user’s Web browser is closed.
+        # age = request.session.get_expiry_age()
+        # logger.debug("expiry age {}".format(age))
 
         context['user_alerts'] = UserAlert.objects.all()
 
@@ -513,7 +522,7 @@ class ChartDataView(LoginRequiredMixin, View):
         max_label = self.round_dt_down(now, timedelta(minutes= self.period_minutes ))
         min_label = max_label - timedelta(hours=self.hours)
         keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
-        logger.debug("time stamps {}".format(keyList))
+        #logger.debug("time stamps {}".format(keyList))
 
         # Initalize the graph time periods
         event_data = {}
@@ -536,9 +545,9 @@ class ChartDataView(LoginRequiredMixin, View):
             this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
-        logger.debug("periods {}".format(event_data.keys()))
-        logger.debug("event values {}".format(event_data.values()))
-        logger.debug("trap values {}".format(trap_data.values()))
+        #logger.debug("periods {}".format(event_data.keys()))
+        #logger.debug("event values {}".format(event_data.values()))
+        #logger.debug("trap values {}".format(trap_data.values()))
         result = {
             'chart_labels': list( event_data.keys() ),
             'chart_event_data': list( event_data.values() ),
