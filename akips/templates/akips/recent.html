@@ -11,6 +11,7 @@
                 <tr>
                     <th>Tier</th>
                     <th>Building / Device</th>
+                    <th>Total</th>
                     <th>First Event</th>
                     <th>Last Event</th>
                     <th>Status</th>
@@ -21,6 +22,7 @@
                 <tr>
                     <td>{{ summary.tier }}</td>
                     <td><a href="{% url 'summary' summary.id %}">{{ summary.type }} {{ summary.name }}</a></td>
+                    <td>{{ summary.total_count }}</td>
                     <td>{{ summary.first_event }}</td>
                     <td>{{ summary.last_event }}</td>
                     <td>{{ summary.status }}</td>
