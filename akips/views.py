@@ -219,7 +219,7 @@ class RecentSummaryView(LoginRequiredMixin, View):
 
         types = ['Critical', 'Building']
         date_from = timezone.now() - timezone.timedelta(days=1)
-        summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-last_event')
+        summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-first_event')
         context['summaries'] = summaries
 
         return render(request, self.template_name, context=context)
@@ -242,7 +242,7 @@ class RecentUnreachablesView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
-        unreachables = Unreachable.objects.filter( event_start__gte=date_from, status='Closed' ).order_by('event_start')
+        unreachables = Unreachable.objects.filter( event_start__gte=date_from, status='Closed' ).order_by('-event_start')
         context['unreachables'] = unreachables
         return render(request, self.template_name, context=context)
 
