@@ -230,11 +230,20 @@ class RecentTrapsView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-
         date_from = timezone.now() - timezone.timedelta(days=1)
         traps = SNMPTrap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
         context['traps'] = traps
+        return render(request, self.template_name, context=context)
 
+class RecentUnreachablesView(LoginRequiredMixin, View):
+    ''' Generic recent unreachables view '''
+    template_name = 'akips/recent_unreachables.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        date_from = timezone.now() - timezone.timedelta(days=1)
+        unreachables = Unreachable.objects.filter( event_start__gte=date_from, status='Closed' ).order_by('event_start')
+        context['unreachables'] = unreachables
         return render(request, self.template_name, context=context)
 
 

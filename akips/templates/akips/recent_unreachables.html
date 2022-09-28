@@ -1,0 +1,35 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES Recent Unreachables{% endblock %}
+{% block page_name %}Recent Unreachables (Last 24 Hours){% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Down</th>
+                    <th>Description</th>
+                    <th>First Event</th>
+                    <th>Last Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unreachable in unreachables %}
+                <tr>
+                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                    <td>{{ unreachable.device.ip4addr }}</td>
+                    <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                    <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td>
+                    <td>{{ unreachable.event_start }}</td>
+                    <td>{{ unreachable.last_refresh }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

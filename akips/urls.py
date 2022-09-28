@@ -14,6 +14,7 @@ urlpatterns = [
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('recent/', views.RecentSummaryView.as_view(), name='recent'),
+    path('recent/unreachable', views.RecentUnreachablesView.as_view(), name='recent_unreachables'),
     path('recent/traps', views.RecentTrapsView.as_view(), name='recent_traps'),
 
     # Dynamic Content AJAX Views
