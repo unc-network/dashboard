@@ -24,7 +24,7 @@
                     </div>
                 </div>
             <!-- <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas> -->
-            <canvas id="barChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 414px;" width="414" height="250" class="chartjs-render-monitor"></canvas>
+            <canvas id="barChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 414px;" width="414" height="250" class="chartjs-render-monitor" data-url="{% url 'chart_data' %}"></canvas>
             </div>
         </div>
     </div>
@@ -142,9 +142,11 @@
         return barchart;
     }
     function refresh_chart( barchart ) {
+        var url = $('#barChart').data("url")
         $.ajax({
             type: "GET",
-            url: '/chart/',
+            //url: '/chart/',
+            url: url,
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
