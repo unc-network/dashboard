@@ -66,7 +66,11 @@
             {% block header_dropdowns %}
             <li class="nav-item">
                 <div class="navbar-text custom-control custom-switch">
+                    {% if request.user.profile.voice_enabled %}
                     <input type="checkbox" class="custom-control-input" id="voice-alert-toggle" data-url="#" checked>
+                    {% else %}
+                    <input type="checkbox" class="custom-control-input" id="voice-alert-toggle" data-url="#">
+                    {% endif %}
                     <label class="custom-control-label" for="voice-alert-toggle"><i class="fas fa-volume-up"></i></label>
                 </div>
             </li>
@@ -85,7 +89,7 @@
                                 <div class="mr-3"><i class="far fa-id-badge fa-2x"></i></div>
                                 <div class="media-body">
                                     <h3 id="username" class="dropdown-item-title">
-                                            {% firstof request.user.get_short_name request.user.get_username %}
+                                            {% firstof request.user.get_full_name request.user.get_username %}
                                         <span class="float-right text-sm text-danger"><i class="fas fa-online"></i></span>
                                     </h3>
                                     <p class="text-sm"><small>{% trans 'Member since' %} :</small></p>

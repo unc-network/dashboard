@@ -139,7 +139,7 @@ class Profile(models.Model):
     voice_enabled = models.BooleanField(default=True)
 
     def __str__(self):
-        return str(self.pid)
+        return str(self.user)
 
 
 @receiver(post_save, sender=User)
