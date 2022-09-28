@@ -445,7 +445,7 @@ class ClearTrapView(LoginRequiredMixin, View):
         trap = get_object_or_404(SNMPTrap, id=trap_id)
         #trap = SNMPTrap.objects.get(id=trap_id)
         trap.status = 'Closed'
-        trap.comment = "Closed by {}".format(user)
+        trap.comment = "Cleared by {}".format(user)
         trap.save()
 
         result = {"status": trap.status}

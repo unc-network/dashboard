@@ -64,26 +64,10 @@
     <ul class="navbar-nav ml-auto">
         <ul class="nav navbar-nav">
             {% block header_dropdowns %}
-            <!-- Notifications Dropdown Menu -->
-            <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="far fa-bell fa-2x"></i>
-                    <span class="badge badge-warning navbar-badge">{{ user_alerts|length }}</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <span class="dropdown-item dropdown-header">{{ user_alerts|length }} Notifications</span>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-file mr-2"></i> {{ user_alerts|length }} new event alerts
-                    </a>
-                    {% for alert in user_alerts %}
-                    <!-- <a href="#" class="dropdown-item">
-                        <i class="fas fa-file mr-2"></i> {{ alert.message }} 
-                        <span class="float-right text-muted text-sm">2 days</span>
-                    </a> -->
-                    {% endfor %}
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
+            <li class="nav-item">
+                <div class="navbar-text custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="voice-alerts" data-url="#" checked>
+                    <label class="custom-control-label" for="voice-alerts"><i class="fas fa-volume-up"></i></label>
                 </div>
             </li>
             <!-- Notifications Dropdown Menu -->
@@ -110,9 +94,6 @@
                             </div>
                             <!-- Message End -->
                         </a>
-                        <div class="dropdown-item">
-                            <p class="text-sm text-right"><a href="#">User Preferences</a></p>
-                        </div>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-footer">
                                 <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">{%trans 'Log out'%}</a>
