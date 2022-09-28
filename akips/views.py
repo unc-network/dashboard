@@ -216,6 +216,19 @@ class RecentSummaryView(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class RecentTrapsView(LoginRequiredMixin, View):
+    ''' Generic recent traps view '''
+    template_name = 'akips/recent_traps.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        date_from = timezone.now() - timezone.timedelta(days=1)
+        traps = SNMPTrap.objects.filter(tt__gte=date_from).order_by('-tt')
+        context['traps'] = traps
+
+        return render(request, self.template_name, context=context)
+
 
 class DeviceView(LoginRequiredMixin, View):
     ''' Generic first view '''
@@ -469,6 +482,24 @@ class AckTrapView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
+class UserAlertView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        last_notified = request.GET.get('last_notified', None)  # Required
+        logger.debug("Got notification from time {}".format( last_notified ))
+        messages = []
+
+        alerts = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
+        result = {"alerts": list( alerts )}
+
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
 class ChartDataView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
@@ -515,41 +546,6 @@ class ChartDataView(LoginRequiredMixin, View):
             'chart_trap_data': list( trap_data.values() ),
         }
 
-        # dataset = Unreachable.objects.filter(event_start__gt=oldest).order_by('event_start').annotate(
-        #     time_series=TruncHour('event_start')
-        # ).values(
-        #     'time_series'
-        # ).annotate(
-        #     device_count=Count('device')
-        # ).order_by('time_series')
-        # counts = {}
-        # for entry in dataset:
-        #     label = timezone.localtime( entry['time_series'] ).strftime("%H:00")
-        #     #label = timezone.utc( entry['time_series'] ).strftime("%Z%H:00")
-        #     counts[ label ] = entry['device_count']
-        #     logger.debug("data hour {} count {}".format( label, entry['device_count'] ))
-
-        # chart_labels = []
-        # chart_data = []
-        # index = self.hours 
-        # logger.debug("now hour {}".format( timezone.localtime(now).strftime("%H:00")))
-        # while index >= 0:
-        #     point = now - timedelta(hours=index)
-        #     #label = point.strftime("%H:00")
-        #     label = timezone.localtime(point).strftime("%H:00")
-        #     logger.debug("Checking index {} and label {}".format(index,label))
-        #     chart_labels.append( label )
-        #     if label in counts:
-        #         chart_data.append( counts[ label ])
-        #     else:
-        #         chart_data.append( 0 )
-        #     index -= 1
-
-        # result = {
-        #     'chart_labels': chart_labels,
-        #     'chart_data': chart_data,
-        # }
-
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
@@ -563,13 +559,13 @@ class ChartDataView(LoginRequiredMixin, View):
             yield current
             current += delta
 
-    def round_dt(self, dt, delta):
-        ''' Round datetime to nearest 'delta' minutes '''
-        return datetime.min + round((dt - datetime.min) / delta) * delta
+    # def round_dt(self, dt, delta):
+    #     ''' Round datetime to nearest 'delta' minutes '''
+    #     return datetime.min + round((dt - datetime.min) / delta) * delta
 
-    def round_dt_up(self, dt, delta):
-        ''' Round datetime up to nearest 'delta' minutes '''
-        return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
+    # def round_dt_up(self, dt, delta):
+    #     ''' Round datetime up to nearest 'delta' minutes '''
+    #     return datetime.min + math.ceil((dt - datetime.min) / delta) * delta
 
     def round_dt_down(self, dt, delta):
         ''' Round datetime down to nearest 'delta' minutes '''
@@ -584,7 +580,6 @@ class ChartDataView(LoginRequiredMixin, View):
         else:
             rounded_dt = rounded_dt.replace(tzinfo=tzinfo)
         return rounded_dt
-        #return datetime.min + math.floor((dt - datetime.min) / delta) * delta
 
 
 ### functional views ###

@@ -1,0 +1,35 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES Recent Traps{% endblock %}
+{% block page_name %}Recent Traps - Last 24 Hours{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Trap</th>
+                    <th>Recorded</th>
+                    <th>Incident</th>
+                    <th>Comment</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trap in traps %}
+                <tr>
+                    <td>{{ trap.device }}</td>
+                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
+                    <td>{{ trap.tt }}</td>
+                    <td>{{ trap.incident }}</td>
+                    <td>{{ trap.comment }}</td>
+                    <td>{{ trap.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

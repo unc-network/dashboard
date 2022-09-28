@@ -14,6 +14,7 @@ urlpatterns = [
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
     path('recent/', views.RecentSummaryView.as_view(), name='recent'),
+    path('recent/traps', views.RecentTrapsView.as_view(), name='recent_traps'),
 
     # Dynamic Content AJAX Views
     path('ajax/critcard/', views.CritCard.as_view(), name='crit_card'),
