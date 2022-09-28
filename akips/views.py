@@ -580,6 +580,29 @@ class ChartDataView(LoginRequiredMixin, View):
             rounded_dt = rounded_dt.replace(tzinfo=tzinfo)
         return rounded_dt
 
+class SetUserProfileView(LoginRequiredMixin, View):
+    ''' API to set user profile settings '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        voice_enabled = request.GET.get('voice_enabled', None)
+        user = request.user
+        logger.debug("Preference update for {} with voice_enabled {}".format(user,voice_enabled))
+
+        user = request.user
+        if voice_enabled is not None:
+            if voice_enabled == 'False':
+                user.profile.voice_enabled = False
+            else:
+                user.profile.voice_enabled = True
+        user.save()
+
+        result = {"voice_enabled": user.profile.voice_enabled }
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
 
 ### functional views ###
 

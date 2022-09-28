@@ -272,6 +272,17 @@
             }
         });
 
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
         // Create the chart and populate for the first time
         var chart = setup_chart();
 
