@@ -3,15 +3,17 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+
+    # Main Views
     path('', views.Home.as_view(), name='home'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
+    path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
+    path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
+    path('device/<name>/', views.DeviceView.as_view(), name='device'),
 
     # Event Focus Views
-    path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
-    path('tier/<tier>/', views.TierView.as_view(), name='tier'),
-    path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
-    path('device/<name>/', views.DeviceView.as_view(), name='device'),
-    path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
+    #path('tier/<tier>/', views.TierView.as_view(), name='tier'),
+    #path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('recent/', views.RecentSummaryView.as_view(), name='recent'),
     path('recent/unreachable', views.RecentUnreachablesView.as_view(), name='recent_unreachables'),
     path('recent/traps', views.RecentTrapsView.as_view(), name='recent_traps'),
@@ -35,7 +37,7 @@ urlpatterns = [
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
 
     # Incident Request
-    path('incident/new', views.IncidentView.as_view(), name='create_incident'),
+    path('incident/new', views.CreateIncidentView.as_view(), name='create_incident'),
     #path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # JSON Views
