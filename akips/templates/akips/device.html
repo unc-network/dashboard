@@ -137,12 +137,46 @@
 
 {% block js %}
 <script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
     function toggle_maintenance_mode() {
         console.log("NYI")
     }
 </script>
 <script type="text/javascript">
     $(document).ready(function () {
+        var refresh_seconds = 30000;
+
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
 
         $('#maintSwitch1').change(function () {
             var url = $(this).data("url");
