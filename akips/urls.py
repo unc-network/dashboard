@@ -5,7 +5,6 @@ from . import views
 urlpatterns = [
     path('', views.Home.as_view(), name='home'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
-    path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # Event Focus Views
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
@@ -36,6 +35,7 @@ urlpatterns = [
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
 
     # Incident Request
+    path('incident/new', views.IncidentView.as_view(), name='create_incident'),
     #path('incident/', views.IncidentView.as_view(), name='incident'),
 
     # JSON Views

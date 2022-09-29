@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="get" action="/incident/">
+<form method="get" action="{% url 'create_incident' %}">
 
     <div id="chart" class="card">
         <div class="card-header">
