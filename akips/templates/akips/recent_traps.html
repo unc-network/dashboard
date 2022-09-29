@@ -12,7 +12,6 @@
                     <th>Device</th>
                     <th>Trap</th>
                     <th>Recorded</th>
-                    <th>Incident</th>
                     <th>Comment</th>
                     <th>Status</th>
                 </tr>
@@ -23,7 +22,6 @@
                     <td>{{ trap.device }}</td>
                     <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
                     <td>{{ trap.tt }}</td>
-                    <td>{{ trap.incident }}</td>
                     <td>{{ trap.comment }}</td>
                     <td>{{ trap.status }}</td>
                 </tr>
