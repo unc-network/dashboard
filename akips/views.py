@@ -504,13 +504,21 @@ class UserAlertView(LoginRequiredMixin, View):
         }
         if last_notified is None:
             # user has no notification history
-            messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
-            if messages:
-                # for message in messages:
-                #     result['messages'].append( message.message )
-                result['messages'].append( "There have been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
-            else:
-                result['messages'].append( "There have been no alerts in the last {} hours.".format(cutoff_hours))
+            # messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
+            # if messages:
+            #     # for message in messages:
+            #     #     result['messages'].append( message.message )
+            #     result['messages'].append( "There have been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
+            # else:
+            #     result['messages'].append( "There have been no alerts in the last {} hours.".format(cutoff_hours))
+
+            unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).count()
+            if unreachables:
+                result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format(unreachables, cutoff_hours))
+
+            traps = SNMPTrap.objects.filter(tt__gt=old_session_time).count()
+            if traps:
+                result['messages'].append("There have been {} new traps in the last {} hours.".format(traps, cutoff_hours))
 
         # elif last_notified_dt < old_session_time:
         #     # user is using an old session
@@ -527,6 +535,10 @@ class UserAlertView(LoginRequiredMixin, View):
             # messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
             # if messages:
             #     result['messages'].append( "There are {} alerts.".format( len(messages) ))
+
+            unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').count()
+            if unreachables:
+                result['messages'].append("There are {} new unreachable devices.".format(unreachables))
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').count()
             if criticals:
