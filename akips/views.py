@@ -523,9 +523,9 @@ class UserAlertView(LoginRequiredMixin, View):
             if messages:
                 # for message in messages:
                 #     result['messages'].append( message.message )
-                result['messages'].append( "There has been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
+                result['messages'].append( "There have been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
             else:
-                result['messages'].append( "There are no active alerts in the last {} hours.".format(cutoff_hours))
+                result['messages'].append( "There have been no alerts in the last {} hours.".format(cutoff_hours))
 
         # elif last_notified_dt < old_session_time:
         #     # user is using an old session
@@ -539,9 +539,9 @@ class UserAlertView(LoginRequiredMixin, View):
         else:
             # user has a typical active session
             messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
-            # result['messages'].append( "There are {} alerts.".format( len(messages) ))
-            for message in messages:
-                result['messages'].append( message.message )
+            result['messages'].append( "There are {} alerts.".format( len(messages) ))
+            # for message in messages:
+            #     result['messages'].append( message.message )
             #result['messages'].append( "there are no new messages")
 
         # result = {"alerts": list( alerts )}
