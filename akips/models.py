@@ -133,6 +133,12 @@ class UserAlert(models.Model):
     def __str__(self):
         return str(self.id)
 
+# class ServiceNowGroup(models.Model):
+#     name = models.CharField(max_length=1024)
+#     group_name = models.CharField(max_length=1024)
+
+#     def __str__(self):
+#         return str(self.id)
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
