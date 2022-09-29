@@ -3,14 +3,19 @@
 #
 #    docker-compose up
 #
-# to spin up Redis, Celery workers, and OCNES in containers.  [You could
-# add `-d` at the end to run them in the background, but then you don't get
-# all the useful log messages you typically want when developing.]
-# Then do Django dev work as usual.  When done, simply enter
+# to spin up Redis, Celery workers, and OCNES in containers.  Or
+#
+#    docker-compose up -d
+#
+# to run them in the background if you do not want/need all the useful log
+# messages you typically want when developing.
+#
+# Then do Django dev work as usual.  When done, simply hit [CTRL][C] to bring
+# down the containers or, if you used `-d`, enter
 #
 #    docker-compose down
 #
-# to bring down the containers.  That's it.
+# to do the same.  That's it.
 #
 # NOTE:  If you have issues, try using `docker-compose up --build` to force
 #        a rebuild of the containers in case things change.
@@ -76,11 +81,14 @@ services:
     working_dir: /dashboard
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
+      # The following entry is if running under Gunicorn
+      GUNICORN_CMD_ARGS: "--bind=0.0.0.0:8000 --access-logfile=-"
     # Another interesting tidbit.  By default Django listens on 127.0.0.1:8000.
     # However, without the last parameter below to have Django bind to all
     # interfaces in the container, you can't access the code on port 8000 on
     # the host.  Seems binding to the loopback in the container is just that.
-    command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
+    # command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
+    command: [ 'gunicorn', 'wsgi' ]
     depends_on:
       - celery
       - redis
