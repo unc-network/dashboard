@@ -53,14 +53,10 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
-    function voice_alert(text) {
+    function voice_alert() {
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         var alert_url = $('#voice-alert-toggle').data('alert-url')
-        var msg = new SpeechSynthesisUtterance(text);
         if (alert_toggle) {
-            //var msg = new SpeechSynthesisUtterance("Checking notifications");
-            //speechSynthesis.speak(msg);
-            //var url = "/api/notifications";
             $.get( alert_url, function( data ) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
@@ -180,7 +176,7 @@
             });
         });
 
-        voice_alert('blah');
+        voice_alert();
 
     }
 </script>
