@@ -1,0 +1,86 @@
+# To run everything in dev, simply navigate to project root directory where
+# this file exists and run
+#
+#    docker-compose up
+#
+# to spin up Redis, Celery workers, and OCNES in containers.  [You could
+# add `-d` at the end to run them in the background, but then you don't get
+# all the useful log messages you typically want when developing.]
+# Then do Django dev work as usual.  When done, simply enter
+#
+#    docker-compose down
+#
+# to bring down the containers.  That's it.
+#
+# NOTE:  If you have issues, try using `docker-compose up --build` to force
+#        a rebuild of the containers in case things change.
+services:
+  ########################################
+  # Bring up REDIS
+  ########################################
+  redis:
+    # Use official Redis image from hub.docker.com
+    # If you have M1 Mac, use
+    # image: arm64v8/redis:7-alpine
+    image: "redis:7-alpine"
+    # Expose port 6379 to host machine
+    ports:
+      - 6379:6379
+
+  ########################################
+  # Bring up Celery workers
+  ########################################
+  celery:
+    # Build Celery image
+    build:
+      context: .
+      dockerfile: Dockerfile.Celery
+      tags:
+        - "celery:latest"
+    # Expose port 5672 to host machine
+    ports:
+      - 5672:5672
+    volumes:
+      - ${PWD}:/dashboard
+    working_dir: /dashboard
+    environment:
+      # This is key.  It overrides the .env file which has the following
+      # environment variable pointing to localhost.
+      # The problem is that 'localhost' is unique to each container, and
+      # these are different from 'localhost' on the host machine.  Meaning
+      # this Celery worker container cannot reach the Redis container on
+      # 'localhost' because each container has its own network interface.
+      # Here we leverage a feature in Docker Compose where each service
+      # is reachable via its name; in this case, we have a URL going to
+      # a Redis server on host 'redis', port 6379.
+      CELERY_BROKER_URL: redis://redis:6379/0
+    command: [ 'celery', '--app', 'project', 'worker', '-B' ]
+    depends_on:
+      - redis
+
+  ########################################
+  # Bring up OCNES
+  ########################################
+  ocnes:
+    # Build OCNES image
+    build:
+      context: .
+      dockerfile: Dockerfile.OCNES
+      tags:
+        - "ocnes:latest"
+    # Expose port 8000 to host machine
+    ports:
+      - 8000:8000
+    volumes:
+      - ${PWD}:/dashboard
+    working_dir: /dashboard
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    # Another interesting tidbit.  By default Django listens on 127.0.0.1:8000.
+    # However, without the last parameter below to have Django bind to all
+    # interfaces in the container, you can't access the code on port 8000 on
+    # the host.  Seems binding to the loopback in the container is just that.
+    command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
+    depends_on:
+      - celery
+      - redis

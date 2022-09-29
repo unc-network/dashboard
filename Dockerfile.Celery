@@ -1,0 +1,26 @@
+# Use official Python image from hub.docker.com
+# If you have M1 Mac, use
+# FROM: arm64v8/python
+FROM python
+
+# NOTE:  To fully mimic production, we can set tags to match specific versions
+#        of things like Python.
+#        Also be aware that trying to use python:3-alpine will fail due to the
+#        need for additional packages for LDAP/etc. Hence using stock image.
+
+# Install needed modules so LDAP bits in pip modules will install properly
+RUN apt-get update
+RUN apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
+
+RUN cd /
+
+# Mount host directory where docker-compose.yml is located, which should be
+# root of dashboard project source code so it appears as /dashboard in the containter.
+# This exposes things like the requirements.txt file so we can install all the relevant
+# Python modules for this project
+RUN --mount=type=bind,source=./,target=/dashboard pip install -r /dashboard/requirements.txt
+#RUN pip install celery "django<4" django_celery_results django_celery_beat python-dotenv redis
+
+RUN cd /dashboard
+
+CMD [ "echo", "Celery workers running..."]
