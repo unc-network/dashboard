@@ -307,8 +307,7 @@ def refresh_unreachable():
                 }
             )
             if t_created:
-                UserAlert.objects.create(
-                    message="new tier {} down".format(tier_name))
+                #UserAlert.objects.create(message="new tier {} down".format(tier_name))
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
                 if t_summary.first_event > unreachable.event_start:
@@ -330,8 +329,7 @@ def refresh_unreachable():
                 }
             )
             if b_created:
-                UserAlert.objects.create(
-                    message="new building {} down".format(bldg_name))
+                UserAlert.objects.create(message="new building {} on tier {} down".format(bldg_name, b_summary.tier))
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
                 if b_summary.first_event > unreachable.event_start:

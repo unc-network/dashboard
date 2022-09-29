@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),
     path('api/chart/', views.ChartDataView.as_view(), name='chart_data'),
     path('api/profile/', views.SetUserProfileView.as_view(), name='profile_api'),
+    path('api/notifications/', views.UserAlertView.as_view(), name='api_notifications'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),

@@ -505,18 +505,52 @@ class UserAlertView(LoginRequiredMixin, View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
-        last_notified = request.GET.get('last_notified', None)  # Required
-        logger.debug("Got notification from time {}".format( last_notified ))
-        messages = []
+        # logger.debug("Got notification from time {}".format( last_notified ))
+        now = timezone.now()
+        cutoff_hours = 3
+        old_session_time = now - timedelta(hours=cutoff_hours)
+        last_notified = request.COOKIES.get('last_notified',None)
+        #last_notified_dt = timezone.make_aware(datetime.strftime(last_notified))
+        logger.debug("cookie last_notified {}".format(last_notified))
 
-        alerts = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
-        result = {"alerts": list( alerts )}
+        result = {
+            'last_notified': last_notified,
+            'messages': []
+        }
+        if last_notified is None:
+            # user has no notification history
+            messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
+            if messages:
+                for message in messages:
+                    result['messages'].append( message.message )
+            else:
+                result['messages'].append( "There are no active alerts in the last {} hours.".format(cutoff_hours))
+
+        # elif last_notified_dt < old_session_time:
+        #     # user is using an old session
+        #     messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
+        #     if messages:
+        #         for message in messages:
+        #             result['messages'].append( message.message )
+        #     else:
+        #         result['messages'].append( "There are no active alerts in the last {} hours.".format(cutoff_hours))
+
+        else:
+            # user has a typical active session
+            messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
+            for message in messages:
+                result['messages'].append( message.message )
+            #result['messages'].append( "there are no new messages")
+
+        # result = {"alerts": list( alerts )}
 
         # Return the results
         if self.pretty_print:
-            return JsonResponse(result, json_dumps_params={'indent': 4})
+            response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
-            return JsonResponse(result)
+            response = JsonResponse(result)
+        response.set_cookie('last_notified', now)
+        return response
 
 class ChartDataView(LoginRequiredMixin, View):
     ''' API view '''

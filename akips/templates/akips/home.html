@@ -66,7 +66,15 @@
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         var msg = new SpeechSynthesisUtterance(text);
         if (alert_toggle) {
-            speechSynthesis.speak(msg);
+            //var msg = new SpeechSynthesisUtterance("Checking notifications");
+            //speechSynthesis.speak(msg);
+            url = "/api/notifications"
+            $.get( url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
         }
     }
     function setup_chart() {
@@ -177,25 +185,25 @@
                 data: {},
                 success: function (result, status, xhr) {
                     body.html(result);
-                    var new_event = body.find('.akips_trend:contains(New)').length;
-                    var inc_event = body.find('.akips_trend:contains(Increasing)').length;
-                    var stable_event = body.find('.akips_trend:contains(Stable)').length;
-                    if (id == 'crit_card') {
-                        if (new_event > 0) {
-                            voice_alert("There are " + new_event + " new critical alerts.");
-                        }
-                    } else if (id == 'bldg_card') {
-                        if (new_event > 0) {
-                            voice_alert("There are " + new_event + " new building alerts.");
-                        }
-                        if (inc_event > 0) {
-                            voice_alert("There are " + inc_event + " increasing building alerts.");
-                        }
-                    } else if (id == 'trap_card') {
-                        if (new_event > 0) {
-                            voice_alert("There are " + new_event + " new trap alerts.");
-                        }
-                    }
+                    // var new_event = body.find('.akips_trend:contains(New)').length;
+                    // var inc_event = body.find('.akips_trend:contains(Increasing)').length;
+                    // var stable_event = body.find('.akips_trend:contains(Stable)').length;
+                    // if (id == 'crit_card') {
+                    //     if (new_event > 0) {
+                    //         voice_alert("There are " + new_event + " new critical alerts.");
+                    //     }
+                    // } else if (id == 'bldg_card') {
+                    //     if (new_event > 0) {
+                    //         voice_alert("There are " + new_event + " new building alerts.");
+                    //     }
+                    //     if (inc_event > 0) {
+                    //         voice_alert("There are " + inc_event + " increasing building alerts.");
+                    //     }
+                    // } else if (id == 'trap_card') {
+                    //     if (new_event > 0) {
+                    //         voice_alert("There are " + new_event + " new trap alerts.");
+                    //     }
+                    // }
                     // body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
                     //     document.getElementById('audiotag1').play();
                     // });
@@ -206,6 +214,8 @@
                 }
             });
         });
+
+        voice_alert('blah');
 
     }
 </script>
