@@ -539,7 +539,8 @@ class UserAlertView(LoginRequiredMixin, View):
         else:
             # user has a typical active session
             messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
-            result['messages'].append( "There are {} alerts.".format( len(messages) ))
+            if messages:
+                result['messages'].append( "There are {} alerts.".format( len(messages) ))
             # for message in messages:
             #     result['messages'].append( message.message )
             #result['messages'].append( "there are no new messages")
