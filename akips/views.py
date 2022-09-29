@@ -538,9 +538,23 @@ class UserAlertView(LoginRequiredMixin, View):
 
         else:
             # user has a typical active session
-            messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
-            if messages:
-                result['messages'].append( "There are {} alerts.".format( len(messages) ))
+
+            # messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
+            # if messages:
+            #     result['messages'].append( "There are {} alerts.".format( len(messages) ))
+
+            criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').count()
+            if criticals:
+                result['messages'].append("There are {} new critical alerts.".format(criticals))
+
+            buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').count()
+            if buildings:
+                result['messages'].append("There are {} new building alerts.".format(buildings))
+
+            traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').count()
+            if traps:
+                result['messages'].append("There are {} new traps.".format(traps))
+
             # for message in messages:
             #     result['messages'].append( message.message )
             #result['messages'].append( "there are no new messages")
