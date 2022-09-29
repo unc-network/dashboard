@@ -63,23 +63,11 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        # now = timezone.now()
-        # request.session.set_expiry(0) # If value is 0, the user’s session cookie will expire when the user’s Web browser is closed.
-        # age = request.session.get_expiry_age()
-        # logger.debug("expiry age {}".format(age))
 
-        context['user_alerts'] = UserAlert.objects.all()
-
-        context['critical'] = Summary.objects.filter(
-            type='Critical', status='Open').order_by('name')
-        context['tiers'] = Summary.objects.filter(
-            type='Distribution', status='Open').order_by('name')
-        context['bldgs'] = Summary.objects.filter(
-            type='Building', status='Open').order_by('name')
-
-        context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
-
-
+        #context['critical'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
+        #context['tiers'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
+        #context['bldgs'] = Summary.objects.filter(type='Building', status='Open').order_by('name')
+        #context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
 
         return render(request, self.template_name, context=context)
 

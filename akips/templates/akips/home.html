@@ -23,7 +23,6 @@
                         <div class=""></div>
                     </div>
                 </div>
-            <!-- <canvas id="areaChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 381px;" width="381" height="250" class="chartjs-render-monitor"></canvas> -->
             <canvas id="barChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 414px;" width="414" height="250" class="chartjs-render-monitor" data-url="{% url 'chart_data' %}"></canvas>
             </div>
         </div>
@@ -48,9 +47,6 @@
         <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
     </div>
 
-    <!-- <audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}"
-        preload="auto"></audio>
-    <a href="javascript:play_single_sound();">Test sound</a> -->
 </form>
 {% endblock %}
 
@@ -68,7 +64,7 @@
         if (alert_toggle) {
             //var msg = new SpeechSynthesisUtterance("Checking notifications");
             //speechSynthesis.speak(msg);
-            url = "/api/notifications"
+            var url = "/api/notifications";
             $.get( url, function( data ) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
@@ -122,19 +118,13 @@
             },
             datasetFill : false,
             scales: {
-                y: {
-                    suggestedMin: 0
-                },
+                y: { suggestedMin: 0 },
                 xAxes: [{
-                    gridLines : {
-                        display : true
-                    },
+                    gridLines : { display : true },
                     stacked: true
                 }],
                 yAxes: [{
-                    gridLines : {
-                        display : true
-                    },
+                    gridLines : { display : true },
                     stacked: true
                 }]
             }
@@ -153,7 +143,6 @@
         var url = $('#barChart').data("url")
         $.ajax({
             type: "GET",
-            //url: '/chart/',
             url: url,
             dataType: "json",
             data: {},
@@ -185,28 +174,6 @@
                 data: {},
                 success: function (result, status, xhr) {
                     body.html(result);
-                    // var new_event = body.find('.akips_trend:contains(New)').length;
-                    // var inc_event = body.find('.akips_trend:contains(Increasing)').length;
-                    // var stable_event = body.find('.akips_trend:contains(Stable)').length;
-                    // if (id == 'crit_card') {
-                    //     if (new_event > 0) {
-                    //         voice_alert("There are " + new_event + " new critical alerts.");
-                    //     }
-                    // } else if (id == 'bldg_card') {
-                    //     if (new_event > 0) {
-                    //         voice_alert("There are " + new_event + " new building alerts.");
-                    //     }
-                    //     if (inc_event > 0) {
-                    //         voice_alert("There are " + inc_event + " increasing building alerts.");
-                    //     }
-                    // } else if (id == 'trap_card') {
-                    //     if (new_event > 0) {
-                    //         voice_alert("There are " + new_event + " new trap alerts.");
-                    //     }
-                    // }
-                    // body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
-                    //     document.getElementById('audiotag1').play();
-                    // });
                 },
                 error: function (xhr, status, error) {
                     body.replaceWith(body_clone);
@@ -225,15 +192,6 @@
 
         // Populate the page content for the first time
         refresh_cards();
-
-        // $('.akips_trend:contains(New)').each(function( index ) {
-        //     document.getElementById('audiotag1').play();
-        // });
-
-        //var username = $('#username').text()
-        //var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        //var msg = new SpeechSynthesisUtterance("Greetings " + username);
-        //speechSynthesis.speak(msg);
 
         // Bind to the document so dynamicly added content will still work
         // Configure the ACK switch for events
@@ -295,6 +253,7 @@
                 $.get(url, { "voice_enabled": 'False' })
             }
         });
+
         // Create the chart and populate for the first time
         var chart = setup_chart();
 
