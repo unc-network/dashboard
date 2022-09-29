@@ -43,16 +43,13 @@ class Unreachable(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
-    ping_state = models.CharField(
-        max_length=32, choices=STATE_CHOICES, default='unreported')
-    snmp_state = models.CharField(
-        max_length=32, choices=STATE_CHOICES, default='unreported')
+    ping_state = models.CharField( max_length=32, choices=STATE_CHOICES, default='unreported')
+    snmp_state = models.CharField( max_length=32, choices=STATE_CHOICES, default='unreported')
     index = models.CharField(max_length=255)    # extracted from value
     # state = models.CharField(max_length=255)    # extracted from value
     device_added = models.DateTimeField()       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
-    ip4addr = models.GenericIPAddressField(
-        blank=True, null=True)    # extracted from value
+    ip4addr = models.GenericIPAddressField( blank=True, null=True)    # extracted from value
     last_refresh = models.DateTimeField()
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
