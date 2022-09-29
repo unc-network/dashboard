@@ -221,7 +221,7 @@ SERVER_EMAIL = 'devops@office.unc.edu'
 
 # Session settings
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 86400
+SESSION_COOKIE_AGE = 1209600    # default 2 weeks, in seconds
 
 # Logging configuration
 LOGGING = {
