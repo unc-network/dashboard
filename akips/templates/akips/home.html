@@ -53,19 +53,15 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
-    function play_single_sound() {
-        document.getElementById('audiotag1').play();
-    }
-</script>
-<script type="text/javascript">
     function voice_alert(text) {
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
         var msg = new SpeechSynthesisUtterance(text);
         if (alert_toggle) {
             //var msg = new SpeechSynthesisUtterance("Checking notifications");
             //speechSynthesis.speak(msg);
-            var url = "/api/notifications";
-            $.get( url, function( data ) {
+            //var url = "/api/notifications";
+            $.get( alert_url, function( data ) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
                     speechSynthesis.speak(msg);
@@ -73,6 +69,8 @@
             } )
         }
     }
+</script>
+<script type="text/javascript">
     function setup_chart() {
         /* ChartJS
         * -------
