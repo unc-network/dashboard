@@ -390,14 +390,24 @@ def refresh_unreachable():
 
 
 @shared_task
-def clear_traps():
-    logger.debug("Clear traps is starting")
+#def clear_traps():
+def cleanup_dashboard_data():
+    logger.debug("Cleanup dashboard data is starting")
     now = timezone.now()
 
-    # Close trap events older than some time period
-    cutoff = now - timedelta(days=1)
-    SNMPTrap.objects.filter(status='Open').exclude(tt__gt=cutoff).update(
-        status='Closed', comment="Auto closed due to age")
+    # Define the periods we care about
+    one_day_ago = now - timedelta(days=1)
+    seven_days_ago = now - timedelta(days=7)
+
+    # clear and delete traps based on age
+    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).update(status='Closed', comment="Auto closed due to age")
+    SNMPTrap.objects.filter(tt__lt=seven_days_ago).delete()
+
+    # delete closed summary events based on age
+    Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
+
+    # delete clsoed unreachables based on age
+    Unreachable.objects.filter(status='Closed',event_start__lt=seven_days_ago,last_refresh__lt=seven_days_ago).delete()
 
     finish_time = timezone.now()
-    logger.info("Clear traps runtime {}".format(finish_time - now))
+    logger.info("Cleanup dashboard data runtime {}".format(finish_time - now))
