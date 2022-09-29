@@ -33,6 +33,27 @@ services:
       - 6379:6379
 
   ########################################
+  # Bring up PostgreSQL
+  ########################################
+  db:
+    # Use official PostgreSQL image from hub.docker.com
+    # If you have M1 Mac, use
+    # image: arm64v8/postgres:latest
+    image: "postgres:latest"
+    # Expose port 5432 to host machine    
+    ports:
+      - 5432:5432
+    volumes:
+      - ${PWD}/.docker/pgdata:/var/lib/postgresql/data
+    environment:
+      # The only required environment variable, which sets superuser password
+      POSTGRES_PASSWORD: OCNESisCOOL
+      # OPTIONAL VARIABLES with defaults
+      # POSTGRES_USER: postgres
+      # POSTGRES_DB: postgres (taken from POSTGRES_USER)
+      # PGDATA: /var/lib/postgresql/data
+
+  ########################################
   # Bring up Celery workers
   ########################################
   celery:
@@ -81,6 +102,14 @@ services:
     working_dir: /dashboard
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
+      # The following are pulled from OpenShift
+      DATABASE_SERVICE_NAME: postgresql
+      DATABASE_ENGINE: postgresql
+      DATABASE_NAME: postgres
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: OCNESisCOOL
+      POSTGRESQL_SERVICE_HOST: db
+      POSTGRESQL_SERVICE_PORT: 5432
       # The following entry is if running under Gunicorn
       GUNICORN_CMD_ARGS: "--bind=0.0.0.0:8000 --access-logfile=-"
     # Another interesting tidbit.  By default Django listens on 127.0.0.1:8000.
@@ -88,6 +117,7 @@ services:
     # interfaces in the container, you can't access the code on port 8000 on
     # the host.  Seems binding to the loopback in the container is just that.
     # command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
+    # command: [ 'python', 'manage.py', 'migrate' ]
     command: [ 'gunicorn', 'wsgi' ]
     depends_on:
       - celery

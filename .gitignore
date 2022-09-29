@@ -70,3 +70,6 @@ target/
 /venv/
 .python-version
 .env
+
+# Docker related data
+.docker/
