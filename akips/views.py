@@ -507,7 +507,7 @@ class UserAlertView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         # logger.debug("Got notification from time {}".format( last_notified ))
         now = timezone.now()
-        cutoff_hours = 3
+        cutoff_hours = 2
         old_session_time = now - timedelta(hours=cutoff_hours)
         last_notified = request.COOKIES.get('last_notified',None)
         #last_notified_dt = timezone.make_aware(datetime.strftime(last_notified))
@@ -521,8 +521,9 @@ class UserAlertView(LoginRequiredMixin, View):
             # user has no notification history
             messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
             if messages:
-                for message in messages:
-                    result['messages'].append( message.message )
+                # for message in messages:
+                #     result['messages'].append( message.message )
+                result['messages'].append( "There has been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
             else:
                 result['messages'].append( "There are no active alerts in the last {} hours.".format(cutoff_hours))
 
@@ -538,6 +539,7 @@ class UserAlertView(LoginRequiredMixin, View):
         else:
             # user has a typical active session
             messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
+            # result['messages'].append( "There are {} alerts.".format( len(messages) ))
             for message in messages:
                 result['messages'].append( message.message )
             #result['messages'].append( "there are no new messages")
