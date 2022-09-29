@@ -217,9 +217,10 @@ class RecentSummaryView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        types = ['Critical', 'Building']
         date_from = timezone.now() - timezone.timedelta(days=1)
-        summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-first_event')
+        # types = ['Critical', 'Building']
+        # summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-first_event')
+        summaries = Summary.objects.filter( last_event__gte=date_from, status='Closed' ).order_by('-first_event')
         context['summaries'] = summaries
 
         return render(request, self.template_name, context=context)
