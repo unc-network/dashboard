@@ -47,6 +47,11 @@
         <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
     </div>
 
+    {% if request.user.is_superuser %}
+    {% for u in recent_users %}
+    <p>{{ u.username }} - {{ u.last_login}} - {{ u.profile.voice_enabled }}</p>
+    {% endfor %}
+    {% endif %}
 </form>
 {% endblock %}
 

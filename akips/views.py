@@ -11,12 +11,13 @@ from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.urls import reverse
 #from django.contrib.auth import views as auth_views
+from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
 
-from django.db.models import Count
-from django.db.models.functions import TruncHour
+#from django.db.models import Count
+#from django.db.models.functions import TruncHour
 
 #from django.utils.decorators import method_decorator
 from django.db.transaction import atomic, non_atomic_requests
@@ -65,6 +66,9 @@ class Home(LoginRequiredMixin, View):
         #context['tiers'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
         #context['bldgs'] = Summary.objects.filter(type='Building', status='Open').order_by('name')
         #context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
+
+        date_from = timezone.now() - timedelta(days=7)
+        context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
 
         return render(request, self.template_name, context=context)
 
