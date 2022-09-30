@@ -585,25 +585,33 @@ class UserAlertView(LoginRequiredMixin, View):
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').order_by('first_event')
             if criticals:
-                result['messages'].append("{} new critical alerts".format( len(criticals) ))
+                critical_count = len(criticals)
+                if critical_count == 1:
+                    result['messages'].append("{} new critical device alert for {},".format( critical_count, criticals.first().name ))
+                else:
+                    result['messages'].append("{} new critical device alerts,".format( critical_count ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').order_by('first_event')
             if buildings:
                 building_count = len(buildings)
                 if building_count == 1:
-                    result['messages'].append("{} new building alert for {}".format( building_count, buildings.first().name ))
+                    result['messages'].append("{} new building alert for {},".format( building_count, buildings.first().name ))
                 else:
-                    result['messages'].append("{} new building alerts".format( len(buildings) ))
+                    result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
             if traps:
-                result['messages'].append("{} new traps".format( len(traps) ))
+                trap_count = len(traps)
+                if trap_count == 1:
+                    result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
+                else:
+                    result['messages'].append("{} new traps,".format( trap_count ))
                 times.append( traps.last().tt )
 
             if times:
-                result['messages'].insert(0,"There are ".format(cutoff_hours))
+                result['messages'].insert(0,"Dashboard Alert:".format(cutoff_hours))
                 result['last_notified'] = max( times )
             else:
                 #result['messages'].append( "There are no new alerts.")
