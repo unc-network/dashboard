@@ -516,17 +516,17 @@ class UserAlertView(LoginRequiredMixin, View):
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
             if criticals:
-                result['messages'].append("{} new critical alerts".format( len(criticals) ))
+                result['messages'].append("{} new critical alerts,".format( len(criticals) ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
             if buildings:
-                result['messages'].append("{} new building alerts".format( len(buildings) ))
+                result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                result['messages'].append("{} new traps".format( len(traps) ))
+                result['messages'].append("{} new traps,".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
@@ -547,17 +547,17 @@ class UserAlertView(LoginRequiredMixin, View):
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
             if criticals:
-                result['messages'].append("{} new critical alerts".format( len(criticals) ))
+                result['messages'].append("{} new critical alerts,".format( len(criticals) ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
             if buildings:
-                result['messages'].append("{} new building alerts".format( len(buildings) ))
+                result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                result['messages'].append("{} new traps".format( len(traps) ))
+                result['messages'].append("{} new traps,".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
