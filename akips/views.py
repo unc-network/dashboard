@@ -494,16 +494,18 @@ class UserAlertView(LoginRequiredMixin, View):
         now = timezone.now()
         cutoff_hours = 2
         old_session_time = now - timedelta(hours=cutoff_hours)
-        last_notified = request.COOKIES.get('last_notified',None)
-        #last_notified_dt = timezone.make_aware(datetime.strftime(last_notified))
-        logger.debug("cookie last_notified {}".format(last_notified))
+        last_notified_cookie = request.COOKIES.get('last_notified',None)
+        logger.debug("cookie last_notified cookie value {}".format(last_notified_cookie))
 
         result = {
-            'last_notified': last_notified,
+            'last_notified': now,
             'messages': []
         }
-        if last_notified is None:
+        if last_notified_cookie is None:
             # user has no notification history
+            #last_notified = timezone.make_aware(datetime.strptime(last_notified_cookie))
+            #last_notified = timezone.make_aware(datetime.fromisoformat(last_notified_cookie))
+
             # messages = UserAlert.objects.filter(created_at__gt=old_session_time,enabled=True)
             # if messages:
             #     # for message in messages:
@@ -511,14 +513,23 @@ class UserAlertView(LoginRequiredMixin, View):
             #     result['messages'].append( "There have been {} alerts in the last {} hours.".format( len(messages), cutoff_hours))
             # else:
             #     result['messages'].append( "There have been no alerts in the last {} hours.".format(cutoff_hours))
+            times = []
 
-            unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).count()
+            unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
             if unreachables:
-                result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format(unreachables, cutoff_hours))
+                result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
+                times.append( unreachables.last().event_start )
 
-            traps = SNMPTrap.objects.filter(tt__gt=old_session_time).count()
+            traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                result['messages'].append("There have been {} new traps in the last {} hours.".format(traps, cutoff_hours))
+                result['messages'].append("There have been {} new traps in the last {} hours.".format( len(traps), cutoff_hours))
+                times.append( traps.last().tt )
+
+            if times:
+                result['last_notified'] = max( times )
+            else:
+                result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
+                result['last_notified'] = now
 
         # elif last_notified_dt < old_session_time:
         #     # user is using an old session
@@ -531,27 +542,40 @@ class UserAlertView(LoginRequiredMixin, View):
 
         else:
             # user has a typical active session
+            #last_notified = timezone.make_aware(datetime.strptime(last_notified_cookie))
+            #last_notified = timezone.make_aware(datetime.fromisoformat(last_notified_cookie))
+            last_notified = datetime.fromisoformat(last_notified_cookie)
+            times = []
 
             # messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
             # if messages:
             #     result['messages'].append( "There are {} alerts.".format( len(messages) ))
 
-            unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').count()
+            unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
             if unreachables:
-                result['messages'].append("There are {} new unreachable devices.".format(unreachables))
+                result['messages'].append("There are {} new unreachable devices.".format( len(unreachables) ))
+                times.append( unreachables.last().event_start )
 
-            criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').count()
+            criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').order_by('first_event')
             if criticals:
-                result['messages'].append("There are {} new critical alerts.".format(criticals))
+                result['messages'].append("There are {} new critical alerts.".format( len(criticals) ))
+                times.append( criticals.last().first_event )
 
-            buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').count()
+            buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').order_by('first_event')
             if buildings:
-                result['messages'].append("There are {} new building alerts.".format(buildings))
+                result['messages'].append("There are {} new building alerts.".format( len(buildings) ))
+                times.append( buildings.last().first_event )
 
-            traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').count()
+            traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
             if traps:
-                result['messages'].append("There are {} new traps.".format(traps))
+                result['messages'].append("There are {} new traps.".format( len(traps) ))
+                times.append( traps.last().tt )
 
+            if times:
+                result['last_notified'] = max( times )
+            else:
+                #result['messages'].append( "There are no new alerts.")
+                result['last_notified'] = last_notified
             # for message in messages:
             #     result['messages'].append( message.message )
             #result['messages'].append( "there are no new messages")
@@ -563,7 +587,7 @@ class UserAlertView(LoginRequiredMixin, View):
             response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             response = JsonResponse(result)
-        response.set_cookie('last_notified', now)
+        response.set_cookie('last_notified', result['last_notified'])
         return response
 
 class ChartDataView(LoginRequiredMixin, View):
