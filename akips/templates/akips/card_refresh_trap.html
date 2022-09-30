@@ -30,7 +30,7 @@
             </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
             <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
-            <td>{{ trap.tt }}</td>
+            <td>{{ trap.tt|date:'Y-m-d H:i:s' }}</td>
             <td class="text-center">
                 {% if trap.incident %}
                 {{ trap.incident }}

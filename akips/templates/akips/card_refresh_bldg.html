@@ -50,7 +50,7 @@
             <td>{{ summary.ups_count }}</td>
             <td>{{ summary.total_count }}</td>
             <td>{% widthratio summary.percent_down 1 100 %}%</td>
-            <td>{{ summary.first_event }}</td>
+            <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td>
             <td class="akips_trend">{{ summary.trend }}</td>
             <td class="text-center">
                 {% if summary.incident %}
