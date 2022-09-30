@@ -615,7 +615,7 @@ class UserAlertView(LoginRequiredMixin, View):
                 times.append( traps.last().tt )
 
             if times:
-                result['messages'].insert(0,"Dashboard Alert:".format(cutoff_hours))
+                #result['messages'].insert(0,"Dashboard Alert:".format(cutoff_hours))
                 result['last_notified'] = max( times )
             else:
                 #result['messages'].append( "There are no new alerts.")
