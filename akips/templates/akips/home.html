@@ -48,9 +48,30 @@
     </div>
 
     {% if request.user.is_superuser %}
-    {% for u in recent_users %}
-    <p>{{ u.username }} - {{ u.last_login}} - {{ u.profile.voice_enabled }}</p>
-    {% endfor %}
+    <div class="card card-primary">
+        <div class="card-body table-responsive p-0">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Onyen</th>
+                        <th>Last Login</th>
+                        <th>Superuser</th>
+                        <th>Voice Enabled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in recent_users %}
+                    <tr>
+                        <td>{{ u.username }}</td>
+                        <td>{{ u.last_login }}</td>
+                        <td>{{ u.is_superuser }}</td>
+                        <td>{{ u.profile.voice_enabled }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     {% endif %}
 </form>
 {% endblock %}
