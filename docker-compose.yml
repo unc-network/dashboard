@@ -27,7 +27,7 @@ services:
     # Use official Redis image from hub.docker.com
     # If you have M1 Mac, use
     # image: arm64v8/redis:7-alpine
-    image: "redis:7-alpine"
+    image: "${DOCKER_ARCH}redis:7-alpine"
     # Expose port 6379 to host machine
     ports:
       - 6379:6379
@@ -39,7 +39,7 @@ services:
     # Use official PostgreSQL image from hub.docker.com
     # If you have M1 Mac, use
     # image: arm64v8/postgres:latest
-    image: "postgres:latest"
+    image: "${DOCKER_ARCH}postgres:latest"
     # Expose port 5432 to host machine    
     ports:
       - 5432:5432

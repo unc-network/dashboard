@@ -85,9 +85,16 @@ docker compose down
 ```
 
 ## NOTES
+- If you are running on an ARM64-based system such as an **Apple Silicon/M1 Mac**, you should be able to build the containers as ARM64 binaries by adding the environment variable `DOCKER_ARCH="arm64v8/"` such as using
+```
+DOCKER_ARCH="arm64v8/" docker compose up
+```
 - The setup as defined has the PostgreSQL container storing all data within a hidden directory at the root of the project files; specifically, in `.docker/pgdata/`.  This is to provide persistence.  Note that if you ever want to "reset" PostgreSQL back to its initial state, simply delete this directory.
 - Because of this persistent storage, `.gitignore` has an entry to ignore `.docker/` altogether.
-- Any time there are updates to Redis, Celery, PostgreSQL, etc., that you wish to take advantage of, you can simply add `--build` to the end of `docker compose up`  and it will force a rebuild of the images.
+- Any time there are updates to Redis, Celery, PostgreSQL, etc., that you wish to take advantage of, or you simply want to make sure that you are using the latest build of a container, you can simply add `--build` to force a rebuild of the images, such as
+```
+docker compose up --build
+```
 - If you ever wish to "burn the Docker setup to the ground", you can either
 	- Go into **Docker Desktop | Preferences...**, click the troubleshooting (bug) icon at the top right, and click on `Clean / Purge data`, or
 	- you can enter the following commands in your terminal/shell:
