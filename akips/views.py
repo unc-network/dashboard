@@ -515,17 +515,28 @@ class UserAlertView(LoginRequiredMixin, View):
             #     result['messages'].append( "There have been no alerts in the last {} hours.".format(cutoff_hours))
             times = []
 
-            unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
-            if unreachables:
-                result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
-                times.append( unreachables.last().event_start )
+            # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
+            # if unreachables:
+            #     result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
+            #     times.append( unreachables.last().event_start )
+
+            criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
+            if criticals:
+                result['messages'].append("{} new critical alerts".format( len(criticals) ))
+                times.append( criticals.last().first_event )
+
+            buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
+            if buildings:
+                result['messages'].append("{} new building alerts".format( len(buildings) ))
+                times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                result['messages'].append("There have been {} new traps in the last {} hours.".format( len(traps), cutoff_hours))
+                result['messages'].append("{} new traps".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
+                result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
                 result['last_notified'] = max( times )
             else:
                 result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
@@ -551,27 +562,28 @@ class UserAlertView(LoginRequiredMixin, View):
             # if messages:
             #     result['messages'].append( "There are {} alerts.".format( len(messages) ))
 
-            unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
-            if unreachables:
-                result['messages'].append("There are {} new unreachable devices.".format( len(unreachables) ))
-                times.append( unreachables.last().event_start )
+            # unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
+            # if unreachables:
+            #     result['messages'].append("There are {} new unreachable devices.".format( len(unreachables) ))
+            #     times.append( unreachables.last().event_start )
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=last_notified,status='Open').order_by('first_event')
             if criticals:
-                result['messages'].append("There are {} new critical alerts.".format( len(criticals) ))
+                result['messages'].append("{} new critical alerts".format( len(criticals) ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').order_by('first_event')
             if buildings:
-                result['messages'].append("There are {} new building alerts.".format( len(buildings) ))
+                result['messages'].append("{} new building alerts".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
             if traps:
-                result['messages'].append("There are {} new traps.".format( len(traps) ))
+                result['messages'].append("{} new traps".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
+                result['messages'].insert(0,"There are ".format(cutoff_hours))
                 result['last_notified'] = max( times )
             else:
                 #result['messages'].append( "There are no new alerts.")
