@@ -204,6 +204,36 @@ class AKIPS:
             return data
         return None
 
+    def get_ups_status(self):
+        ''' Pull the current status of UPS '''
+        # command: mget * * * UPS-MIB.upsOutputSource
+        # 172.28.12.11 ups UPS-MIB.upsOutputSource = 3,normal,1473262633,1633441440,
+        # 172.28.12.121 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+        # 172.28.12.128 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+        params = {
+            'cmds': 'mget * * * UPS-MIB.upsOutputSource'
+        }
+        text = self.get(params=params)
+        if text:
+            data = []
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
+                if match:
+                    entry = {
+                        'device': match.group(1),
+                        'child': match.group(2),
+                        'attribute':  match.group(3),
+                        'index': match.group(4),
+                        'state': match.group(5),
+                        'device_added': match.group(6), # epoch in local timezone
+                        'event_start': match.group(7)  # epoch in local timezone
+                    }
+                    data.append( entry )
+            logger.debug("Found {} states in akips".format( len( data ) ))
+            return data
+        return None
+
     def get_events(self, type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
             mget event {all,critical,enum,threshold,uptime}

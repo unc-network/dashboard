@@ -29,6 +29,30 @@ class Device(models.Model):
         return str(self.name)
 
 
+class Status(models.Model):
+    ''' AKiPS Status '''
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    object = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+    last_change = models.DateTimeField()
+
+    def __str__(self):
+        return str(self.id)
+
+class StatusAlert(models.Model):
+    ''' AKiPS Status Alert '''
+    kind = models.CharField(max_length=255,help_text='kind of alert fired')
+    tt = models.DateTimeField(help_text='epoch time of the alert')
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    child = models.CharField(max_length=255,help_text='child or interface name')
+    descr = models.CharField(max_length=255,help_text='child description')
+    attr = models.CharField(max_length=255,help_text='MIB.object')
+    alias = models.CharField(max_length=255,help_text='attr description')
+    state = models.CharField(max_length=255)
+
+    def __str__(self):
+        return str(self.id)
+
 class Unreachable(models.Model):
     STATUS_CHOICES = (
         ('Open', 'Open'),

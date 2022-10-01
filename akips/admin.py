@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert, Profile
+from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert, Profile, Status, StatusAlert
 
 # Register your models here.
 
@@ -11,6 +11,13 @@ class DeviceAdmin(admin.ModelAdmin):
     list_filter = ['critical', 'maintenance', 'type', 'tier', 'building_name']
     search_fields = ['name', 'sysName', 'ip4addr']
 
+@admin.register(Status)
+class StatusAdmin(admin.ModelAdmin):
+    list_display = ['device', 'object']
+
+@admin.register(StatusAlert)
+class StatusAlertAdmin(admin.ModelAdmin):
+    list_display = ['device', 'attr']
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
