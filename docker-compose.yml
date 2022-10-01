@@ -120,5 +120,6 @@ services:
     # command: [ 'python', 'manage.py', 'migrate' ]
     command: [ 'gunicorn', 'wsgi' ]
     depends_on:
+      - db
       - celery
       - redis
