@@ -37,8 +37,8 @@
             </td>
             {% endif %}
             {% if summary.type == 'Distribution' %}
-            <td class="font-weight-bold">
-                <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>
+            <td class="font-weight-bold text-center">
+                <a href="{% url 'summary' summary.id %}">{{ summary.name }} <i class="fas fa-level-down-alt"></i></i></a>
             </td>
             {% else %}
             <td>
