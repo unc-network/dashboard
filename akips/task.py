@@ -339,7 +339,8 @@ def refresh_unreachable():
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
                     'last_event': now,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
+                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count(),
+                    #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
             if t_created:
@@ -361,7 +362,8 @@ def refresh_unreachable():
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
                     'last_event': now,
-                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count()
+                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
+                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
             if b_created:
@@ -397,6 +399,11 @@ def refresh_unreachable():
                     count['UNKNOWN'][unreachable.device.name] = True
                 count['TOTAL'][unreachable.device.name] = True
         logger.debug("Counts {} are {}".format(summary.name, count))
+
+        if summary.type == 'Distribution':
+            summary.ups_battery = Status.objects.filter(device__tier=summary.name,object='UPS-MIB.upsOutputSource',value='battery').count()
+        elif summary.type == 'Building':
+            summary.ups_battery = Status.objects.filter(device__building_name=summary.name,object='UPS-MIB.upsOutputSource',value='battery').count()
 
         summary.switch_count = len(count['SWITCH'].keys())
         summary.ap_count = len(count['AP'].keys())

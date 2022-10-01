@@ -109,6 +109,7 @@ class Summary(models.Model):
     max_count = models.IntegerField(default=0)
     percent_down = models.DecimalField(
         default=0, max_digits=4, decimal_places=3)
+    ups_battery = models.IntegerField(default=0)
     first_event = models.DateTimeField()
     trend = models.CharField(default='New', max_length=255)
     last_event = models.DateTimeField()
