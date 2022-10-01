@@ -133,7 +133,7 @@ class UnreachableView(LoginRequiredMixin, View):
         context = {}
 
         unreachables = Unreachable.objects.filter(
-            status='Open', device__maintenance=False).order_by('device__name')
+            status='Open', device__maintenance=False).order_by('-event_start')
         context['unreachables'] = unreachables
 
         return render(request, self.template_name, context=context)
@@ -150,9 +150,9 @@ class SummaryView(LoginRequiredMixin, View):
         summary = get_object_or_404(Summary, id=summary_id)
 
         context['u_open'] = summary.unreachables.filter(
-            status='Open').order_by('device__name')
+            status='Open').order_by('-event_start')
         context['u_closed'] = summary.unreachables.filter(
-            status='Closed').order_by('device__name')
+            status='Closed').order_by('-event_start')
         context['summary'] = summary
 
         return render(request, self.template_name, context=context)
