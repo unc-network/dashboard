@@ -38,7 +38,7 @@
             {% endif %}
             {% if summary.type == 'Distribution' %}
             <td class="font-weight-bold text-center">
-                <a href="{% url 'summary' summary.id %}"><i class="fas fa-angle-down"></i> {{ summary.name }} Tier1 </i></a>
+                <a href="{% url 'summary' summary.id %}">{{ summary.name }} Tier1 <i class="fas fa-level-down-alt"></i></a>
             </td>
             {% else %}
             <td>
