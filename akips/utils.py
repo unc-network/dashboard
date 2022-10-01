@@ -204,15 +204,26 @@ class AKIPS:
             return data
         return None
 
-    def get_ups_status(self):
-        ''' Pull the current status of UPS '''
-        # command: mget * * * UPS-MIB.upsOutputSource
-        # 172.28.12.11 ups UPS-MIB.upsOutputSource = 3,normal,1473262633,1633441440,
-        # 172.28.12.121 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
-        # 172.28.12.128 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
-        params = {
-            'cmds': 'mget * * * UPS-MIB.upsOutputSource'
-        }
+    def get_status(self, type='ping'):
+        ''' Pull the status values we are most interested in '''
+        if type == 'ups':
+            params = { 'cmds': 'mget * * ups UPS-MIB.upsOutputSource' }
+            # command: mget * * * UPS-MIB.upsOutputSource
+            # 172.28.12.11 ups UPS-MIB.upsOutputSource = 3,normal,1473262633,1633441440,
+            # 172.28.12.121 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+            # 172.28.12.128 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+        elif type == 'ping':
+            params = { 'cmds': 'mget * * ping4 PING.icmpState' }
+            # 172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
+            # CrN-082-SmithCenter-AP_Stats_Table ping4 PING.icmpState = 1,down,1605595895,1656331597,172.29.94.63
+            # CrN-082-SmithCenter-AP_Talent_Table ping4 PING.icmpState = 1,down,1641624705,1646101757,172.29.94.112
+        elif type == 'snmp':
+            params = { 'cmds': 'mget * * sys SNMP.snmpState' }
+            # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+        else:
+            logger.warning("Invalid get status type {}".format(type))
+            return None
+
         text = self.get(params=params)
         if text:
             data = []

@@ -141,19 +141,91 @@ def refresh_akips_devices():
 
 
 @shared_task
+def refresh_ping_status():
+    logger.debug("refreshing ping status")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.01
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+    akips = AKIPS()
+    data = akips.get_status(type='ping')
+    if data:
+        for entry in data:
+            logger.debug("updating {}".format(entry))
+            try:
+                device = Device.objects.get(name=entry['device'])
+            except Device.DoesNotExist:
+                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                continue
+
+            Status.objects.update_or_create(
+                device=device,
+                object=entry['attribute'],
+                defaults={
+                    'value': entry['state'],
+                    'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                }
+            )
+            time.sleep(sleep_delay)
+
+    finish_time = timezone.now()
+    logger.info("refresh ping status runtime {}".format(finish_time - now))
+
+@shared_task
+def refresh_snmp_status():
+    logger.debug("refreshing snmp status")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.01
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+    akips = AKIPS()
+    data = akips.get_status(type='snmp')
+    if data:
+        for entry in data:
+            logger.debug("updating {}".format(entry))
+            try:
+                device = Device.objects.get(name=entry['device'])
+            except Device.DoesNotExist:
+                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                continue
+
+            Status.objects.update_or_create(
+                device=device,
+                object=entry['attribute'],
+                defaults={
+                    'value': entry['state'],
+                    'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                }
+            )
+            time.sleep(sleep_delay)
+
+    finish_time = timezone.now()
+    logger.info("refresh snmp status runtime {}".format(finish_time - now))
+
+@shared_task
 def refresh_ups_status():
     logger.debug("refreshing ups status")
     now = timezone.now()
     sleep_delay = 0
 
     if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
-        sleep_delay = 0.05
+        sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     akips = AKIPS()
-    data = akips.get_ups_status()
+    data = akips.get_status(type='ups')
     if data:
         for entry in data:
             logger.debug("updating {}".format(entry))
