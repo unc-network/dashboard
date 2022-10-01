@@ -42,7 +42,7 @@
             </td>
             {% else %}
             <td>
-                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a>
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> {% if summary.ups_battery > 0 %}(on <i class="fas fa-car-battery"></i>){% endif %}
             </td>
             {% endif %}
             <td>{{ summary.switch_count }}</td>
