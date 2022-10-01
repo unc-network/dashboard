@@ -609,7 +609,8 @@ class UserAlertView(LoginRequiredMixin, View):
             if traps:
                 trap_count = len(traps)
                 if trap_count == 1:
-                    result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
+                    #result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
+                    result['messages'].append("{} new trap,".format( trap_count ))
                 else:
                     result['messages'].append("{} new traps,".format( trap_count ))
                 times.append( traps.last().tt )
