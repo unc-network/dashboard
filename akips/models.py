@@ -36,6 +36,10 @@ class Status(models.Model):
     value = models.CharField(max_length=255)
     last_change = models.DateTimeField()
 
+    class Meta:
+        ordering = ['device']
+        indexes = [ models.Index(fields=['object']) ]
+
     def __str__(self):
         return str(self.id)
 

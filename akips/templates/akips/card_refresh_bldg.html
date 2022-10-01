@@ -38,16 +38,16 @@
             {% endif %}
             {% if summary.type == 'Distribution' %}
             <td class="font-weight-bold text-center">
-                <a href="{% url 'summary' summary.id %}">{{ summary.name }} Tier1 <i class="fas fa-level-down-alt"></i></a>
+                <a href="{% url 'summary' summary.id %}">{{ summary.name }} Tier1 <i class="fas fa-caret-down"></i></a>
             </td>
             {% else %}
             <td>
-                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> {% if summary.ups_battery > 0 %}(on <i class="fas fa-car-battery"></i>){% endif %}
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> 
             </td>
             {% endif %}
             <td>{{ summary.switch_count }}</td>
             <td>{{ summary.ap_count }}</td>
-            <td>{{ summary.ups_count }}</td>
+            <td>{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-half text-danger"></i>{% endif %}</td>
             <td>{{ summary.total_count }}</td>
             <td>{% widthratio summary.percent_down 1 100 %}%</td>
             <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td>

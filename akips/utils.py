@@ -229,7 +229,7 @@ class AKIPS:
             data = []
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$", line)
                 if match:
                     entry = {
                         'device': match.group(1),
@@ -238,7 +238,8 @@ class AKIPS:
                         'index': match.group(4),
                         'state': match.group(5),
                         'device_added': match.group(6), # epoch in local timezone
-                        'event_start': match.group(7)  # epoch in local timezone
+                        'event_start': match.group(7),  # epoch in local timezone
+                        'ipaddr': match.group(8)
                     }
                     data.append( entry )
             logger.debug("Found {} states in akips".format( len( data ) ))
