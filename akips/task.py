@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Summary, SNMPTrap, UserAlert
+from .models import Device, Unreachable, Summary, SNMPTrap, UserAlert, Status
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -139,6 +139,42 @@ def refresh_akips_devices():
     finish_time = timezone.now()
     logger.info("AKIPS device refresh runtime {}".format(finish_time - now))
 
+
+@shared_task
+def refresh_ups_status():
+    logger.debug("refreshing ups status")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+    akips = AKIPS()
+    data = akips.get_ups_status()
+    if data:
+        for entry in data:
+            logger.debug("updating {}".format(entry))
+            try:
+                device = Device.objects.get(name=entry['device'])
+            except Device.DoesNotExist:
+                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                continue
+
+            Status.objects.update_or_create(
+                device=device,
+                object=entry['attribute'],
+                defaults={
+                    'value': entry['state'],
+                    'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                }
+            )
+            time.sleep(sleep_delay)
+
+    finish_time = timezone.now()
+    logger.info("refresh ups status runtime {}".format(finish_time - now))
 
 @shared_task
 def refresh_nit():
