@@ -51,7 +51,15 @@
             <td>{{ summary.total_count }}</td>
             <td>{% widthratio summary.percent_down 1 100 %}%</td>
             <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td>
-            <td class="akips_trend">{{ summary.trend }}</td>
+            {% if summary.trend == 'New' %}
+                <td class="bg-danger akips_trend">{{ summary.trend }}</td>
+            {% elif summary.trend == 'Increasing' %}
+                <td class="bg-warning akips_trend">{{ summary.trend }}</td>
+            {% elif summary.trend == 'Decreasing' %}
+                <td class="bg-success akips_trend">{{ summary.trend }}</td>
+            {% else %}
+                <td class="akips_trend">{{ summary.trend }}</td>
+            {% endif %}
             <td class="text-center">
                 {% if summary.incident %}
                 {{ summary.incident }}
