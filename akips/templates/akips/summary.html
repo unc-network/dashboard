@@ -93,10 +93,11 @@
                         <tr>
                             <th>Name</th>
                             <th>Down</th>
+                            <th>Type</th>
                             <th>Description</th>
                             <th>First Event</th>
                             <th>Last Event</th>
-                            <th>Hibernate</th>
+                            <!-- <th>Hibernate</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -104,10 +105,11 @@
                         <tr>
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td>
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
-                            <td>{{ unreachable.device.hierarcy }}</td>
+                            <!-- <td></td> -->
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -123,10 +125,11 @@
                         <tr>
                             <th>Name</th>
                             <th>Down</th>
+                            <th>Type</th>
                             <th>Description</th>
                             <th>First Event</th>
                             <th>Last Event</th>
-                            <th>Hibernate</th>
+                            <!-- <th>Hibernate</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -134,10 +137,11 @@
                         <tr>
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td>
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
-                            <td></td>
+                            <!-- <td></td> -->
                         </tr>
                         {% endfor %}
                     </tbody>
