@@ -550,17 +550,29 @@ class UserAlertView(LoginRequiredMixin, View):
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
             if criticals:
-                result['messages'].append("{} new critical alerts,".format( len(criticals) ))
+                critical_count = len(criticals)
+                if critical_count == 1:
+                    result['messages'].append("{} new critical alert,".format( len(criticals) ))
+                else:
+                    result['messages'].append("{} new critical alerts,".format( len(criticals) ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
             if buildings:
-                result['messages'].append("{} new building alerts,".format( len(buildings) ))
+                building_count = len(buildings)
+                if building_count == 1:
+                    result['messages'].append("{} new building alert,".format( len(buildings) ))
+                else:
+                    result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                result['messages'].append("{} new traps,".format( len(traps) ))
+                trap_count = len(traps)
+                if trap_count == 1:
+                    result['messages'].append("{} new trap,".format( len(traps) ))
+                else:
+                    result['messages'].append("{} new traps,".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
