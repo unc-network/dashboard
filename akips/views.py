@@ -253,11 +253,10 @@ class DeviceView(LoginRequiredMixin, View):
         context['device'] = device
 
         #unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
-        unreachables = Unreachable.objects.filter(
-            device=device).order_by('-last_refresh')
+        unreachables = Unreachable.objects.filter( device=device).order_by('-last_refresh')
         context['unreachables'] = unreachables
 
-        traps = SNMPTrap.objects.filter(device=device)
+        traps = SNMPTrap.objects.filter(device=device).order_by('-tt')
         context['traps'] = traps
 
         return render(request, self.template_name, context=context)
