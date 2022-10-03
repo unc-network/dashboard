@@ -37,6 +37,7 @@ class Status(models.Model):
     last_change = models.DateTimeField()
 
     class Meta:
+        verbose_name_plural = 'statuses'
         ordering = ['device']
         indexes = [ models.Index(fields=['object']) ]
 
@@ -122,6 +123,7 @@ class Summary(models.Model):
     incident = models.CharField(blank=True, max_length=255)
 
     class Meta:
+        verbose_name_plural = 'summaries'
         ordering = ['tier', '-type', 'name', 'first_event']
 
     def __str__(self):
