@@ -9,6 +9,11 @@
 {% block content %}
 <form method="get" action="{% url 'create_incident' %}">
 
+    <div class="row">
+        <div class="col text-right small">
+            Refresh in <span id="time-remain">30</span> seconds
+        </div>
+    </div>
     <div id="chart" class="card">
         <div class="card-header">
             <h3 class="card-title">Event Trends</h3>
@@ -277,10 +282,22 @@
         // Create the chart and populate for the first time
         var chart = setup_chart();
 
+        var auto_refresh = true;
+
+        // Update the refresh counter
+        var max_remaining = refresh_seconds / 1000;
+        var remaining = max_remaining;
+        var remainingId = setInterval(function() {
+            $('#time-remain').text(remaining);
+            //console.log("counter " + remaining);
+            remaining = remaining - 1;
+        }, 1000);
+
         // Update the page content on a dynamic refresh interval
         var intervalId = window.setInterval(function () {
             refresh_cards();
             refresh_chart(chart);
+            remaining = max_remaining;
         }, refresh_seconds);
 
     })
