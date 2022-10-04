@@ -483,14 +483,34 @@ def refresh_unreachable():
         total_count = len(count['TOTAL'].keys())
         percent_down = round(total_count / summary.max_count, 3)
 
-        if summary.total_count == total_count:
-            summary.trend = 'Stable'
-        elif summary.total_count < total_count:
+        # Moving avg calculation
+        # new_average = old_average * (n-1)/n + new_value /n
+        # new_average = ( old_average * (n-1) + new_value ) /n
+        if summary.moving_avg_count == 0:
+            summary.moving_avg_count += 1
+            summary.moving_average = total_count
+            new_average = total_count
+        #elif summary.moving_avg_count < 4:
+        else:
+            n = summary.moving_avg_count + 1
+            new_average = ( summary.moving_average * (n-1) + total_count ) / n
+        # else:
+        #     n = 4
+        #     new_average = summary.moving_average * (n-1)/n + total_count / n
+        logger.debug("Moving average {} vs total {}".format(new_average,total_count))
+
+        new_threshold = now - timedelta(minutes=2)
+        if summary.first_event >= new_threshold:
+            summary.trend = 'New'
+        elif total_count > new_average + 0.05:
             summary.trend = 'Increasing'
-        elif summary.total_count > total_count:
+        elif total_count < new_average - 0.05:
             summary.trend = 'Decreasing'
+        else:
+            summary.trend = 'Stable'
         summary.total_count = total_count
         summary.percent_down = percent_down
+        summary.moving_average = new_average
 
         summary.save()
 
