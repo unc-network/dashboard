@@ -212,10 +212,8 @@
 </script>
 <script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
-
-        // Populate the page content for the first time
-        refresh_cards();
+        var refresh_seconds = 30;
+        var auto_refresh = true;
 
         // Bind to the document so dynamicly added content will still work
         // Configure the ACK switch for events
@@ -278,26 +276,24 @@
             }
         });
 
-        // Create the chart and populate for the first time
+        // Populate the page content for the first time
+        refresh_cards();
         var chart = setup_chart();
 
-        var auto_refresh = true;
-
         // Update the refresh counter
-        var max_remaining = refresh_seconds / 1000;
+        var max_remaining = refresh_seconds;
         var remaining = max_remaining;
         var remainingId = setInterval(function() {
             remaining = remaining - 1;
             $('#time-remain').text(remaining);
-            //console.log("counter " + remaining);
         }, 1000);
 
-        // Update the page content on a dynamic refresh interval
+        // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
             remaining = max_remaining;
             refresh_cards();
             refresh_chart(chart);
-        }, refresh_seconds);
+        }, refresh_seconds * 1000);
 
     })
 </script>
