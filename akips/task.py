@@ -499,7 +499,7 @@ def refresh_unreachable():
         #     new_average = summary.moving_average * (n-1)/n + total_count / n
         logger.debug("Moving average {} vs total {}".format(new_average,total_count))
 
-        new_threshold = now - timedelta(minutes=2)
+        new_threshold = now - timedelta(minutes=5)
         if summary.first_event >= new_threshold:
             summary.trend = 'New'
         elif total_count > new_average + 0.05:
