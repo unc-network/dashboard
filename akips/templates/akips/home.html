@@ -288,16 +288,16 @@
         var max_remaining = refresh_seconds / 1000;
         var remaining = max_remaining;
         var remainingId = setInterval(function() {
+            remaining = remaining - 1;
             $('#time-remain').text(remaining);
             //console.log("counter " + remaining);
-            remaining = remaining - 1;
         }, 1000);
 
         // Update the page content on a dynamic refresh interval
         var intervalId = window.setInterval(function () {
+            remaining = max_remaining;
             refresh_cards();
             refresh_chart(chart);
-            remaining = max_remaining;
         }, refresh_seconds);
 
     })
