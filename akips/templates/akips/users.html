@@ -1,0 +1,65 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Users{% endblock %}
+{% block extra_head%}
+{% endblock %}
+
+{% block content %}
+<div class="card card-primary">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Onyen</th>
+                    <th>Last Login</th>
+                    <th>Superuser</th>
+                    <th>Voice Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in recent_users %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.last_login }}</td>
+                    <td>{{ u.is_superuser }}</td>
+                    <td>{{ u.profile.voice_enabled }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+    })
+</script>
+{% endblock %}

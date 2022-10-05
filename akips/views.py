@@ -61,23 +61,23 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-
-        #context['critical'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
-        #context['tiers'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
-        #context['bldgs'] = Summary.objects.filter(type='Building', status='Open').order_by('name')
-        #context['traps'] = SNMPTrap.objects.all().order_by('-tt')[:50]
-
-        date_from = timezone.now() - timedelta(days=7)
-        context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
-
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
         post_template = 'akips/incident.html'
         context = {}
-
         return render(request, post_template, context=context)
 
+
+class Users(LoginRequiredMixin, View):
+    ''' Show users logged in recently '''
+    template_name = 'akips/users.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        date_from = timezone.now() - timedelta(days=7)
+        context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
+        return render(request, self.template_name, context=context)
 
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''

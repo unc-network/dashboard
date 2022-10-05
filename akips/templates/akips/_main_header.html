@@ -38,6 +38,9 @@
         </li>
         {% if request.user.is_superuser %}
         <li class="nav-item">
+            <a href="{% url 'users' %}" class="nav-link">Users</a>
+        </li>
+        <li class="nav-item">
             <a href="{% url 'admin:index' %}" class="nav-link">Admin</a>
         </li>
         {% endif %}
