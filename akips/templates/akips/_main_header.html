@@ -36,6 +36,9 @@
             </div>
           </li>
         </li>
+        <li class="nav-item">
+            <a href="{% url 'devices' %}" class="nav-link">Devices</a>
+        </li>
         {% if request.user.is_superuser %}
         <li class="nav-item">
             <a href="{% url 'users' %}" class="nav-link">Users</a>
