@@ -70,6 +70,19 @@ class Home(LoginRequiredMixin, View):
         return render(request, post_template, context=context)
 
 
+class Devices(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/devices.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        list = ['SWITCH','AP','UPS','ROUTER']
+        devices = Device.objects.exclude(type__in=list)
+        context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
+
 class Users(LoginRequiredMixin, View):
     ''' Show users logged in recently '''
     template_name = 'akips/users.html'
@@ -599,6 +612,7 @@ class UserAlertView(LoginRequiredMixin, View):
 
         else:
             # user has a typical active session
+            #result['messages'].append("User has an active session")
             #last_notified = timezone.make_aware(datetime.strptime(last_notified_cookie))
             #last_notified = timezone.make_aware(datetime.fromisoformat(last_notified_cookie))
             last_notified = datetime.fromisoformat(last_notified_cookie)

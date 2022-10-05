@@ -10,6 +10,7 @@ urlpatterns = [
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
+    path('devices/', views.Devices.as_view(), name='devices'),
     path('users/', views.Users.as_view(), name='users'),
 
     # Event Focus Views
