@@ -782,12 +782,15 @@ def process_webhook_payload(payload):
             payload['trap_oid'], payload['device'], payload['ipaddr']))
         return
 
-    SNMPTrap.objects.create(
-        tt=datetime.fromtimestamp(
-            int(payload['tt']), tz=timezone.get_current_timezone()),
-        device=device,
-        ipaddr=payload['ipaddr'],
-        trap_oid=payload['trap_oid'],
-        uptime=payload['uptime'],
-        oids=json.dumps(payload['oids'])
-    )
+    if payload['type'] == 'Trap':
+        SNMPTrap.objects.create(
+            tt=datetime.fromtimestamp(
+                int(payload['tt']), tz=timezone.get_current_timezone()),
+            device=device,
+            ipaddr=payload['ipaddr'],
+            trap_oid=payload['trap_oid'],
+            uptime=payload['uptime'],
+            oids=json.dumps(payload['oids'])
+        )
+    else:
+        logger.warn("Unknown type value {}".format( str(payload) ))
