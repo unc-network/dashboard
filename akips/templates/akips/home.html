@@ -296,15 +296,19 @@
         var max_remaining = refresh_seconds;
         var remaining = max_remaining;
         var remainingId = setInterval(function() {
-            remaining = remaining - 1;
-            $('#time-remain').text(remaining);
+            if ( $('#refresh-toggle').is(':checked') ) {
+                remaining = remaining - 1;
+                $('#time-remain').text(remaining);
+            }
         }, 1000);
 
         // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
-            remaining = max_remaining;
-            refresh_cards();
-            refresh_chart(chart);
+            if ( $('#refresh-toggle').is(':checked') ) {
+                remaining = max_remaining;
+                refresh_cards();
+                refresh_chart(chart);
+            }
         }, refresh_seconds * 1000);
 
     })
