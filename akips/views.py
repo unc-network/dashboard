@@ -87,7 +87,7 @@ class Users(LoginRequiredMixin, View):
             logger.debug("session expire {}".format( s.expire_date ))
             sessions.append({ 
                 'user': User.objects.get(id=s_decoded['_auth_user_id']),
-                'expire': s.expire_date
+                'expire': s.expire_date,
                 })
         context['session_list'] = sessions
 

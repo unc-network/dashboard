@@ -15,6 +15,7 @@
                     <th>Session Expire</th>
                     <th>Superuser</th>
                     <th>Voice Enabled</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -24,6 +25,7 @@
                     <td>{{ u.expire }}</td>
                     <td>{{ u.user.is_superuser }}</td>
                     <td>{{ u.user.profile.voice_enabled }}</td>
+                    <td>{{ u.session_keys }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
