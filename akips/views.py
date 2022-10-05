@@ -77,8 +77,9 @@ class Devices(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        list = ['SWITCH','AP','UPS','ROUTER']
-        devices = Device.objects.exclude(type__in=list)
+        # list = ['SWITCH','AP','UPS','ROUTER']
+        # devices = Device.objects.exclude(type__in=list)
+        devices = Device.objects.all()
         context['devices'] = devices
 
         return render(request, self.template_name, context=context)
