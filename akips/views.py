@@ -24,7 +24,7 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import Summary, Unreachable, Device, SNMPTrap, UserAlert
+from .models import Summary, Unreachable, Device, SNMPTrap, Status
 from .forms import IncidentForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow, pretty_duration
@@ -791,6 +791,15 @@ def process_webhook_payload(payload):
             trap_oid=payload['trap_oid'],
             uptime=payload['uptime'],
             oids=json.dumps(payload['oids'])
+        )
+    elif payload['type'] == 'Status':
+        Status.objects.update_or_create(
+            device=device,
+            object=payload['attr'],
+            defaults={
+                'value': payload['state'],
+                'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+            }
         )
     else:
         logger.warn("Unknown type value {}".format( str(payload) ))
