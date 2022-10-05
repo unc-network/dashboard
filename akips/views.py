@@ -767,6 +767,7 @@ def akips_webhook(request):
         )
 
     payload = json.loads(request.body)
+    logger.info("payload: {}".format( str(payload) ))
     process_webhook_payload(payload)
     return HttpResponse("Message received.", content_type="text/plain")
 

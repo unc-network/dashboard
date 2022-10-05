@@ -7,7 +7,19 @@
 {% endblock %}
 
 {% block no_heading %}
-<div class="col text-right small">Refresh in <span id="time-remain">30</span> seconds</div>
+<div class="row">
+    <!-- <div class="col-8">
+    </div>
+    <div class="col text-right">
+        <div class="text-right small">Refresh in <span id="time-remain">30</span> seconds</div>
+    </div> -->
+    <div class="col text-right text-sm">
+        <div class="custom-control custom-switch form-select-sm">
+            <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
+            <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
+        </div>
+    </div>
+</div> 
 {% endblock %}
 
 {% block content %}
