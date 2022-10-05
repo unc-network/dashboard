@@ -12,18 +12,18 @@
             <thead>
                 <tr>
                     <th>Onyen</th>
-                    <th>Last Login</th>
+                    <th>Session Expire</th>
                     <th>Superuser</th>
                     <th>Voice Enabled</th>
                 </tr>
             </thead>
             <tbody>
-                {% for u in recent_users %}
+                {% for u in session_list %}
                 <tr>
-                    <td>{{ u.username }}</td>
-                    <td>{{ u.last_login }}</td>
-                    <td>{{ u.is_superuser }}</td>
-                    <td>{{ u.profile.voice_enabled }}</td>
+                    <td>{{ u.user.username }}</td>
+                    <td>{{ u.expire }}</td>
+                    <td>{{ u.user.is_superuser }}</td>
+                    <td>{{ u.user.profile.voice_enabled }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -13,6 +13,7 @@ from django.urls import reverse
 #from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.sessions.models import Session
 from django.contrib import messages
 from django.utils import timezone
 
@@ -77,6 +78,20 @@ class Users(LoginRequiredMixin, View):
         context = {}
         date_from = timezone.now() - timedelta(days=7)
         context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
+
+        session_list = Session.objects.filter(expire_date__gte=timezone.now())
+        sessions = []
+        for s in session_list:
+            s_decoded = s.get_decoded()
+            logger.debug("session {}".format( s.get_decoded() ))
+            logger.debug("session expire {}".format( s.expire_date ))
+            sessions.append({ 
+                'user': User.objects.get(id=s_decoded['_auth_user_id']),
+                'expire': s.expire_date
+                })
+        context['session_list'] = sessions
+
+
         return render(request, self.template_name, context=context)
 
 class CritCard(LoginRequiredMixin, View):
