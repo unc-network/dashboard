@@ -530,19 +530,20 @@ def refresh_unreachable():
 
         # Moving avg calculation
         # new_average = old_average * (n-1)/n + new_value /n
-        # new_average = ( old_average * (n-1) + new_value ) /n
+        # new_average = old_average * 0.80 + new_value * 0.20 
         if summary.moving_avg_count == 0:
             summary.moving_avg_count += 1
             summary.moving_average = total_count
             new_average = total_count
         #elif summary.moving_avg_count < 4:
         else:
-            n = summary.moving_avg_count + 1
-            new_average = ( summary.moving_average * (n-1) + total_count ) / n
+            # n = summary.moving_avg_count + 1
+            # new_average = ( summary.moving_average * (n-1) + total_count ) / n
+            new_average = summary.moving_average * 0.8 + total_count * 0.2
         # else:
         #     n = 4
         #     new_average = summary.moving_average * (n-1)/n + total_count / n
-        logger.debug("Moving average {} vs total {}".format(new_average,total_count))
+        logger.debug("Moving average: last={}, total={}, new={}".format(summary.moving_average,total_count,new_average))
 
         new_threshold = now - timedelta(minutes=5)
         if summary.first_event >= new_threshold:
