@@ -456,7 +456,7 @@ def refresh_unreachable():
         time.sleep(sleep_delay)
 
     # Process all ups on battery
-    ups_on_battery = Status.objects.filter(object='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False)
+    ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False)
     for ups in ups_on_battery:
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
@@ -470,13 +470,13 @@ def refresh_unreachable():
                 'first_event': ups.last_change,
                 'last_event': now,
                 'max_count': Device.objects.filter(tier=ups.device.tier).count(),
-                'ups_battery': Status.objects.filter(device__tier=ups.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
+                'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
         )
         if t_created:
             logger.debug("Tier summary created {}".format(tier_name))
         else:
-            b_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
+            b_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             t_summary.last_event = now
             t_summary.save()
 
@@ -490,13 +490,13 @@ def refresh_unreachable():
                 'first_event': ups.last_change,
                 'last_event': now,
                 'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
         )
         if b_created:
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
-            b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+            b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             b_summary.last_event = now
             b_summary.save()
 
@@ -523,9 +523,9 @@ def refresh_unreachable():
         logger.debug("Counts {} are {}".format(summary.name, count))
 
         if summary.type == 'Distribution':
-            summary.ups_battery = Status.objects.filter(device__tier=summary.name,object='UPS-MIB.upsOutputSource',value='battery').count()
+            summary.ups_battery = Status.objects.filter(device__tier=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
         elif summary.type == 'Building':
-            summary.ups_battery = Status.objects.filter(device__building_name=summary.name,object='UPS-MIB.upsOutputSource',value='battery').count()
+            summary.ups_battery = Status.objects.filter(device__building_name=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
 
         summary.switch_count = len(count['SWITCH'].keys())
         summary.ap_count = len(count['AP'].keys())
