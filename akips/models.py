@@ -97,7 +97,8 @@ class Summary(models.Model):
     TYPE_CHOICES = (
         ('Distribution', 'Distribution'),
         ('Building', 'Building'),
-        ('Critical', 'Critical')
+        ('Critical', 'Critical'),
+        ('Speciality', 'Speciality'),
     )
     STATUS_CHOICES = (
         ('Open', 'Open'),

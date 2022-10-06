@@ -114,8 +114,7 @@ class CritCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['summaries'] = Summary.objects.filter(
-            type='Critical', status='Open').order_by('name')
+        context['summaries'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
 
@@ -125,8 +124,7 @@ class TierCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['summaries'] = Summary.objects.filter(
-            type='Distribution', status='Open').order_by('name')
+        context['summaries'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
 
@@ -138,10 +136,18 @@ class BuildingCard(LoginRequiredMixin, View):
         context = {}
         #context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
         types = ['Distribution', 'Building']
-        context['summaries'] = Summary.objects.filter(
-            type__in=types, status='Open').order_by('tier', '-type', 'name')
+        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
         return render(request, self.template_name, context=context)
 
+class SpecialityCard(LoginRequiredMixin, View):
+    ''' Generic card refresh view '''
+    template_name = 'akips/card_refresh_special.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        types = ['Speciality']
+        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
+        return render(request, self.template_name, context=context)
 
 class TrapCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -185,47 +191,6 @@ class SummaryView(LoginRequiredMixin, View):
         context['summary'] = summary
 
         return render(request, self.template_name, context=context)
-
-
-# class TierView(LoginRequiredMixin, View):
-#     ''' Generic first view '''
-#     template_name = 'akips/tier.html'
-
-#     def get(self, request, *args, **kwargs):
-#         context = {}
-#         tier_name = self.kwargs.get('tier', None)
-#         if tier_name is None:
-#             raise Http404("Invalid Tier Name")
-#         context['tier'] = tier_name
-
-#         if tier_name == 'Unknown':
-#             tier_name = ''
-#         devices = Unreachable.objects.filter(
-#             status='Open', device__tier=tier_name).order_by('device__name')
-#         context['devices'] = devices
-
-#         return render(request, self.template_name, context=context)
-
-
-# class BuildingView(LoginRequiredMixin, View):
-#     ''' Generic first view '''
-#     template_name = 'akips/building.html'
-
-#     def get(self, request, *args, **kwargs):
-#         context = {}
-#         bldg_name = self.kwargs.get('bldg', None)
-#         if bldg_name is None:
-#             raise Http404("Invalid Building Name")
-#         context['bldg'] = bldg_name
-
-#         if bldg_name == 'Unknown':
-#             bldg_name = ''
-#         #devices = Unreachable.objects.filter(device__building_name=bldg_name)
-#         devices = Unreachable.objects.filter(
-#             status='Open', device__building_name=bldg_name).order_by('device__name')
-#         context['devices'] = devices
-
-#         return render(request, self.template_name, context=context)
 
 
 class RecentSummaryView(LoginRequiredMixin, View):

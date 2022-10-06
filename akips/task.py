@@ -399,8 +399,8 @@ def refresh_unreachable():
                 c_summary.save()
             c_summary.unreachables.add(unreachable)
 
-        else:
-            # Handle Non-Critical devices
+        elif unreachable.device.group == 'default':
+            # Handle Non-Critical switch, ap, and ups devices
 
             # Handle blank tier or building names
             if unreachable.device.tier:
@@ -457,6 +457,29 @@ def refresh_unreachable():
                 b_summary.last_event = now
                 b_summary.save()
             b_summary.unreachables.add(unreachable)
+
+        else:
+            # non critical and non default devices
+            logger.debug("Processing special group {}".format( unreachable.device.group ))
+
+            # Find the speciality summary to update
+            s_summary, s_created = Summary.objects.get_or_create(
+                type='Speciality',
+                name= unreachable.device.group,
+                status='Open',
+                defaults={
+                    'first_event': unreachable.event_start,
+                    'last_event': now,
+                    'max_count': Device.objects.filter(group=unreachable.device.group).count(),
+                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                }
+            )
+            if s_created:
+                logger.debug("Speciality summary created {}".format( unreachable.device.group ))
+            else:
+                s_summary.last_event = now
+                s_summary.save()
+            s_summary.unreachables.add(unreachable)
 
         time.sleep(sleep_delay)
 
