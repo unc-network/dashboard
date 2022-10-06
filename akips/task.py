@@ -119,16 +119,22 @@ def refresh_akips_devices():
                         g_match.group('index'), g_match.group('label')))
                     if g_match.group('index') == '0':
                         critical = True
+                        device.group = 'Critical'
                     elif g_match.group('index') == '1':
                         critical = True
+                        device.group = 'Critical'
                     elif g_match.group('index') == '2':
                         tier = g_match.group('label')
+                        device.group = 'default'
                     elif g_match.group('index') == '3':
-                        pass
+                        device.group = 'default'
                     elif g_match.group('index') == '4':
                         bldg = g_match.group('label')
-                    elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
-                        device.type = 'SERVER'
+                        device.group = 'default'
+                    elif g_match.group('index') == '5':
+                        device.group = g_match.group('label')
+                    # elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
+                    #     device.type = 'SERVER'
             device.critical = critical
             device.tier = tier
             device.building_name = bldg
@@ -400,11 +406,11 @@ def refresh_unreachable():
             if unreachable.device.tier:
                 tier_name = unreachable.device.tier
             else:
-                tier_name = 'Unknown'
+                tier_name = 'Other'
             if unreachable.device.building_name:
                 bldg_name = unreachable.device.building_name
             else:
-                bldg_name = 'Unknown'
+                bldg_name = 'Other'
 
             # Find the tier summary to update
             t_summary, t_created = Summary.objects.get_or_create(

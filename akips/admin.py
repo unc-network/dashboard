@@ -6,16 +6,14 @@ from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert, Prof
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'ip4addr', 'tier',
-                    'building_name', 'type', 'sysName', 'last_refresh']
-    list_filter = ['critical', 'maintenance', 'type', 'tier', 'building_name']
+    list_display = ['name', 'ip4addr', 'sysName', 'group', 'type', 'last_refresh']
+    list_filter = ['group', 'critical', 'maintenance', 'type', 'tier', 'building_name']
     search_fields = ['name', 'sysName', 'ip4addr']
 
 @admin.register(Status)
 class StatusAdmin(admin.ModelAdmin):
     list_display = ['device', 'child', 'attribute', 'value', 'last_change']
     list_filter = ['attribute', 'value']
-    #search_fields = ['device']
 
 @admin.register(StatusAlert)
 class StatusAlertAdmin(admin.ModelAdmin):
@@ -23,16 +21,14 @@ class StatusAlertAdmin(admin.ModelAdmin):
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
-    list_display = ['id','device', 'ping_state', 'snmp_state',
-                    'event_start', 'last_refresh', 'status']
+    list_display = ['id','device', 'ping_state', 'snmp_state', 'event_start', 'last_refresh', 'status']
     list_filter = ['status', 'last_refresh']
     search_fields = ['id', 'ip4addr']
 
 
 @admin.register(Summary)
 class SummaryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'type', 'total_count',
-                    'max_count', 'status', 'first_event', 'last_event']
+    list_display = ['name', 'type', 'total_count', 'max_count', 'status', 'first_event', 'last_event']
     list_filter = ['status', 'type']
     search_fields = ['name']
 

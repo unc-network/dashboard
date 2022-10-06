@@ -13,6 +13,7 @@ class Device(models.Model):
     sysName = models.CharField(max_length=255, blank=True)
     sysDescr = models.CharField(max_length=255, blank=True)
     sysLocation = models.CharField(max_length=255, blank=True)
+    group = models.CharField(max_length=255, default='default')
     critical = models.BooleanField(default=False)
     tier = models.CharField(max_length=255, blank=True)
     building_name = models.CharField(max_length=255, blank=True)
