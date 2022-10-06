@@ -541,7 +541,7 @@ class UserAlertView(LoginRequiredMixin, View):
         if last_notified_cookie is None:
             # user has no notification history
             times = []
-            result['messages'].append("Greetings.")
+            result['messages'].append("Greetings, {}.".format( request.user.first_name))
 
             # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
             # if unreachables:
@@ -573,7 +573,7 @@ class UserAlertView(LoginRequiredMixin, View):
         elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
             # user is using an old session
             times = []
-            result['messages'].append("Welcome back.")
+            result['messages'].append("Welcome back, {}.".format( request.user.first_name))
 
             # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
             # if unreachables:
