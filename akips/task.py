@@ -594,7 +594,7 @@ def cleanup_dashboard_data():
     Unreachable.objects.filter(status='Closed',event_start__lt=seven_days_ago,last_refresh__lt=seven_days_ago).delete()
 
     # Status objects
-    Status.objects.filter(child='').delete()
+    # Status.objects.filter(child='').delete()
 
     finish_time = timezone.now()
     logger.info("Cleanup dashboard data runtime {}".format(finish_time - now))
