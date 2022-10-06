@@ -349,8 +349,7 @@ def refresh_unreachable():
             last_refresh__gte=now).update(status='Closed')
 
     finish_time = timezone.now()
-    logger.info("AKIPS unreachable refresh runtime {}".format(
-        finish_time - now))
+    logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
 
 # @shared_task
 # def refresh_summary():
