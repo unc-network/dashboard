@@ -127,6 +127,8 @@ def refresh_akips_devices():
                         pass
                     elif g_match.group('index') == '4':
                         bldg = g_match.group('label')
+                    elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
+                        device.type = 'SERVER'
             device.critical = critical
             device.tier = tier
             device.building_name = bldg

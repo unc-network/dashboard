@@ -378,7 +378,8 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 form.cleaned_data.get('assignment_group'),
                 form.cleaned_data.get('description'),
                 severity=form.cleaned_data.get('criticality'),
-                work_notes=dashboard_overview
+                work_notes=dashboard_overview,
+                callerid=request.user.username
             )
             if incident:
                 context['create_message'] = "Incident {} was created.".format(
@@ -540,6 +541,7 @@ class UserAlertView(LoginRequiredMixin, View):
         if last_notified_cookie is None:
             # user has no notification history
             times = []
+            result['messages'].append("Greetings.")
 
             # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
             # if unreachables:
@@ -571,6 +573,7 @@ class UserAlertView(LoginRequiredMixin, View):
         elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
             # user is using an old session
             times = []
+            result['messages'].append("Welcome back.")
 
             # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
             # if unreachables:

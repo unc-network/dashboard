@@ -356,7 +356,7 @@ class ServiceNow:
     password = os.getenv('SN_PASSWORD', '')
     session = requests.Session()
 
-    def create_incident(self, group, description, severity=None, work_notes=None):
+    def create_incident(self, group, description, callerid=None, severity=None, work_notes=None):
         ''' Create a new SN incident '''
         # Set proper headers
         headers = {"Content-Type":"application/json", "Accept":"application/json"}
@@ -378,6 +378,8 @@ class ServiceNow:
             # but it is required to close an incident and can be set here
             'u_category': 'Network',     # optional
         }
+        if callerid:
+            data['u_caller_id'] = callerid
         if severity == 'Critical':
             # "1 - Critical" servicenow priority
             data['u_impact'] = '1'
