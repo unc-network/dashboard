@@ -350,17 +350,18 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
         form = IncidentForm(request.POST)
         if form.is_valid():
+            server_name = "https://ocnes.cloudapps.unc.edu"
 
             # Get the summaries
             summary_ids = []
             if form.cleaned_data.get('summary_events'):
-                summary_ids = form.cleaned_data.get(
-                    'summary_events').split(',')
+                summary_ids = form.cleaned_data.get('summary_events').split(',')
                 summaries = Summary.objects.filter(id__in=summary_ids)
                 dashboard_overview = ''
                 for summary in summaries:
-                    dashboard_overview += "Unreachable {} {}\n".format(
-                        summary.type, summary.name)
+                    dashboard_overview += "Unreachable {} {} ".format(summary.type, summary.name)
+                    dashboard_overview += "{}/{}".format(server_name, reverse( 'summary', kwargs={ 'id': summary.id }))
+                    dashboard_overview += "\n"
 
             # Get the traps
             trap_ids = []
@@ -369,8 +370,9 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 traps = SNMPTrap.objects.filter(id__in=trap_ids)
                 dashboard_overview = ''
                 for trap in traps:
-                    dashboard_overview += "Trap {} {}\n".format(
-                        trap.device, trap.trap_oid)
+                    dashboard_overview += "Trap {} {} ".format(trap.device, trap.trap_oid)
+                    dashboard_overview += "{}/{}".format(server_name, reverse( 'trap', kwargs={ 'trap_id': trap.id }))
+                    dashboard_overview += "\n"
 
             # Create the ServiceNow Incident
             servicenow = ServiceNow()
