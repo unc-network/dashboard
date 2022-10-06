@@ -167,7 +167,8 @@ def refresh_ping_status():
 
             Status.objects.update_or_create(
                 device=device,
-                object=entry['attribute'],
+                child=entry['child'],
+                attribute=entry['attribute'],
                 defaults={
                     'value': entry['state'],
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
@@ -203,7 +204,8 @@ def refresh_snmp_status():
 
             Status.objects.update_or_create(
                 device=device,
-                object=entry['attribute'],
+                child=entry['child'],
+                attribute=entry['attribute'],
                 defaults={
                     'value': entry['state'],
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
@@ -239,7 +241,8 @@ def refresh_ups_status():
 
             Status.objects.update_or_create(
                 device=device,
-                object=entry['attribute'],
+                child=entry['child'],
+                attribute=entry['attribute'],
                 defaults={
                     'value': entry['state'],
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
@@ -590,6 +593,9 @@ def cleanup_dashboard_data():
 
     # delete clsoed unreachables based on age
     Unreachable.objects.filter(status='Closed',event_start__lt=seven_days_ago,last_refresh__lt=seven_days_ago).delete()
+
+    # Status objects
+    Status.objects.filter(child='').delete()
 
     finish_time = timezone.now()
     logger.info("Cleanup dashboard data runtime {}".format(finish_time - now))

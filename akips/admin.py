@@ -13,8 +13,8 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Status)
 class StatusAdmin(admin.ModelAdmin):
-    list_display = ['device', 'object', 'value', 'last_change']
-    list_filter = ['object', 'value']
+    list_display = ['device', 'child', 'attribute', 'value', 'last_change']
+    list_filter = ['attribute', 'value']
     #search_fields = ['device']
 
 @admin.register(StatusAlert)

@@ -32,14 +32,15 @@ class Device(models.Model):
 class Status(models.Model):
     ''' AKiPS Status '''
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    object = models.CharField(max_length=255)
+    child = models.CharField(max_length=255)
+    attribute = models.CharField(max_length=255)
     value = models.CharField(max_length=255)
     last_change = models.DateTimeField()
 
     class Meta:
         verbose_name_plural = 'statuses'
         ordering = ['device']
-        indexes = [ models.Index(fields=['object']) ]
+        indexes = [ models.Index(fields=['attribute']) ]
 
     def __str__(self):
         return str(self.id)
