@@ -18,7 +18,7 @@
                     <th>Device</th>
                     <th>IP</th>
                     <th>sysName</th>
-                    <th>sysDescr</th>
+                    <th>Grouping</th>
                     <th>Type</th>
                 </tr>
             </thead>
@@ -28,7 +28,8 @@
                     <td><a href="{% url 'device' device.name %}">{{ device.name }}</a></td>
                     <td>{{ device.ip4addr }}</td>
                     <td>{{ device.sysName }}</td>
-                    <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ device.sysDescr }}</span></td>
+                    <!-- <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ device.sysDescr }}</span></td> -->
+                    <td>{{ device.group }}</td>
                     <td>{{ device.type }}</td>
                 </tr>
                 {% endfor %}
