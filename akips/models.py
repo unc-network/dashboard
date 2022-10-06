@@ -7,7 +7,7 @@ from django.dispatch import receiver
 
 
 class Device(models.Model):
-    # devices from akips
+    ''' Representation of AKiPS device record '''
     name = models.CharField(max_length=255, unique=True)
     ip4addr = models.GenericIPAddressField()
     sysName = models.CharField(max_length=255, blank=True)
@@ -23,14 +23,14 @@ class Device(models.Model):
 
     class Meta:
         ordering = ['name']
-        indexes = [models.Index(fields=['ip4addr'])]
+        # indexes = [models.Index(fields=['ip4addr'])]
 
     def __str__(self):
         return str(self.name)
 
 
 class Status(models.Model):
-    ''' AKiPS Status '''
+    ''' Representation of AKiPS status record '''
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
@@ -85,7 +85,7 @@ class Unreachable(models.Model):
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     class Meta:
-        ordering = ['device', 'event_start']
+        ordering = ['-event_start']
 
     def __str__(self):
         return str(self.device)
@@ -125,7 +125,8 @@ class Summary(models.Model):
 
     class Meta:
         verbose_name_plural = 'summaries'
-        ordering = ['tier', '-type', 'name', 'first_event']
+        #ordering = ['tier', '-type', 'name', 'first_event']
+        ordering = ['-first_event']
 
     def __str__(self):
         return str(self.name)
@@ -148,6 +149,9 @@ class SNMPTrap(models.Model):
         max_length=32, choices=STATUS_CHOICES, default='Open')
     incident = models.CharField(blank=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-tt']
 
     def __str__(self):
         return str(self.id)

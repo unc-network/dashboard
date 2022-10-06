@@ -39,7 +39,7 @@ class SummaryAdmin(admin.ModelAdmin):
 
 @admin.register(SNMPTrap)
 class SNMPTrapAdmin(admin.ModelAdmin):
-    list_display = ['tt', 'trap_oid', 'device', 'ipaddr', 'status']
+    list_display = ['trap_oid', 'device', 'ipaddr', 'tt', 'status']
     list_filter = ['status', 'trap_oid']
     search_fields = ['trap_oid', 'ipaddr']
 

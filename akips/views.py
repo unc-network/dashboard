@@ -237,7 +237,6 @@ class RecentSummaryView(LoginRequiredMixin, View):
 
         date_from = timezone.now() - timezone.timedelta(days=1)
         # types = ['Critical', 'Building']
-        # summaries = Summary.objects.filter( type__in=types, last_event__gte=date_from, status='Closed' ).order_by('-first_event')
         summaries = Summary.objects.filter( last_event__gte=date_from, status='Closed' ).order_by('-first_event')
         context['summaries'] = summaries
 
