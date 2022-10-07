@@ -611,7 +611,7 @@ class UserAlertView(LoginRequiredMixin, View):
             if buildings:
                 building_count = len(buildings)
                 if building_count == 1:
-                    result['messages'].append("{} new building alert for {},".format( building_count, buildings.first().name ))
+                    result['messages'].append("{} new alert for {},".format( building_count, buildings.first().name ))
                 else:
                     result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
