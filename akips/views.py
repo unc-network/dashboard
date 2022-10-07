@@ -184,11 +184,12 @@ class SummaryView(LoginRequiredMixin, View):
 
         summary = get_object_or_404(Summary, id=summary_id)
 
-        context['u_open'] = summary.unreachables.filter(
-            status='Open').order_by('-event_start')
-        context['u_closed'] = summary.unreachables.filter(
-            status='Closed').order_by('-event_start')
+        context['u_open'] = summary.unreachables.filter(status='Open').order_by('-event_start')
+        context['u_closed'] = summary.unreachables.filter(status='Closed').order_by('-event_start')
         context['summary'] = summary
+
+        context['avg_low'] = summary.moving_average * 0.95
+        context['avg_high'] = summary.moving_average * 1.05
 
         return render(request, self.template_name, context=context)
 

@@ -33,6 +33,12 @@
                         <th>Status</th>
                         <td>{{ summary.status }}</td>
                     </tr>
+                    {% if request.user.is_superuser %}
+                    <tr>
+                        <th>Moving Average</th>
+                        <td>{{ summary.moving_average }}<br>low: {{ avg_low }}<br>high: {{ avg_high }}</td>
+                    </tr>
+                    {% endif %}
                 </table>
             </div>
             <div class="col-6">

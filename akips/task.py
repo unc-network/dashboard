@@ -581,9 +581,9 @@ def refresh_unreachable():
         new_threshold = now - timedelta(minutes=5)
         if summary.first_event >= new_threshold:
             summary.trend = 'New'
-        elif total_count > new_average + 0.05:
+        elif total_count > new_average * 1.05:
             summary.trend = 'Increasing'
-        elif total_count < new_average - 0.05:
+        elif total_count < new_average * 0.95:
             summary.trend = 'Decreasing'
         else:
             summary.trend = 'Stable'
