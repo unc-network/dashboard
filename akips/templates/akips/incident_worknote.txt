@@ -1,0 +1,7 @@
+{% for summary in summaries %}
+{{ summary.type }} {{ summary.name }} {{ server_name }}{% url 'summary' summary.id %}
+{% for u in summary.unreachables.all %}
+{{ u.device.name }} ({{ u.device.ip4addr }}) unreachable starting {{ u.event_start }} {% endfor %}
+{% endfor %}
+{% for trap in traps %}
+Trap {{ trap.device }} {{ trap.trap_oid }} {{ server_name }}{% url 'trap' trap.id %}{% endfor %}

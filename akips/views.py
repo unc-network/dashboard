@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.sessions.models import Session
+from django.template.loader import render_to_string
 from django.contrib import messages
 from django.utils import timezone
 
@@ -315,29 +316,23 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
         form = IncidentForm(request.POST)
         if form.is_valid():
-            server_name = "https://ocnes.cloudapps.unc.edu"
+            ctx = {
+                'server_name': "https://ocnes.cloudapps.unc.edu"
+            }
 
             # Get the summaries
             summary_ids = []
             if form.cleaned_data.get('summary_events'):
                 summary_ids = form.cleaned_data.get('summary_events').split(',')
                 summaries = Summary.objects.filter(id__in=summary_ids)
-                dashboard_overview = ''
-                for summary in summaries:
-                    dashboard_overview += "Unreachable {} {} ".format(summary.type, summary.name)
-                    dashboard_overview += "{}/{}".format(server_name, reverse( 'summary', kwargs={ 'id': summary.id }))
-                    dashboard_overview += "\n"
+                ctx['summaries'] = summaries
 
             # Get the traps
             trap_ids = []
             if form.cleaned_data.get('trap_events'):
                 trap_ids = form.cleaned_data.get('trap_events').split(',')
                 traps = SNMPTrap.objects.filter(id__in=trap_ids)
-                dashboard_overview = ''
-                for trap in traps:
-                    dashboard_overview += "Trap {} {} ".format(trap.device, trap.trap_oid)
-                    dashboard_overview += "{}/{}".format(server_name, reverse( 'trap', kwargs={ 'trap_id': trap.id }))
-                    dashboard_overview += "\n"
+                ctx['traps'] = traps
 
             # Create the ServiceNow Incident
             servicenow = ServiceNow()
@@ -345,7 +340,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 form.cleaned_data.get('assignment_group'),
                 form.cleaned_data.get('description'),
                 severity=form.cleaned_data.get('criticality'),
-                work_notes=dashboard_overview,
+                work_notes=render_to_string('akips/incident_worknote.txt',ctx),
                 callerid=request.user.username
             )
             if incident:
