@@ -177,6 +177,7 @@
 
         $('.event-card').each(function (index) {
             var id = this.id;
+            $('#' + id ).show();
             var url = $(this).data("url");
             var body = $(this).find(".card-body");
             var body_clone = body.clone();
@@ -189,6 +190,11 @@
                 data: {},
                 success: function (result, status, xhr) {
                     body.html(result);
+                    var len = $('#' + id + ' tr').length;
+                    //console.log("Table " + id + " row count " + len);
+                    if ( len < 2 ) {
+                        $('#' + id ).hide();
+                    }
                 },
                 error: function (xhr, status, error) {
                     body.replaceWith(body_clone);
