@@ -52,6 +52,11 @@ services:
       # POSTGRES_USER: postgres
       # POSTGRES_DB: postgres (taken from POSTGRES_USER)
       # PGDATA: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   ########################################
   # Bring up Celery workers
@@ -69,6 +74,7 @@ services:
     volumes:
       - ${PWD}:/dashboard
     working_dir: /dashboard
+    env_file: .env
     environment:
       # This is key.  It overrides the .env file which has the following
       # environment variable pointing to localhost.
@@ -80,9 +86,21 @@ services:
       # is reachable via its name; in this case, we have a URL going to
       # a Redis server on host 'redis', port 6379.
       CELERY_BROKER_URL: redis://redis:6379/0
+      # The following are pulled from OpenShift
+      DATABASE_SERVICE_NAME: postgresql
+      DATABASE_ENGINE: postgresql
+      DATABASE_NAME: postgres
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: OCNESisCOOL
+      POSTGRESQL_SERVICE_HOST: db
+      POSTGRESQL_SERVICE_PORT: 5432
+
     command: [ 'celery', '--app', 'project', 'worker', '-B' ]
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   ########################################
   # Bring up OCNES
@@ -100,7 +118,9 @@ services:
     volumes:
       - ${PWD}:/dashboard
     working_dir: /dashboard
+    env_file: .env
     environment:
+      # This is key.  It overrides the .env file
       CELERY_BROKER_URL: redis://redis:6379/0
       # The following are pulled from OpenShift
       DATABASE_SERVICE_NAME: postgresql
@@ -118,8 +138,23 @@ services:
     # the host.  Seems binding to the loopback in the container is just that.
     # command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
     # command: [ 'python', 'manage.py', 'migrate' ]
-    command: [ 'gunicorn', 'wsgi' ]
+
+    # command: [ 'gunicorn', 'wsgi' ]
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Migrating the database before starting the server..."
+        python manage.py makemigrations
+        python manage.py migrate
+        # Start Gunicorn processes
+        echo "Starting Gunicorn..."
+        gunicorn wsgi
+
     depends_on:
-      - db
-      - celery
-      - redis
+      celery:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
