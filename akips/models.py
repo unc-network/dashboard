@@ -46,19 +46,6 @@ class Status(models.Model):
     def __str__(self):
         return str(self.id)
 
-class StatusAlert(models.Model):
-    ''' AKiPS Status Alert '''
-    kind = models.CharField(max_length=255,help_text='kind of alert fired')
-    tt = models.DateTimeField(help_text='epoch time of the alert')
-    device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    child = models.CharField(max_length=255,help_text='child or interface name')
-    descr = models.CharField(max_length=255,help_text='child description')
-    attr = models.CharField(max_length=255,help_text='MIB.object')
-    alias = models.CharField(max_length=255,help_text='attr description')
-    state = models.CharField(max_length=255)
-
-    def __str__(self):
-        return str(self.id)
 
 class Unreachable(models.Model):
     STATUS_CHOICES = (
@@ -147,10 +134,11 @@ class SNMPTrap(models.Model):
     oids = models.CharField(max_length=1024)
     ack = models.BooleanField(default=False)
     comment = models.CharField(max_length=1024, blank=True)
-    status = models.CharField(
-        max_length=32, choices=STATUS_CHOICES, default='Open')
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
     incident = models.CharField(blank=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    dup_count = models.IntegerField(default=0)
+    dup_last = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-tt']

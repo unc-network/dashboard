@@ -770,6 +770,13 @@ def akips_webhook(request):
 @atomic
 def process_webhook_payload(payload):
     ''' Add it to the database '''
+    if 'device' not in payload:
+        logger.warn("Trap alert is missing device field")
+        return
+    elif 'type' not in payload:
+        logger.warn("Trap alert is missing type field")
+        return
+
     try:
         device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
@@ -778,15 +785,39 @@ def process_webhook_payload(payload):
         return
 
     if payload['type'] == 'Trap':
-        SNMPTrap.objects.create(
-            tt=datetime.fromtimestamp(
-                int(payload['tt']), tz=timezone.get_current_timezone()),
-            device=device,
-            ipaddr=payload['ipaddr'],
+        # Check for ACK and Open duplicates
+        duplicates = SNMPTrap.objects.filter( 
+            device=device, 
             trap_oid=payload['trap_oid'],
-            uptime=payload['uptime'],
-            oids=json.dumps(payload['oids'])
-        )
+            oids=json.dumps(payload['oids']),
+            ack=True,
+            status='Open')
+
+        if duplicates:
+            logger.info("Trap has repeated")
+            for duplicate in duplicates:
+                duplicate.dup_count += 1
+                duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
+                duplicate.save()
+            SNMPTrap.objects.create(
+                tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+                device=device,
+                ipaddr=payload['ipaddr'],
+                trap_oid=payload['trap_oid'],
+                uptime=payload['uptime'],
+                oids=json.dumps(payload['oids']),
+                comment="Auto-cleared as a duplicate",
+                status='Closed',
+            )
+        else:
+            SNMPTrap.objects.create(
+                tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+                device=device,
+                ipaddr=payload['ipaddr'],
+                trap_oid=payload['trap_oid'],
+                uptime=payload['uptime'],
+                oids=json.dumps(payload['oids'])
+            )
     elif payload['type'] == 'Status':
         Status.objects.update_or_create(
             device=device,

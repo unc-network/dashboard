@@ -36,6 +36,16 @@
                     <td>{{ oid }}</td>
                 </tr>
                 {% endfor %}
+                {% if trap.dup_count > 0 %}
+                <tr>
+                    <th>Duplicates</th>
+                    <td>{{ trap.dup_count }}</td>
+                </tr>
+                <tr>
+                    <th>Last Duplicate</th>
+                    <td>{{ trap.dup_last }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
 
