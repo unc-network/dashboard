@@ -785,12 +785,12 @@ def process_webhook_payload(payload):
         return
 
     if payload['type'] == 'Trap':
-        # Check for ACK and Open duplicates
+        # Check for Open duplicates
         duplicates = SNMPTrap.objects.filter( 
             device=device, 
             trap_oid=payload['trap_oid'],
             oids=json.dumps(payload['oids']),
-            ack=True,
+            #ack=True,
             status='Open')
 
         if duplicates:
