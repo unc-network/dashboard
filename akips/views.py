@@ -94,15 +94,18 @@ class Users(LoginRequiredMixin, View):
         date_from = timezone.now() - timedelta(days=7)
         context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
 
-        session_list = Session.objects.filter(expire_date__gte=timezone.now())
+        session_list = Session.objects.filter(expire_date__gte=timezone.now()).order_by('-expire_date')
         sessions = []
         for s in session_list:
             s_decoded = s.get_decoded()
+            session_start = s.expire_date - timedelta(seconds=settings.SESSION_COOKIE_AGE)
             logger.debug("session {}".format( s.get_decoded() ))
             logger.debug("session expire {}".format( s.expire_date ))
+            logger.debug("session start {}".format( session_start ))
             sessions.append({ 
                 'user': User.objects.get(id=s_decoded['_auth_user_id']),
                 'expire': s.expire_date,
+                'start': session_start,
                 })
         context['session_list'] = sessions
 
