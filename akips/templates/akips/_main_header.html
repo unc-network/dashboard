@@ -26,9 +26,7 @@
             <a href="{% url 'unreachable' %}" class="nav-link">Unreachables</a>
         </li>
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              Recent
-            </a>
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Recent</a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
               <a class="dropdown-item" href="{% url 'recent' %}">Events</a>
               <a class="dropdown-item" href="{% url 'recent_unreachables' %}">Unreachables</a>
@@ -117,6 +115,6 @@
         {% endblock nav_custom_menu %}
 
     </div>
-{% endblock %}
+    {% endblock %} <!-- Header NavBar End -->
     </div>
 </nav>
