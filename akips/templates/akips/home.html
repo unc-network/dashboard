@@ -133,14 +133,20 @@
             },
             datasetFill : false,
             scales: {
-                y: { suggestedMin: 0 },
+                // y: { 
+                //     type: 'logarithmic'
+                // },
                 xAxes: [{
                     gridLines : { display : true },
                     stacked: true
                 }],
                 yAxes: [{
                     gridLines : { display : true },
-                    stacked: true
+                    stacked: true,
+                    ticks: {
+                        min: 0
+                    },
+                    //type: 'logarithmic'
                 }]
             }
         }
