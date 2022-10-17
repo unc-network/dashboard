@@ -802,16 +802,16 @@ def process_webhook_payload(payload):
                 duplicate.dup_count += 1
                 duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
                 duplicate.save()
-            SNMPTrap.objects.create(
-                tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
-                device=device,
-                ipaddr=payload['ipaddr'],
-                trap_oid=payload['trap_oid'],
-                uptime=payload['uptime'],
-                oids=json.dumps(payload['oids']),
-                comment="Auto-cleared as a duplicate",
-                status='Closed',
-            )
+            # SNMPTrap.objects.create(
+            #     tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+            #     device=device,
+            #     ipaddr=payload['ipaddr'],
+            #     trap_oid=payload['trap_oid'],
+            #     uptime=payload['uptime'],
+            #     oids=json.dumps(payload['oids']),
+            #     comment="Auto-cleared as a duplicate",
+            #     status='Closed',
+            # )
         else:
             SNMPTrap.objects.create(
                 tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
