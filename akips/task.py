@@ -613,8 +613,8 @@ def cleanup_dashboard_data():
     seven_days_ago = now - timedelta(days=7)
 
     # clear and delete traps based on age
-    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).update(status='Closed', comment="Auto closed due to age")
-    SNMPTrap.objects.filter(tt__lt=seven_days_ago).delete()
+    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment="Auto closed due to age")
+    SNMPTrap.objects.filter(status='Closed',tt__lt=seven_days_ago).delete()
 
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
