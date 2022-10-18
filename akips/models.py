@@ -78,25 +78,25 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
-class BatteryEvent(models.Model):
-    STATUS_CHOICES = (
-        ('Open', 'Open'),
-        ('Closed', 'Closed'),
-    )
-    # UPS battery events
-    device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    child = models.CharField(max_length=255)
-    attribute = models.CharField(max_length=255)
-    value = models.CharField(max_length=255)
-    event_start = models.DateTimeField()
-    last_refresh = models.DateTimeField()
-    comment = models.CharField(max_length=1024, blank=True)
+# class BatteryEvent(models.Model):
+#     STATUS_CHOICES = (
+#         ('Open', 'Open'),
+#         ('Closed', 'Closed'),
+#     )
+#     # UPS battery events
+#     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+#     child = models.CharField(max_length=255)
+#     attribute = models.CharField(max_length=255)
+#     value = models.CharField(max_length=255)
+#     event_start = models.DateTimeField()
+#     last_refresh = models.DateTimeField()
+#     comment = models.CharField(max_length=1024, blank=True)
 
-    class Meta:
-        ordering = ['-event_start']
+#     class Meta:
+#         ordering = ['-event_start']
 
-    def __str__(self):
-        return str(self.device)
+#     def __str__(self):
+#         return str(self.device)
 
 
 class Summary(models.Model):
