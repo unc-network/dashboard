@@ -30,7 +30,7 @@
             </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
             <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
-                {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary">{{ trap.dup_count }} dup</span>{% endif %}
+                {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
             </td>
             <td>{{ trap.tt|date:'m/d h:i:s a' }}</td>
             <td class="text-center">

@@ -152,7 +152,8 @@ class AKIPS:
         ''' Pull a list of unreachable IPv4 ping devices '''
         params = {
             #'cmds': 'mget * * ping4 PING.icmpState value /down/',
-            'cmds': 'mget * * /ping4|sys/ * value /down/',
+            #'cmds': 'mget * * /ping4|sys/ * value /down/',
+            'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
             #'cmds': 'mget * * /ping4|sys/ /PING.icmpState|SNMP.snmpState/ value /down/'
         }
         text = self.get(params=params)
@@ -201,6 +202,7 @@ class AKIPS:
                     if event_start < data[name]['event_start']:
                         data[name]['event_start'] = event_start
             logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("data: {}".format(data))
             return data
         return None
 
