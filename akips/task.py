@@ -499,9 +499,10 @@ def refresh_unreachable():
         if t_created:
             logger.debug("Tier summary created {}".format(tier_name))
         else:
-            b_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             t_summary.last_event = now
             t_summary.save()
+        t_summary.batteries.add(ups)
 
         # Find the building summary to update
         b_summary, b_created = Summary.objects.get_or_create(
@@ -522,6 +523,7 @@ def refresh_unreachable():
             b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             b_summary.last_event = now
             b_summary.save()
+        b_summary.batteries.add(ups)
 
     # Calculate summary counts
     summaries = Summary.objects.filter(status='Open')

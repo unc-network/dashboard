@@ -116,6 +116,7 @@ class Summary(models.Model):
     name = models.CharField(max_length=255)
     ack = models.BooleanField(default=False)
     unreachables = models.ManyToManyField(Unreachable)
+    batteries = models.ManyToManyField(Status)
     switch_count = models.IntegerField(default=0)
     ap_count = models.IntegerField(default=0)
     ups_count = models.IntegerField(default=0)

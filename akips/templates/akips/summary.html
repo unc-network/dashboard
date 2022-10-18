@@ -93,6 +93,11 @@
       <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">Past Unreachables ({{ u_closed|length }})</a>
     </li>
     {% endif %}
+    {% if batteries %}
+    <li class="nav-item">
+      <a class="nav-link" id="battery-tab" data-toggle="tab" href="#battery" role="tab" aria-controls="battery" aria-selected="false">UPS Battery Status ({{ batteries|length }})</a>
+    </li>
+    {% endif %}
   </ul>
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade {% if summary.status == 'Open' %}show active{% endif %}" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -152,6 +157,32 @@
                             <td>{{ unreachable.event_start }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                             <!-- <td></td> -->
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="battery" role="tabpanel" aria-labelledby="battery-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>UPS Device</th>
+                            <th>IP</th>
+                            <th>Power Source</th>
+                            <th>Last Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status in batteries %}
+                        <tr>
+                            <td><a href="{% url 'device' status.device.name %}">{{ status.device.name }}</a></td>
+                            <td>{{ status.device.ip4addr }}</td>
+                            <td>{{ status.value }}</td>
+                            <td>{{ status.last_change }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

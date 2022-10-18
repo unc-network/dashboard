@@ -190,6 +190,7 @@ class SummaryView(LoginRequiredMixin, View):
 
         context['u_open'] = summary.unreachables.filter(status='Open').order_by('-event_start')
         context['u_closed'] = summary.unreachables.filter(status='Closed').order_by('-event_start')
+        context['batteries'] = summary.batteries.all()
         context['summary'] = summary
 
         context['avg_low'] = summary.moving_average * 0.95
