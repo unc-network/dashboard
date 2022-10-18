@@ -78,6 +78,26 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
+class BatteryEvent(models.Model):
+    STATUS_CHOICES = (
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    )
+    # UPS battery events
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    child = models.CharField(max_length=255)
+    attribute = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+    event_start = models.DateTimeField()
+    last_refresh = models.DateTimeField()
+    comment = models.CharField(max_length=1024, blank=True)
+
+    class Meta:
+        ordering = ['-event_start']
+
+    def __str__(self):
+        return str(self.device)
+
 
 class Summary(models.Model):
     ''' Summarized view of unreachable devices '''
@@ -146,15 +166,6 @@ class SNMPTrap(models.Model):
     def __str__(self):
         return str(self.id)
 
-
-class UserAlert(models.Model):
-    message = models.CharField(max_length=1024)
-    sound = models.BooleanField(default=True)
-    enabled = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return str(self.id)
 
 # class ServiceNowGroup(models.Model):
 #     name = models.CharField(max_length=1024)

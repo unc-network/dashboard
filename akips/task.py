@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Summary, SNMPTrap, UserAlert, Status
+from .models import Device, Unreachable, Summary, SNMPTrap, Status
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -351,8 +351,7 @@ def refresh_unreachable():
             time.sleep(sleep_delay)
 
         # Remove stale entries
-        Unreachable.objects.filter(status='Open').exclude(
-            last_refresh__gte=now).update(status='Closed')
+        Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
@@ -388,8 +387,6 @@ def refresh_unreachable():
                 }
             )
             if c_created:
-                UserAlert.objects.create(
-                    message="new critical device {} down".format(unreachable.device.name))
                 logger.debug("Crit summary created {}".format(
                     unreachable.device.name))
             else:
@@ -426,7 +423,6 @@ def refresh_unreachable():
                 }
             )
             if t_created:
-                #UserAlert.objects.create(message="new tier {} down".format(tier_name))
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
                 if t_summary.first_event > unreachable.event_start:
@@ -449,7 +445,6 @@ def refresh_unreachable():
                 }
             )
             if b_created:
-                UserAlert.objects.create(message="new building {} on tier {} down".format(bldg_name, b_summary.tier))
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
                 if b_summary.first_event > unreachable.event_start:
