@@ -609,12 +609,18 @@ def cleanup_dashboard_data():
     now = timezone.now()
 
     # Define the periods we care about
+    two_hours_ago = now - timedelta(hours=2)
     one_day_ago = now - timedelta(days=1)
     seven_days_ago = now - timedelta(days=7)
 
-    # clear and delete traps based on age
-    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment="Auto closed due to age")
+    # Auto clear old traps (1 day)
+    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment='Auto closed due to age')
+
+    # Delete really old traps (7 days)
     SNMPTrap.objects.filter(status='Closed',tt__lt=seven_days_ago).delete()
+
+    # Remove old duplicate traps (2 hours)
+    SNMPTrap.objects.filter(status='Closed',tt__lt=two_hours_ago,comment='Auto-cleared as a duplicate').delete()
 
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
