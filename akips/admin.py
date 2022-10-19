@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, Profile, Status
+from akips.models import Device, SNMPTrap, Unreachable, Summary, Profile, Status, HibernateRequest
 
 # Register your models here.
 
@@ -14,6 +14,11 @@ class DeviceAdmin(admin.ModelAdmin):
 class StatusAdmin(admin.ModelAdmin):
     list_display = ['device', 'child', 'attribute', 'value', 'last_change']
     list_filter = ['attribute', 'value']
+
+
+@admin.register(HibernateRequest)
+class HibernateRequestAdmin(admin.ModelAdmin):
+    list_display = ['device', 'type', 'comment']
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
