@@ -37,8 +37,13 @@
             </div>
           </li>
         </li>
-        <li class="nav-item">
-            <a href="{% url 'devices' %}" class="nav-link">Devices</a>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="{% url 'maintenance' %}">Maintenance Mode</a>
+              <a class="dropdown-item" href="{% url 'devices' %}">All Devices</a>
+            </div>
+          </li>
         </li>
         {% if request.user.is_superuser %}
         <li class="nav-item">

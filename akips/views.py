@@ -177,6 +177,17 @@ class UnreachableView(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class MaintenanceView(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/devices.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        devices = Device.objects.filter(maintenance=True)
+        context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
 
 class SummaryView(LoginRequiredMixin, View):
     ''' Generic summary view '''
