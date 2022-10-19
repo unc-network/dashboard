@@ -282,6 +282,25 @@ class TrapView(LoginRequiredMixin, View):
         return render(request, self.template_name, context=context)
 
 
+class HibernateView(LoginRequiredMixin, View):
+    ''' Hibernate devices '''
+    template_name = 'akips/hibernate.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        checkboxes = request.GET.getlist('device')
+        logger.debug("Got list {}".format(checkboxes))
+
+        device_ids = checkboxes
+        context['devices'] = Device.objects.filter(id__in=device_ids)
+
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        context = {}
+
+        return render(request, self.template_name, context=context)
+
 class CreateIncidentView(LoginRequiredMixin, View):
     ''' Create Incidents '''
     template_name = 'akips/incident.html'

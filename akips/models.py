@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -74,6 +75,25 @@ class Unreachable(models.Model):
 
     class Meta:
         ordering = ['-event_start']
+
+    def __str__(self):
+        return str(self.device)
+
+class HibernateRequest(models.Model):
+    TYPE_CHOICES = (
+        ('Auto', 'Auto'),
+        ('Time', 'Time'),
+        ('Manual', 'Manual'),
+    )
+    STATUS_CHOICES = (
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    )
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    scheduled = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    comment = models.CharField(max_length=1024, blank=True)
 
     def __str__(self):
         return str(self.device)
