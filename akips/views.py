@@ -27,7 +27,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .models import Summary, Unreachable, Device, SNMPTrap, Status
-from .forms import IncidentForm
+from .forms import IncidentForm, HibernateForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow, pretty_duration
 
@@ -179,7 +179,7 @@ class UnreachableView(LoginRequiredMixin, View):
 
 class MaintenanceView(LoginRequiredMixin, View):
     ''' Generic first view '''
-    template_name = 'akips/devices.html'
+    template_name = 'akips/devices_maintenance.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
@@ -308,6 +308,11 @@ class HibernateView(LoginRequiredMixin, View):
 
         device_ids = checkboxes
         context['devices'] = Device.objects.filter(id__in=device_ids)
+
+        initial = {
+            'device_ids': ','.join(device_ids),
+        }
+        context['form'] = HibernateForm(initial=initial)
 
         return render(request, self.template_name, context=context)
 

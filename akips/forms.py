@@ -49,3 +49,27 @@ class IncidentForm(forms.Form):
         if not cleaned_data.get('summary_events') and not cleaned_data.get('trap_events'):
             raise ValidationError(
                 {'summary_events': 'At least one summary or trap must be selected'})
+
+class HibernateForm(forms.Form):
+    TYPE_CHOICES = (
+        ('Auto', 'Auto clear'),
+        ('Time', 'Clear at time'),
+        ('Manual', 'Never clear'),
+    )
+    device_ids = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput()
+    )
+    type = forms.ChoiceField(
+        choices=TYPE_CHOICES,
+        widget=forms.RadioSelect
+    )
+    description = forms.CharField(
+        widget=forms.Textarea(
+            attrs={
+                'class': 'form-control',
+                'rows': '3',
+                'placeholder': 'Enter....'
+            }
+        )
+    )
