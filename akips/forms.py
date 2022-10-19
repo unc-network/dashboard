@@ -65,7 +65,7 @@ class HibernateForm(forms.Form):
         widget=forms.RadioSelect
     )
     clear_time = forms.DateTimeField(
-        input_formats=['%d/%m/%Y %H:%M'],
+        input_formats=['%m/%d/%Y %H:%M'],
         widget=forms.DateTimeInput(
             attrs={
                 'class': 'form-control datetimepicker-input',
