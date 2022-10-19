@@ -73,6 +73,10 @@
         <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
             aria-selected="false">Trap History ({{ traps|length }})</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link" id="status-tab" data-toggle="tab" href="#status" role="tab" aria-controls="status"
+            aria-selected="false">Current Status ({{ status_list|length }})</a>
+    </li>
 </ul>
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -127,6 +131,30 @@
                             <td>{{ trap.tt }}</td>
                             <td>{{ trap.incident }}</td>
                             <td>{{ trap.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="status" role="tabpanel" aria-labelledby="status-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Value</th>
+                            <th>Last Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status in status_list %}
+                        <tr>
+                            <td>{{ status.attribute }}</td>
+                            <td>{{ status.value }}</td>
+                            <td>{{ status.last_change }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

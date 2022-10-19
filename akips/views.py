@@ -258,6 +258,10 @@ class DeviceView(LoginRequiredMixin, View):
         traps = SNMPTrap.objects.filter(device=device).order_by('-tt')
         context['traps'] = traps
 
+        status_list = Status.objects.filter(device=device)
+        logger.debug("status_list {}".format(status_list))
+        context['status_list'] = status_list
+
         return render(request, self.template_name, context=context)
 
 
