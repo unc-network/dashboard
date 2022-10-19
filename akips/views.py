@@ -318,6 +318,14 @@ class HibernateView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         context = {}
+        form = HibernateForm(request.POST)
+        if form.is_valid():
+            
+            messages.success(request, "success")
+
+        else:
+            # Form is invalid
+            context['form'] = form
 
         return render(request, self.template_name, context=context)
 

@@ -67,14 +67,21 @@
 </div>
 
 <div class="form-group">
-    <label>Date and time</label>
+    <label>{{ form.clear_time.label }}</label>
     <div class="input-group date" id="reservationdatetime" data-target-input="nearest">
-        <input type="text" class="form-control datetimepicker-input" data-target="#reservationdatetime">
+        {{ form.clear_time }}
         <div class="input-group-append" data-target="#reservationdatetime" data-toggle="datetimepicker">
             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
         </div>
     </div>
 </div>
+<p>{{ form.clear_time.errors }}</p>
+
+<!-- <div class="form-group">
+    <label>{{ form.clear_time.label }}</label>
+    {{ form.clear_time }}
+</div>
+<p>{{ form.clear_time.errors }}</p> -->
 
 <div class="form-group">
     <label>{{ form.description.label }}</label>
@@ -113,7 +120,10 @@
         var refresh_seconds = 30000;
 
         //Date and time picker
-        $('#reservationdatetime').datetimepicker({ icons: { time: 'far fa-clock' } });
+        $('#reservationdatetime').datetimepicker({ 
+            format: 'DD/MM/YYYY HH:mm',
+            icons: { time: 'far fa-clock' } 
+        });
 
         voice_alert();
 
