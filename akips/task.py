@@ -381,8 +381,8 @@ def refresh_unreachable():
                 name=unreachable.device.name,
                 status='Open',
                 defaults={
-                    'first_event': now,
-                    'last_event': now,
+                    'first_event': unreachable.event_start,
+                    'last_event': unreachable.event_start,
                     'max_count': 1
                 }
             )
@@ -392,7 +392,9 @@ def refresh_unreachable():
             else:
                 if c_summary.first_event > unreachable.event_start:
                     c_summary.first_event = unreachable.event_start
-                c_summary.last_event = now
+                if c_summary.last_event < unreachable.event_start:
+                    c_summary.last_event = unreachable.event_start
+                c_summary.last_refresh = now
                 c_summary.save()
             c_summary.unreachables.add(unreachable)
 
@@ -417,8 +419,8 @@ def refresh_unreachable():
                 defaults={
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
-                    'last_event': now,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count(),
+                    'last_event': unreachable.event_start,
+                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
                     #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
@@ -428,7 +430,9 @@ def refresh_unreachable():
                 t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
                 if t_summary.first_event > unreachable.event_start:
                     t_summary.first_event = unreachable.event_start
-                t_summary.last_event = now
+                if t_summary.last_event < unreachable.event_start:
+                    t_summary.last_event = unreachable.event_start
+                t_summary.last_refresh = now
                 t_summary.save()
             t_summary.unreachables.add(unreachable)
 
@@ -440,7 +444,7 @@ def refresh_unreachable():
                 defaults={
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
-                    'last_event': now,
+                    'last_event': unreachable.event_start,
                     'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
                     #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
@@ -451,7 +455,9 @@ def refresh_unreachable():
                 b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
                 if b_summary.first_event > unreachable.event_start:
                     b_summary.first_event = unreachable.event_start
-                b_summary.last_event = now
+                if b_summary.last_event < unreachable.event_start:
+                    b_summary.last_event = unreachable.event_start
+                b_summary.last_refresh = now
                 b_summary.save()
             b_summary.unreachables.add(unreachable)
 
@@ -466,7 +472,7 @@ def refresh_unreachable():
                 status='Open',
                 defaults={
                     'first_event': unreachable.event_start,
-                    'last_event': now,
+                    'last_event': unreachable.event_start,
                     'max_count': Device.objects.filter(group=unreachable.device.group).count(),
                     #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
@@ -474,10 +480,12 @@ def refresh_unreachable():
             if s_created:
                 logger.debug("Speciality summary created {}".format( unreachable.device.group ))
             else:
-                s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count(),
+                s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
                 if s_summary.first_event > unreachable.event_start:
                     s_summary.first_event = unreachable.event_start
-                s_summary.last_event = now
+                if s_summary.last_event < unreachable.event_start:
+                    s_summary.last_event = unreachable.event_start
+                s_summary.last_refresh = now
                 s_summary.save()
             s_summary.unreachables.add(unreachable)
 
@@ -496,7 +504,7 @@ def refresh_unreachable():
             defaults={
                 'tier': ups.device.tier,
                 'first_event': ups.last_change,
-                'last_event': now,
+                'last_event': ups.last_change,
                 'max_count': Device.objects.filter(tier=ups.device.tier).count(),
                 'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
@@ -505,7 +513,11 @@ def refresh_unreachable():
             logger.debug("Tier summary created {}".format(tier_name))
         else:
             t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            t_summary.last_event = now
+            if t_summary.first_event > ups.last_change:
+                t_summary.first_event = ups.last_change
+            if t_summary.last_event < ups.last_change:
+                t_summary.last_event = ups.last_change
+            t_summary.last_refresh = now
             t_summary.save()
         t_summary.batteries.add(ups)
 
@@ -517,7 +529,7 @@ def refresh_unreachable():
             defaults={
                 'tier': ups.device.tier,
                 'first_event': ups.last_change,
-                'last_event': now,
+                'last_event': ups.last_change,
                 'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
                 'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
@@ -526,7 +538,11 @@ def refresh_unreachable():
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
             b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            b_summary.last_event = now
+            if b_summary.first_event > ups.last_change:
+                b_summary.first_event = ups.last_change
+            if b_summary.last_event < ups.last_change:
+                b_summary.last_event = ups.last_change
+            b_summary.last_refresh = now
             b_summary.save()
         b_summary.batteries.add(ups)
 
@@ -598,7 +614,8 @@ def refresh_unreachable():
         time.sleep(sleep_delay)
 
     # Close building type events open with no down devices
-    Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
+    #Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
+    Summary.objects.filter(status='Open').exclude(last_refresh=now).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))

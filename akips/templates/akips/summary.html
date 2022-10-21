@@ -110,9 +110,9 @@
                             <th>Name</th>
                             <th>Down</th>
                             <th>Type</th>
-                            <!-- <th>Description</th> -->
-                            <th>First Event</th>
-                            <th>Last Event</th>
+                            <th>Description</th>
+                            <th>Start</th>
+                            <!-- <th>Last Event</th> -->
                             <th>Hibernate</th>
                         </tr>
                     </thead>
@@ -122,9 +122,9 @@
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td>
-                            <!-- <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td> -->
+                            <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start }}</td>
-                            <td>{{ unreachable.last_refresh }}</td>
+                            <!-- <td>{{ unreachable.last_refresh }}</td> -->
                             <td class="text-center">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" name="device" value="{{ unreachable.device.id }}">
@@ -154,8 +154,8 @@
                             <th>Down</th>
                             <th>Type</th>
                             <th>Description</th>
-                            <th>First Event</th>
-                            <th>Last Event</th>
+                            <th>Start</th>
+                            <th>End</th>
                         </tr>
                     </thead>
                     <tbody>

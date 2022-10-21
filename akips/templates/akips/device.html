@@ -87,8 +87,8 @@
                         <tr>
                             <!-- <th>id</th> -->
                             <th>Down</th>
-                            <th>Start Event</th>
-                            <th>Last Event</th>
+                            <th>Start</th>
+                            <th>End</th>
                             <th>Incident</th>
                             <th>Status</th>
                         </tr>
@@ -100,7 +100,7 @@
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
                                 {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.event_start }}</td>
-                            <td>{{ unreachable.last_refresh }}</td>
+                            <td>{% if unreachable.status == 'Closed' %}{{ unreachable.last_refresh }}{% endif %}</td>
                             <td>{{ unreachable.incident }}</td>
                             <td>{{ unreachable.status }}</td>
                         </tr>

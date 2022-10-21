@@ -11,7 +11,7 @@
             <th class="d-none d-md-table-cell">UPS</th>
             <th>All</th>
             <th class="d-none d-md-table-cell">% Affected</th>
-            <th>First Event</th>
+            <th>Last Event</th>
             <th class="d-none d-md-table-cell">Trend</th>
             <th class="d-none d-md-table-cell">Incident Request</th>
         </tr>
@@ -59,7 +59,7 @@
                 {% widthratio summary.percent_down 1 100 %}%
                 {% endif %}
             </td>
-            <td>{{ summary.first_event|date:'m/d h:i:s a' }}</td>
+            <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td>
             {% if summary.trend == 'New' %}
                 <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-plus"></i></td>
             {% elif summary.trend == 'Increasing' %}
