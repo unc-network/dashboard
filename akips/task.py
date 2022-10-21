@@ -425,6 +425,7 @@ def refresh_unreachable():
             if t_created:
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
+                t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
                 if t_summary.first_event > unreachable.event_start:
                     t_summary.first_event = unreachable.event_start
                 t_summary.last_event = now
@@ -447,6 +448,7 @@ def refresh_unreachable():
             if b_created:
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
+                b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
                 if b_summary.first_event > unreachable.event_start:
                     b_summary.first_event = unreachable.event_start
                 b_summary.last_event = now
@@ -472,6 +474,9 @@ def refresh_unreachable():
             if s_created:
                 logger.debug("Speciality summary created {}".format( unreachable.device.group ))
             else:
+                s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count(),
+                if s_summary.first_event > unreachable.event_start:
+                    s_summary.first_event = unreachable.event_start
                 s_summary.last_event = now
                 s_summary.save()
             s_summary.unreachables.add(unreachable)
