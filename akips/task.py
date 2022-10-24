@@ -615,7 +615,7 @@ def refresh_unreachable():
 
     # Close building type events open with no down devices
     #Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
-    Summary.objects.filter(status='Open').exclude(last_refresh=now).update(status='Closed')
+    Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
