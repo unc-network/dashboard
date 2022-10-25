@@ -1,8 +1,8 @@
 {% extends 'akips/base.html' %}
 {% load static %}
 
-{% block title %}OCNES Devices{% endblock %}
-{% block page_name %}Maintenance Mode{% endblock %}
+{% block title %}OCNES{% endblock %}
+{% block page_name %}Hibernate Requests{% endblock %}
 
 {% block style_sheets %}
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
@@ -17,21 +17,25 @@
             <thead>
                 <tr>
                     <th>Device</th>
-                    <th>IP</th>
-                    <th>sysName</th>
-                    <th>Grouping</th>
-                    <th>Type</th>
+                    <th>Ping Status</th>
+                    <th>Maint. Mode</th>
+                    <th>Request</th>
+                    <th>Clear Condition</th>
+                    <th>Comment</th>
                 </tr>
             </thead>
             <tbody>
-                {% for device in devices %}
+                {% for entry in list %}
                 <tr>
-                    <td><a href="{% url 'device' device.name %}">{{ device.name }}</a></td>
-                    <td>{{ device.ip4addr }}</td>
-                    <td>{{ device.sysName }}</td>
-                    <!-- <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ device.sysDescr }}</span></td> -->
-                    <td>{{ device.group }}</td>
-                    <td>{{ device.type }}</td>
+                    <td><a href="{% url 'device' entry.hibernate.device.name %}">{{ entry.hibernate.device.name }}</a></td>
+                    <td>{% for status in entry.status %}
+                            {{ status.value }}
+                        {% endfor %}
+                    </td>
+                    <td>{{ entry.hibernate.device.maintenance }}</td>
+                    <td>{{ entry.hibernate.status }}</td>
+                    <td>{{ entry.hibernate.type }}{% if entry.hibernate.type == 'Time' %} {{ entry.hibernate.scheduled }}{% endif %}</td>
+                    <td>{{ entry.hibernate.comment }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

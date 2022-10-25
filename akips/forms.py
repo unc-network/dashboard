@@ -65,6 +65,7 @@ class HibernateForm(forms.Form):
         widget=forms.RadioSelect
     )
     clear_time = forms.DateTimeField(
+        required=False,
         input_formats=['%m/%d/%Y %H:%M'],
         widget=forms.DateTimeInput(
             attrs={
@@ -73,7 +74,7 @@ class HibernateForm(forms.Form):
             }
         )
     )
-    description = forms.CharField(
+    comment = forms.CharField(
         widget=forms.Textarea(
             attrs={
                 'class': 'form-control',
@@ -82,3 +83,9 @@ class HibernateForm(forms.Form):
             }
         )
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('type','') == 'Time' and not cleaned_data.get('clear_time') :
+            raise ValidationError(
+                {'clear_time': 'A time is required'})

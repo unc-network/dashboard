@@ -183,9 +183,31 @@ class MaintenanceView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        list = []
 
         devices = Device.objects.filter(maintenance=True)
         context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
+
+class HibernateRequestsView(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/hibernate_requests.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        list = []
+
+        hibernate_list = HibernateRequest.objects.filter(status='Open')
+        for hibernate in hibernate_list:
+            status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            logger.debug("status {}".format(status))
+            entry = {
+                'hibernate': hibernate,
+                'status': status
+            }
+            list.append(entry)
+        context['list'] = list
 
         return render(request, self.template_name, context=context)
 
@@ -324,8 +346,21 @@ class HibernateView(LoginRequiredMixin, View):
             device_ids = form.cleaned_data.get('device_ids').split(',')
             for id in device_ids:
                 logger.debug("Hibernating device id {}".format(id))
-                # request = HibernateRequest()
-                messages.success(request, "Hibernation request submitted for device {}".format(id))
+                device = Device.objects.get(id=id)
+
+                hibernate_request, created = HibernateRequest.objects.update_or_create(
+                    device=device,
+                    defaults={
+                        "type": form.cleaned_data.get('type'),
+                        "scheduled": form.cleaned_data.get('clear_time'),
+                        "comment": form.cleaned_data.get('comment'),
+                        "status": 'Open',
+                    }
+                )
+                if created:
+                    messages.success(request, "Hibernation request created for device {}".format( device.name ))
+                else:
+                    messages.success(request, "Hibernation request updated for device {}".format( device.name ))
                 return HttpResponseRedirect(reverse('home'))
 
         else:
