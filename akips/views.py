@@ -376,6 +376,9 @@ class HibernateView(LoginRequiredMixin, View):
 
         else:
             # Form is invalid
+            device_ids = request.POST.get('device_ids').split(',')
+            context['devices'] = Device.objects.filter(id__in=device_ids)
+
             context['form'] = form
 
         return render(request, self.template_name, context=context)
