@@ -367,7 +367,7 @@ class ServiceNow:
             # Required fields
             'u_assignment_group': group,
             'u_caller_id': self.username,
-            'u_short_description': "OCNES Dashboard: {}".format(description),
+            'u_short_description': "OCNES: {}".format(description),
 
             # Optional fields
             #'u_business_service': 'Network: IP Services',
