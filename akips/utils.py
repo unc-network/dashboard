@@ -100,7 +100,7 @@ class AKIPS:
             return data
         return None
 
-    def set_maintenance_mode(self, device_name, mode=True):
+    def set_maintenance_mode(self, device_name, mode='True'):
         ''' Set mantenance mode on or off for a device '''
         params = {
             'function': 'web_manual_grouping',

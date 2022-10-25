@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Summary, SNMPTrap, Status
+from .models import Device, HibernateRequest, Unreachable, Summary, SNMPTrap, Status
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -620,6 +620,61 @@ def refresh_unreachable():
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
 
+
+@shared_task
+def refresh_hibernate():
+    logger.debug("Refeshing hibernated devices")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+
+    hibernate_requests = HibernateRequest.objects.filter(status='Open')
+    for hibernate in hibernate_requests:
+        logger.debug("Checking hibernate status for {}".format( hibernate.device.name ))
+
+        if hibernate.type == 'Auto':
+            status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            current_status = 'up'
+            for value in status:
+                if value.attribute == 'PING.icmpState' and value.value == 'down':
+                    current_status = 'down'
+                elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
+                    current_status = 'down'
+
+            if current_status == 'up':
+                logger.info("Status is up, clearing hibernate request for {}".format( hibernate.device.name ))
+
+                # Update AKIPS
+                akips = AKIPS()
+                result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+
+                # update the local database
+                hibernate.device.maintenance = False
+                hibernate.device.save()
+                hibernate.status = 'Closed'
+                hibernate.save()
+
+        elif hibernate.type == 'Time' and now >= hibernate.scheduled:
+            logger.info("Time is up, clearing hibernate request for {}".format( hibernate.device.name ))
+
+            # Update AKIPS
+            akips = AKIPS()
+            result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+
+            # update the local database
+            hibernate.device.maintenance = False
+            hibernate.device.save()
+            hibernate.status = 'Closed'
+            hibernate.save()
+
+    finish_time = timezone.now()
+    logger.info("hibernate refresh runtime {}".format(finish_time - now))
 
 @shared_task
 #def clear_traps():

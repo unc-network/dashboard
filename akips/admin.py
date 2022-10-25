@@ -18,7 +18,8 @@ class StatusAdmin(admin.ModelAdmin):
 
 @admin.register(HibernateRequest)
 class HibernateRequestAdmin(admin.ModelAdmin):
-    list_display = ['device', 'type', 'comment']
+    list_display = ['device', 'type', 'comment', 'status']
+    list_filter = ['status']
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):

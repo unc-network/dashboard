@@ -359,9 +359,20 @@ class HibernateView(LoginRequiredMixin, View):
                 )
                 if created:
                     messages.success(request, "Hibernation request created for device {}".format( device.name ))
-                else:
+                elif hibernate_request:
                     messages.success(request, "Hibernation request updated for device {}".format( device.name ))
-                return HttpResponseRedirect(reverse('home'))
+
+                # Update local device record
+                device.maintenance = True
+                device.save()
+
+                # Update AKIPS
+                akips = AKIPS()
+                result = akips.set_maintenance_mode(device.name)
+
+                logger.debug("Device {} hibernation request submitted".format(device.name))
+
+            return HttpResponseRedirect(reverse('home'))
 
         else:
             # Form is invalid
@@ -485,8 +496,7 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         result = {}
         # Get the current device from local database
         akips = AKIPS()
-        result['text'] = akips.set_maintenance_mode(
-            device_name, maintenance_mode)
+        result['text'] = akips.set_maintenance_mode(device_name, maintenance_mode)
         logger.debug(json.dumps(result, indent=4, sort_keys=True))
 
         # Return the results
