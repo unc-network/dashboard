@@ -18,7 +18,7 @@
                 <tr>
                     <th>Device</th>
                     <th>Trap</th>
-                    <th>Recorded</th>
+                    <th>Last Recorded</th>
                     <th>Comment</th>
                     <th>Status</th>
                 </tr>
@@ -30,7 +30,7 @@
                     <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
                         {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
                     </td>
-                    <td>{{ trap.tt }}</td>
+                    <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m/d h:i:s a' }}{% else %}{{ trap.tt|date:'m/d h:i:s a' }}{% endif %}</td>
                     <td>{{ trap.comment }}</td>
                     <td>{{ trap.status }}</td>
                 </tr>
