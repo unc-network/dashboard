@@ -31,6 +31,7 @@ services:
     # Expose port 6379 to host machine
     ports:
       - 6379:6379
+    restart: unless-stopped
 
   ########################################
   # Bring up PostgreSQL
@@ -57,6 +58,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   ########################################
   # Bring up Celery workers
@@ -94,6 +96,7 @@ services:
       DATABASE_PASSWORD: OCNESisCOOL
       POSTGRESQL_SERVICE_HOST: db
       POSTGRESQL_SERVICE_PORT: 5432
+    restart: unless-stopped
 
     command: [ 'celery', '--app', 'project', 'worker', '-B' ]
     depends_on:
@@ -138,6 +141,8 @@ services:
     # the host.  Seems binding to the loopback in the container is just that.
     # command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
     # command: [ 'python', 'manage.py', 'migrate' ]
+
+    restart: unless-stopped
 
     # command: [ 'gunicorn', 'wsgi' ]
     command:
