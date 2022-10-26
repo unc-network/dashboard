@@ -12,7 +12,7 @@
             <tbody>
                 <tr>
                     <th>Trap Time</th>
-                    <td>{{ trap.tt }}</td>
+                    <td>{{ trap.tt|date:'m/d h:i:s a' }}</td>
                 </tr>
                 <tr>
                     <th>Trap</th>
@@ -36,6 +36,16 @@
                     <td>{{ oid }}</td>
                 </tr>
                 {% endfor %}
+                {% if trap.dup_count > 0 %}
+                <tr>
+                    <th>Duplicates</th>
+                    <td>{{ trap.dup_count }}</td>
+                </tr>
+                <tr>
+                    <th>Last Duplicate</th>
+                    <td>{{ trap.dup_last|date:'m/d h:i:s a' }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
 

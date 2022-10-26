@@ -1,17 +1,24 @@
 {% extends 'akips/base.html' %}
+{% load static %}
 
 {% block title %}OCNES Recent Traps{% endblock %}
 {% block page_name %}Recent Traps (Last 24 Hours){% endblock %}
 
+{% block style_sheets %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="card">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
+    <div class="card-body table-responsive">
+        <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+
+        <table id="myTable" class="table table-hover dataTable table-sm">
             <thead>
                 <tr>
                     <th>Device</th>
                     <th>Trap</th>
-                    <th>Recorded</th>
+                    <th>Last Recorded</th>
                     <th>Comment</th>
                     <th>Status</th>
                 </tr>
@@ -19,20 +26,36 @@
             <tbody>
                 {% for trap in traps %}
                 <tr>
-                    <td>{{ trap.device }}</td>
-                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
-                    <td>{{ trap.tt }}</td>
+                    <td><a href="{% url 'device' trap.device %}">{{ trap.device }}</a></td>
+                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
+                        {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
+                    </td>
+                    <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m/d h:i:s a' }}{% else %}{{ trap.tt|date:'m/d h:i:s a' }}{% endif %}</td>
                     <td>{{ trap.comment }}</td>
                     <td>{{ trap.status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block js %}
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/jszip/jszip.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/pdfmake.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/vfs_fonts.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
     function voice_alert() {
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
@@ -50,6 +73,13 @@
 <script type="text/javascript">
     $(document).ready(function () {
         var refresh_seconds = 30000;
+
+        $("#myTable").DataTable({
+          "responsive": true, "lengthChange": false, "autoWidth": false,
+          "buttons": ["copy", "csv", "excel", "pdf", "print"],
+          "pageLength": 25,
+          "ordering": false,
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
         voice_alert();
 

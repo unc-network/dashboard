@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -46,19 +47,6 @@ class Status(models.Model):
     def __str__(self):
         return str(self.id)
 
-class StatusAlert(models.Model):
-    ''' AKiPS Status Alert '''
-    kind = models.CharField(max_length=255,help_text='kind of alert fired')
-    tt = models.DateTimeField(help_text='epoch time of the alert')
-    device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    child = models.CharField(max_length=255,help_text='child or interface name')
-    descr = models.CharField(max_length=255,help_text='child description')
-    attr = models.CharField(max_length=255,help_text='MIB.object')
-    alias = models.CharField(max_length=255,help_text='attr description')
-    state = models.CharField(max_length=255)
-
-    def __str__(self):
-        return str(self.id)
 
 class Unreachable(models.Model):
     STATUS_CHOICES = (
@@ -91,6 +79,45 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
+class HibernateRequest(models.Model):
+    TYPE_CHOICES = (
+        ('Auto', 'Auto'),
+        ('Time', 'Time'),
+        ('Manual', 'Manual'),
+    )
+    STATUS_CHOICES = (
+        ('Open', 'Open'),
+        ('Closed', 'Closed'),
+    )
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    scheduled = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    comment = models.CharField(max_length=1024, blank=True)
+
+    def __str__(self):
+        return str(self.device)
+
+# class BatteryEvent(models.Model):
+#     STATUS_CHOICES = (
+#         ('Open', 'Open'),
+#         ('Closed', 'Closed'),
+#     )
+#     # UPS battery events
+#     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+#     child = models.CharField(max_length=255)
+#     attribute = models.CharField(max_length=255)
+#     value = models.CharField(max_length=255)
+#     event_start = models.DateTimeField()
+#     last_refresh = models.DateTimeField()
+#     comment = models.CharField(max_length=1024, blank=True)
+
+#     class Meta:
+#         ordering = ['-event_start']
+
+#     def __str__(self):
+#         return str(self.device)
+
 
 class Summary(models.Model):
     ''' Summarized view of unreachable devices '''
@@ -108,7 +135,8 @@ class Summary(models.Model):
     tier = models.CharField(max_length=255, blank=True)
     name = models.CharField(max_length=255)
     ack = models.BooleanField(default=False)
-    unreachables = models.ManyToManyField(Unreachable)
+    unreachables = models.ManyToManyField(Unreachable, blank=True)
+    batteries = models.ManyToManyField(Status, blank=True)
     switch_count = models.IntegerField(default=0)
     ap_count = models.IntegerField(default=0)
     ups_count = models.IntegerField(default=0)
@@ -118,9 +146,10 @@ class Summary(models.Model):
     moving_average = models.FloatField(default=0)
     moving_avg_count = models.IntegerField(default=0)
     ups_battery = models.IntegerField(default=0)
-    first_event = models.DateTimeField()
+    first_event = models.DateTimeField(help_text="First up/down event in the summary time period")
+    last_event = models.DateTimeField(help_text="Last up/down event in the summary time period")
+    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summmary data was refreshed")
     trend = models.CharField(default='New', max_length=255)
-    last_event = models.DateTimeField()
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
     incident = models.CharField(blank=True, max_length=255)
@@ -147,10 +176,11 @@ class SNMPTrap(models.Model):
     oids = models.CharField(max_length=1024)
     ack = models.BooleanField(default=False)
     comment = models.CharField(max_length=1024, blank=True)
-    status = models.CharField(
-        max_length=32, choices=STATUS_CHOICES, default='Open')
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
     incident = models.CharField(blank=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    dup_count = models.IntegerField(default=0)
+    dup_last = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-tt']
@@ -158,15 +188,6 @@ class SNMPTrap(models.Model):
     def __str__(self):
         return str(self.id)
 
-
-class UserAlert(models.Model):
-    message = models.CharField(max_length=1024)
-    sound = models.BooleanField(default=True)
-    enabled = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return str(self.id)
 
 # class ServiceNowGroup(models.Model):
 #     name = models.CharField(max_length=1024)

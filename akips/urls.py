@@ -11,6 +11,7 @@ urlpatterns = [
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
     path('devices/', views.Devices.as_view(), name='devices'),
+    path('devices/maintenance', views.MaintenanceView.as_view(), name='maintenance'),
     path('users/', views.Users.as_view(), name='users'),
 
     # Event Focus Views
@@ -39,9 +40,11 @@ urlpatterns = [
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
 
-    # Incident Request
+    # Request Views
     path('incident/new', views.CreateIncidentView.as_view(), name='create_incident'),
     #path('incident/', views.IncidentView.as_view(), name='incident'),
+    path('hibernate/', views.HibernateView.as_view(), name='hibernate'),
+    path('hibernate/requests', views.HibernateRequestsView.as_view(), name='hibernate_requests'),
 
     # JSON Views
     #path('webhook/', views.AKIPSListener.as_view(), name='akips_webhook'),

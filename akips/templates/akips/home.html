@@ -133,14 +133,20 @@
             },
             datasetFill : false,
             scales: {
-                y: { suggestedMin: 0 },
+                // y: { 
+                //     type: 'logarithmic'
+                // },
                 xAxes: [{
                     gridLines : { display : true },
                     stacked: true
                 }],
                 yAxes: [{
                     gridLines : { display : true },
-                    stacked: true
+                    stacked: true,
+                    ticks: {
+                        min: 0
+                    },
+                    //type: 'logarithmic'
                 }]
             }
         }
@@ -172,6 +178,17 @@
             }
         });
     }
+    function refresh_dups() {
+        $('.dup-data').each(function (index) {
+            var now = new Date();
+            var last = new Date( $(this).data("last") );
+            var FIVE_MIN=5*60*1000;
+            if ( (now - last) < FIVE_MIN) {
+                //console.log('Date is in the last 5 minutes old');
+                $(this).removeClass("bg-primary").addClass("bg-danger");
+            }
+        });
+    }
     function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
 
@@ -194,6 +211,9 @@
                     //console.log("Table " + id + " row count " + len);
                     if ( len < 2 ) {
                         $('#' + id ).hide();
+                    }
+                    if (id == "trap_card") {
+                        refresh_dups();
                     }
                 },
                 error: function (xhr, status, error) {

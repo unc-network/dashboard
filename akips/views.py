@@ -26,8 +26,8 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import Summary, Unreachable, Device, SNMPTrap, Status
-from .forms import IncidentForm
+from .models import HibernateRequest, Summary, Unreachable, Device, SNMPTrap, Status
+from .forms import IncidentForm, HibernateForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow, pretty_duration
 
@@ -94,15 +94,18 @@ class Users(LoginRequiredMixin, View):
         date_from = timezone.now() - timedelta(days=7)
         context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
 
-        session_list = Session.objects.filter(expire_date__gte=timezone.now())
+        session_list = Session.objects.filter(expire_date__gte=timezone.now()).order_by('-expire_date')
         sessions = []
         for s in session_list:
             s_decoded = s.get_decoded()
+            session_start = s.expire_date - timedelta(seconds=settings.SESSION_COOKIE_AGE)
             logger.debug("session {}".format( s.get_decoded() ))
             logger.debug("session expire {}".format( s.expire_date ))
+            logger.debug("session start {}".format( session_start ))
             sessions.append({ 
                 'user': User.objects.get(id=s_decoded['_auth_user_id']),
                 'expire': s.expire_date,
+                'start': session_start,
                 })
         context['session_list'] = sessions
 
@@ -168,12 +171,45 @@ class UnreachableView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        unreachables = Unreachable.objects.filter(
-            status='Open', device__maintenance=False).order_by('-event_start')
+        #unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).order_by('-event_start')
+        unreachables = Unreachable.objects.filter(status='Open').order_by('-event_start')
         context['unreachables'] = unreachables
 
         return render(request, self.template_name, context=context)
 
+class MaintenanceView(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/devices_maintenance.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        list = []
+
+        devices = Device.objects.filter(maintenance=True)
+        context['devices'] = devices
+
+        return render(request, self.template_name, context=context)
+
+class HibernateRequestsView(LoginRequiredMixin, View):
+    ''' Generic first view '''
+    template_name = 'akips/hibernate_requests.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        list = []
+
+        hibernate_list = HibernateRequest.objects.filter(status='Open')
+        for hibernate in hibernate_list:
+            status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            logger.debug("status {}".format(status))
+            entry = {
+                'hibernate': hibernate,
+                'status': status
+            }
+            list.append(entry)
+        context['list'] = list
+
+        return render(request, self.template_name, context=context)
 
 class SummaryView(LoginRequiredMixin, View):
     ''' Generic summary view '''
@@ -187,6 +223,7 @@ class SummaryView(LoginRequiredMixin, View):
 
         context['u_open'] = summary.unreachables.filter(status='Open').order_by('-event_start')
         context['u_closed'] = summary.unreachables.filter(status='Closed').order_by('-event_start')
+        context['batteries'] = summary.batteries.all()
         context['summary'] = summary
 
         context['avg_low'] = summary.moving_average * 0.95
@@ -254,6 +291,10 @@ class DeviceView(LoginRequiredMixin, View):
         traps = SNMPTrap.objects.filter(device=device).order_by('-tt')
         context['traps'] = traps
 
+        status_list = Status.objects.filter(device=device)
+        logger.debug("status_list {}".format(status_list))
+        context['status_list'] = status_list
+
         return render(request, self.template_name, context=context)
 
 
@@ -277,6 +318,70 @@ class TrapView(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+
+class HibernateView(LoginRequiredMixin, View):
+    ''' Hibernate devices '''
+    template_name = 'akips/hibernate.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        checkboxes = request.GET.getlist('device')
+        logger.debug("Got list {}".format(checkboxes))
+
+        device_ids = checkboxes
+        context['devices'] = Device.objects.filter(id__in=device_ids)
+
+        initial = {
+            'device_ids': ','.join(device_ids),
+        }
+        context['form'] = HibernateForm(initial=initial)
+
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        context = {}
+        form = HibernateForm(request.POST)
+
+        if form.is_valid():
+            device_ids = form.cleaned_data.get('device_ids').split(',')
+            for id in device_ids:
+                logger.debug("Hibernating device id {}".format(id))
+                device = Device.objects.get(id=id)
+
+                hibernate_request, created = HibernateRequest.objects.update_or_create(
+                    device=device,
+                    defaults={
+                        "type": form.cleaned_data.get('type'),
+                        "scheduled": form.cleaned_data.get('clear_time'),
+                        "comment": form.cleaned_data.get('comment'),
+                        "status": 'Open',
+                    }
+                )
+                if created:
+                    messages.success(request, "Hibernation request created for device {}".format( device.name ))
+                elif hibernate_request:
+                    messages.success(request, "Hibernation request updated for device {}".format( device.name ))
+
+                # Update local device record
+                device.maintenance = True
+                device.save()
+
+                # Update AKIPS
+                akips = AKIPS()
+                result = akips.set_maintenance_mode(device.name)
+
+                logger.debug("Device {} hibernation request submitted".format(device.name))
+
+            return HttpResponseRedirect(reverse('home'))
+
+        else:
+            # Form is invalid
+            device_ids = request.POST.get('device_ids').split(',')
+            context['devices'] = Device.objects.filter(id__in=device_ids)
+
+            context['form'] = form
+
+        return render(request, self.template_name, context=context)
 
 class CreateIncidentView(LoginRequiredMixin, View):
     ''' Create Incidents '''
@@ -394,8 +499,7 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         result = {}
         # Get the current device from local database
         akips = AKIPS()
-        result['text'] = akips.set_maintenance_mode(
-            device_name, maintenance_mode)
+        result['text'] = akips.set_maintenance_mode(device_name, maintenance_mode)
         logger.debug(json.dumps(result, indent=4, sort_keys=True))
 
         # Return the results
@@ -770,6 +874,13 @@ def akips_webhook(request):
 @atomic
 def process_webhook_payload(payload):
     ''' Add it to the database '''
+    if 'device' not in payload:
+        logger.warn("Trap alert is missing device field")
+        return
+    elif 'type' not in payload:
+        logger.warn("Trap alert is missing type field")
+        return
+
     try:
         device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
@@ -778,15 +889,39 @@ def process_webhook_payload(payload):
         return
 
     if payload['type'] == 'Trap':
-        SNMPTrap.objects.create(
-            tt=datetime.fromtimestamp(
-                int(payload['tt']), tz=timezone.get_current_timezone()),
-            device=device,
-            ipaddr=payload['ipaddr'],
+        # Check for Open duplicates
+        duplicates = SNMPTrap.objects.filter( 
+            device=device, 
             trap_oid=payload['trap_oid'],
-            uptime=payload['uptime'],
-            oids=json.dumps(payload['oids'])
-        )
+            oids=json.dumps(payload['oids']),
+            #ack=True,
+            status='Open')
+
+        if duplicates:
+            logger.info("Trap has repeated")
+            for duplicate in duplicates:
+                duplicate.dup_count += 1
+                duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
+                duplicate.save()
+            # SNMPTrap.objects.create(
+            #     tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+            #     device=device,
+            #     ipaddr=payload['ipaddr'],
+            #     trap_oid=payload['trap_oid'],
+            #     uptime=payload['uptime'],
+            #     oids=json.dumps(payload['oids']),
+            #     comment="Auto-cleared as a duplicate",
+            #     status='Closed',
+            # )
+        else:
+            SNMPTrap.objects.create(
+                tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+                device=device,
+                ipaddr=payload['ipaddr'],
+                trap_oid=payload['trap_oid'],
+                uptime=payload['uptime'],
+                oids=json.dumps(payload['oids'])
+            )
     elif payload['type'] == 'Status':
         Status.objects.update_or_create(
             device=device,

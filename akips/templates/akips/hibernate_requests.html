@@ -1,8 +1,8 @@
 {% extends 'akips/base.html' %}
 {% load static %}
 
-{% block title %}OCNES Recent Unreachables{% endblock %}
-{% block page_name %}Recent Unreachables (Last 24 Hours){% endblock %}
+{% block title %}OCNES{% endblock %}
+{% block page_name %}Hibernate Requests{% endblock %}
 
 {% block style_sheets %}
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
@@ -10,31 +10,32 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-body table-responsive">
+    <div class="card-body">
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>IP Address</th>
-                    <th>Down</th>
-                    <!-- <th>Description</th> -->
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Status</th>
+                    <th>Device</th>
+                    <th>Ping Status</th>
+                    <th>Maint. Mode</th>
+                    <th>Request</th>
+                    <th>Clear Condition</th>
+                    <th>Comment</th>
                 </tr>
             </thead>
             <tbody>
-                {% for unreachable in unreachables %}
+                {% for entry in list %}
                 <tr>
-                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
-                    <td>{{ unreachable.device.ip4addr }}</td>
-                    <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                    <!-- <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td> -->
-                    <td>{{ unreachable.event_start }}</td>
-                    <td>{{ unreachable.last_refresh }}</td>
-                    <td>{{ unreachable.status }}</td>
+                    <td><a href="{% url 'device' entry.hibernate.device.name %}">{{ entry.hibernate.device.name }}</a></td>
+                    <td>{% for status in entry.status %}
+                            {{ status.value }}
+                        {% endfor %}
+                    </td>
+                    <td>{{ entry.hibernate.device.maintenance }}</td>
+                    <td>{{ entry.hibernate.status }}</td>
+                    <td>{{ entry.hibernate.type }}{% if entry.hibernate.type == 'Time' %} {{ entry.hibernate.scheduled }}{% endif %}</td>
+                    <td>{{ entry.hibernate.comment }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -80,7 +81,6 @@
           "responsive": true, "lengthChange": false, "autoWidth": false,
           "buttons": ["copy", "csv", "excel", "pdf", "print"],
           "pageLength": 25,
-          "ordering": false,
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
         voice_alert();

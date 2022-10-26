@@ -6,14 +6,14 @@
         <tr>
             <th>Ack</th>
             <th>Tier1 / Building</th>
-            <th>Switch</th>
-            <th>AP</th>
-            <th>UPS</th>
+            <th class="d-none d-md-table-cell">Switch</th>
+            <th class="d-none d-md-table-cell">AP</th>
+            <th class="d-none d-md-table-cell">UPS</th>
             <th>All</th>
-            <th>% Affected</th>
-            <th>First Event</th>
-            <th>Trend</th>
-            <th>Incident Request</th>
+            <th class="d-none d-md-table-cell">% Affected</th>
+            <th>Last Event</th>
+            <th class="d-none d-md-table-cell">Trend</th>
+            <th class="d-none d-md-table-cell">Incident Request</th>
         </tr>
     </thead>
     <tbody>
@@ -48,28 +48,28 @@
                 <!-- <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>  -->
             </td>
             {% endif %}
-            <td>{{ summary.switch_count }}</td>
-            <td>{{ summary.ap_count }}</td>
-            <td>{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-three-quarters text-danger"></i>{% endif %}</td>
+            <td class="d-none d-md-table-cell">{{ summary.switch_count }}</td>
+            <td class="d-none d-md-table-cell">{{ summary.ap_count }}</td>
+            <td class="d-none d-md-table-cell">{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-three-quarters text-danger"></i>{% endif %}</td>
             <td>{{ summary.total_count }}</td>
-            <td>
+            <td class="d-none d-md-table-cell">
                 {% if summary.percent_down >= .10 %}
                 <span class="text-danger">{% widthratio summary.percent_down 1 100 %}%</span>
                 {% else %}
                 {% widthratio summary.percent_down 1 100 %}%
                 {% endif %}
             </td>
-            <td>{{ summary.first_event|date:'m/d h:i:s a' }}</td>
+            <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td>
             {% if summary.trend == 'New' %}
-                <td class="text-center bg-danger akips_trend"><i class="fas fa-plus"></i></td>
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-plus"></i></td>
             {% elif summary.trend == 'Increasing' %}
-                <td class="text-center bg-warning akips_trend"><i class="fas fa-level-up-alt"></i></td>
+                <td class="text-center bg-warning akips_trend d-none d-md-table-cell"><i class="fas fa-level-up-alt"></i></td>
             {% elif summary.trend == 'Decreasing' %}
-                <td class="text-center bg-success akips_trend"><i class="fas fa-level-down-alt"></i></td>
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-level-down-alt"></i></td>
             {% else %}
-                <td class="text-center akips_trend"><i class="fas fa-long-arrow-alt-right"></i></td>
+                <td class="text-center akips_trend d-none d-md-table-cell"><i class="fas fa-long-arrow-alt-right"></i></td>
             {% endif %}
-            <td class="text-center">
+            <td class="text-center d-none d-md-table-cell">
                 {% if summary.incident %}
                 {{ summary.incident }}
                 {% else %}

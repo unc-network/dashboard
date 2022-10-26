@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, Unreachable, Summary, SNMPTrap, UserAlert, Status
+from .models import Device, HibernateRequest, Unreachable, Summary, SNMPTrap, Status
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -351,8 +351,7 @@ def refresh_unreachable():
             time.sleep(sleep_delay)
 
         # Remove stale entries
-        Unreachable.objects.filter(status='Open').exclude(
-            last_refresh__gte=now).update(status='Closed')
+        Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
@@ -382,20 +381,20 @@ def refresh_unreachable():
                 name=unreachable.device.name,
                 status='Open',
                 defaults={
-                    'first_event': now,
-                    'last_event': now,
+                    'first_event': unreachable.event_start,
+                    'last_event': unreachable.event_start,
                     'max_count': 1
                 }
             )
             if c_created:
-                UserAlert.objects.create(
-                    message="new critical device {} down".format(unreachable.device.name))
                 logger.debug("Crit summary created {}".format(
                     unreachable.device.name))
             else:
                 if c_summary.first_event > unreachable.event_start:
                     c_summary.first_event = unreachable.event_start
-                c_summary.last_event = now
+                if c_summary.last_event < unreachable.event_start:
+                    c_summary.last_event = unreachable.event_start
+                c_summary.last_refresh = now
                 c_summary.save()
             c_summary.unreachables.add(unreachable)
 
@@ -420,18 +419,20 @@ def refresh_unreachable():
                 defaults={
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
-                    'last_event': now,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count(),
+                    'last_event': unreachable.event_start,
+                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
                     #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
             if t_created:
-                #UserAlert.objects.create(message="new tier {} down".format(tier_name))
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
+                t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
                 if t_summary.first_event > unreachable.event_start:
                     t_summary.first_event = unreachable.event_start
-                t_summary.last_event = now
+                if t_summary.last_event < unreachable.event_start:
+                    t_summary.last_event = unreachable.event_start
+                t_summary.last_refresh = now
                 t_summary.save()
             t_summary.unreachables.add(unreachable)
 
@@ -443,18 +444,20 @@ def refresh_unreachable():
                 defaults={
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
-                    'last_event': now,
+                    'last_event': unreachable.event_start,
                     'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
                     #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
             if b_created:
-                UserAlert.objects.create(message="new building {} on tier {} down".format(bldg_name, b_summary.tier))
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
+                b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
                 if b_summary.first_event > unreachable.event_start:
                     b_summary.first_event = unreachable.event_start
-                b_summary.last_event = now
+                if b_summary.last_event < unreachable.event_start:
+                    b_summary.last_event = unreachable.event_start
+                b_summary.last_refresh = now
                 b_summary.save()
             b_summary.unreachables.add(unreachable)
 
@@ -469,7 +472,7 @@ def refresh_unreachable():
                 status='Open',
                 defaults={
                     'first_event': unreachable.event_start,
-                    'last_event': now,
+                    'last_event': unreachable.event_start,
                     'max_count': Device.objects.filter(group=unreachable.device.group).count(),
                     #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
                 }
@@ -477,7 +480,12 @@ def refresh_unreachable():
             if s_created:
                 logger.debug("Speciality summary created {}".format( unreachable.device.group ))
             else:
-                s_summary.last_event = now
+                s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
+                if s_summary.first_event > unreachable.event_start:
+                    s_summary.first_event = unreachable.event_start
+                if s_summary.last_event < unreachable.event_start:
+                    s_summary.last_event = unreachable.event_start
+                s_summary.last_refresh = now
                 s_summary.save()
             s_summary.unreachables.add(unreachable)
 
@@ -496,7 +504,7 @@ def refresh_unreachable():
             defaults={
                 'tier': ups.device.tier,
                 'first_event': ups.last_change,
-                'last_event': now,
+                'last_event': ups.last_change,
                 'max_count': Device.objects.filter(tier=ups.device.tier).count(),
                 'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
@@ -504,9 +512,14 @@ def refresh_unreachable():
         if t_created:
             logger.debug("Tier summary created {}".format(tier_name))
         else:
-            b_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            t_summary.last_event = now
+            t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            if t_summary.first_event > ups.last_change:
+                t_summary.first_event = ups.last_change
+            if t_summary.last_event < ups.last_change:
+                t_summary.last_event = ups.last_change
+            t_summary.last_refresh = now
             t_summary.save()
+        t_summary.batteries.add(ups)
 
         # Find the building summary to update
         b_summary, b_created = Summary.objects.get_or_create(
@@ -516,7 +529,7 @@ def refresh_unreachable():
             defaults={
                 'tier': ups.device.tier,
                 'first_event': ups.last_change,
-                'last_event': now,
+                'last_event': ups.last_change,
                 'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
                 'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             }
@@ -525,8 +538,13 @@ def refresh_unreachable():
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
             b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            b_summary.last_event = now
+            if b_summary.first_event > ups.last_change:
+                b_summary.first_event = ups.last_change
+            if b_summary.last_event < ups.last_change:
+                b_summary.last_event = ups.last_change
+            b_summary.last_refresh = now
             b_summary.save()
+        b_summary.batteries.add(ups)
 
     # Calculate summary counts
     summaries = Summary.objects.filter(status='Open')
@@ -596,11 +614,71 @@ def refresh_unreachable():
         time.sleep(sleep_delay)
 
     # Close building type events open with no down devices
-    Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
+    #Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
+    Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
 
+
+@shared_task
+def refresh_hibernate():
+    logger.debug("Refeshing hibernated devices")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.05
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+
+    hibernate_requests = HibernateRequest.objects.filter(status='Open')
+    for hibernate in hibernate_requests:
+        logger.debug("Checking hibernate status for {}".format( hibernate.device.name ))
+
+        if hibernate.type == 'Auto':
+            # status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            # current_status = 'up'
+            # for value in status:
+            #     if value.attribute == 'PING.icmpState' and value.value == 'down':
+            #         current_status = 'down'
+            #     elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
+            #         current_status = 'down'
+
+            # if current_status == 'up':
+
+            # Check or an open unreachable on this device
+            unreachable_count = Unreachable.objects.filter(device=hibernate.device,status='Open').count()
+            if unreachable_count == 0:
+                logger.info("Status is up, clearing hibernate request for {}".format( hibernate.device.name ))
+
+                # Update AKIPS
+                akips = AKIPS()
+                result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+
+                # update the local database
+                hibernate.device.maintenance = False
+                hibernate.device.save()
+                hibernate.status = 'Closed'
+                hibernate.save()
+
+        elif hibernate.type == 'Time' and now >= hibernate.scheduled:
+            logger.info("Time is up, clearing hibernate request for {}".format( hibernate.device.name ))
+
+            # Update AKIPS
+            akips = AKIPS()
+            result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+
+            # update the local database
+            hibernate.device.maintenance = False
+            hibernate.device.save()
+            hibernate.status = 'Closed'
+            hibernate.save()
+
+    finish_time = timezone.now()
+    logger.info("hibernate refresh runtime {}".format(finish_time - now))
 
 @shared_task
 #def clear_traps():
@@ -609,12 +687,18 @@ def cleanup_dashboard_data():
     now = timezone.now()
 
     # Define the periods we care about
+    two_hours_ago = now - timedelta(hours=2)
     one_day_ago = now - timedelta(days=1)
     seven_days_ago = now - timedelta(days=7)
 
-    # clear and delete traps based on age
-    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).update(status='Closed', comment="Auto closed due to age")
-    SNMPTrap.objects.filter(tt__lt=seven_days_ago).delete()
+    # Auto clear old traps (1 day)
+    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment='Auto closed due to age')
+
+    # Delete really old traps (7 days)
+    SNMPTrap.objects.filter(status='Closed',tt__lt=seven_days_ago).delete()
+
+    # Remove old duplicate traps (2 hours)
+    SNMPTrap.objects.filter(status='Closed',tt__lt=two_hours_ago,comment='Auto-cleared as a duplicate').delete()
 
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()

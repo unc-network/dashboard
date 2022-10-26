@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, UserAlert, Profile, Status, StatusAlert
+from akips.models import Device, SNMPTrap, Unreachable, Summary, Profile, Status, HibernateRequest
 
 # Register your models here.
 
@@ -15,9 +15,11 @@ class StatusAdmin(admin.ModelAdmin):
     list_display = ['device', 'child', 'attribute', 'value', 'last_change']
     list_filter = ['attribute', 'value']
 
-@admin.register(StatusAlert)
-class StatusAlertAdmin(admin.ModelAdmin):
-    list_display = ['device', 'attr']
+
+@admin.register(HibernateRequest)
+class HibernateRequestAdmin(admin.ModelAdmin):
+    list_display = ['device', 'type', 'comment', 'status']
+    list_filter = ['status']
 
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
@@ -28,7 +30,7 @@ class UnreachableAdmin(admin.ModelAdmin):
 
 @admin.register(Summary)
 class SummaryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'type', 'total_count', 'max_count', 'status', 'first_event', 'last_event']
+    list_display = ['name', 'type', 'total_count', 'status', 'first_event', 'last_event', 'last_refresh']
     list_filter = ['status', 'type']
     search_fields = ['name']
 
@@ -38,11 +40,6 @@ class SNMPTrapAdmin(admin.ModelAdmin):
     list_display = ['trap_oid', 'device', 'ipaddr', 'tt', 'status']
     list_filter = ['status', 'trap_oid']
     search_fields = ['trap_oid', 'ipaddr']
-
-
-@admin.register(UserAlert)
-class UserAlertAdmin(admin.ModelAdmin):
-    list_display = ['message', 'created_at']
 
 
 @admin.register(Profile)

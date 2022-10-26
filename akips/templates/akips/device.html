@@ -73,6 +73,10 @@
         <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
             aria-selected="false">Trap History ({{ traps|length }})</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link" id="status-tab" data-toggle="tab" href="#status" role="tab" aria-controls="status"
+            aria-selected="false">Current Status ({{ status_list|length }})</a>
+    </li>
 </ul>
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -83,8 +87,8 @@
                         <tr>
                             <!-- <th>id</th> -->
                             <th>Down</th>
-                            <th>Start Event</th>
-                            <th>Last Event</th>
+                            <th>Start</th>
+                            <th>End</th>
                             <th>Incident</th>
                             <th>Status</th>
                         </tr>
@@ -96,7 +100,7 @@
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
                                 {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <td>{{ unreachable.event_start }}</td>
-                            <td>{{ unreachable.last_refresh }}</td>
+                            <td>{% if unreachable.status == 'Closed' %}{{ unreachable.last_refresh }}{% endif %}</td>
                             <td>{{ unreachable.incident }}</td>
                             <td>{{ unreachable.status }}</td>
                         </tr>
@@ -121,10 +125,36 @@
                     <tbody>
                         {% for trap in traps %}
                         <tr>
-                            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a></td>
+                            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
+                                {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
+                            </td>
                             <td>{{ trap.tt }}</td>
                             <td>{{ trap.incident }}</td>
                             <td>{{ trap.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="status" role="tabpanel" aria-labelledby="status-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Value</th>
+                            <th>Last Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status in status_list %}
+                        <tr>
+                            <td>{{ status.attribute }}</td>
+                            <td>{{ status.value }}</td>
+                            <td>{{ status.last_change }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
