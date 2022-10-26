@@ -639,15 +639,19 @@ def refresh_hibernate():
         logger.debug("Checking hibernate status for {}".format( hibernate.device.name ))
 
         if hibernate.type == 'Auto':
-            status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
-            current_status = 'up'
-            for value in status:
-                if value.attribute == 'PING.icmpState' and value.value == 'down':
-                    current_status = 'down'
-                elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
-                    current_status = 'down'
+            # status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            # current_status = 'up'
+            # for value in status:
+            #     if value.attribute == 'PING.icmpState' and value.value == 'down':
+            #         current_status = 'down'
+            #     elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
+            #         current_status = 'down'
 
-            if current_status == 'up':
+            # if current_status == 'up':
+
+            # Check or an open unreachable on this device
+            unreachable_count = Unreachable.objects.filter(device=hibernate.device,status='Open').count()
+            if unreachable_count == 0:
                 logger.info("Status is up, clearing hibernate request for {}".format( hibernate.device.name ))
 
                 # Update AKIPS
