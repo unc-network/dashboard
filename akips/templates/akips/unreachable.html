@@ -27,7 +27,8 @@
             <tbody>
                 {% for unreachable in unreachables %}
                 <tr>
-                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a>
+                    {% if unreachable.device.maintenance %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-tools"></i></span>{% endif %}</td>
                     <td>{{ unreachable.device.ip4addr }}</td>
                     <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                     <td class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</td>
