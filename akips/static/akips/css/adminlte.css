@@ -6809,7 +6809,8 @@ button.bg-danger:focus {
 }
 
 .bg-light {
-  background-color: #f8f9fa !important;
+  /* background-color: #f8f9fa !important; */
+  background-color: #f5f5f5 !important;
 }
 
 a.bg-light:hover, a.bg-light:focus,
@@ -28009,7 +28010,8 @@ blockquote.quote-gray-dark h6 {
 }
 
 .bg-light {
-  background-color: #f8f9fa !important;
+  /* background-color: #f8f9fa !important; */
+  background-color: #f5f5f5 !important;
 }
 
 .bg-light,
