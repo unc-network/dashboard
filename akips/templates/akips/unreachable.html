@@ -27,7 +27,7 @@
             <tbody>
                 {% for unreachable in unreachables %}
                 <tr>
-                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a>
+                    <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a>
                     {% if unreachable.device.hibernate %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-bed"></i></span>{% endif %}
                     {% if unreachable.device.maintenance %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-tools"></i></span>{% endif %}
                 </td>
