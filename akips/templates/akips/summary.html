@@ -120,7 +120,7 @@
                     <tbody>
                         {% for unreachable in u_open %}
                         <tr>
-                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
@@ -164,7 +164,7 @@
                     <tbody>
                         {% for unreachable in u_closed %}
                         <tr>
-                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.name }}</a></td>
+                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
