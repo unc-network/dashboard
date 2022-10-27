@@ -363,12 +363,8 @@ class HibernateView(LoginRequiredMixin, View):
                     messages.success(request, "Hibernation request updated for device {}".format( device.name ))
 
                 # Update local device record
-                device.maintenance = True
+                device.hibernate = True
                 device.save()
-
-                # Update AKIPS
-                akips = AKIPS()
-                result = akips.set_maintenance_mode(device.name)
 
                 logger.debug("Device {} hibernation request submitted".format(device.name))
 

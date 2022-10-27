@@ -58,6 +58,9 @@
                         data-url="{% url 'set_maintenance' %}">
                     {% endif %}
                     <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+                    {% if device.hibernate %}
+                    <p>Hibernated <span class="badge bg-primary"><i class="fas fa-bed"></i></span></p>
+                    {% endif %}
                 </div>
             </div>
         </div>

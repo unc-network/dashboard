@@ -370,7 +370,7 @@ def refresh_unreachable():
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     # Process all current unreachable records
-    unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False)
+    unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True)
     for unreachable in unreachables:
         logger.debug("Processing unreachable {}".format(unreachable))
 
@@ -492,7 +492,7 @@ def refresh_unreachable():
         time.sleep(sleep_delay)
 
     # Process all ups on battery
-    ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False)
+    ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True)
     for ups in ups_on_battery:
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
@@ -639,27 +639,27 @@ def refresh_hibernate():
         logger.debug("Checking hibernate status for {}".format( hibernate.device.name ))
 
         if hibernate.type == 'Auto':
-            # status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
-            # current_status = 'up'
-            # for value in status:
-            #     if value.attribute == 'PING.icmpState' and value.value == 'down':
-            #         current_status = 'down'
-            #     elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
-            #         current_status = 'down'
+            #status = Status.objects.filter(device=hibernate.device,attribute='PING.icmpState')
+            status = Status.objects.filter(device=hibernate.device)
+            current_status = 'up'
+            for value in status:
+                if value.attribute == 'PING.icmpState' and value.value == 'down':
+                    current_status = 'down'
+                elif value.attribute == 'SNMP.snmpState' and value.value == 'down':
+                    current_status = 'down'
 
-            # if current_status == 'up':
-
-            # Check or an open unreachable on this device
-            unreachable_count = Unreachable.objects.filter(device=hibernate.device,status='Open').count()
-            if unreachable_count == 0:
+            # # Check or an open unreachable on this device
+            # unreachable_count = Unreachable.objects.filter(device=hibernate.device,status='Open').count()
+            # if unreachable_count == 0:
+            if current_status == 'up':
                 logger.info("Status is up, clearing hibernate request for {}".format( hibernate.device.name ))
 
-                # Update AKIPS
-                akips = AKIPS()
-                result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+                # # Update AKIPS
+                # akips = AKIPS()
+                # result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
 
                 # update the local database
-                hibernate.device.maintenance = False
+                hibernate.device.hibernate = False
                 hibernate.device.save()
                 hibernate.status = 'Closed'
                 hibernate.save()
@@ -667,12 +667,12 @@ def refresh_hibernate():
         elif hibernate.type == 'Time' and now >= hibernate.scheduled:
             logger.info("Time is up, clearing hibernate request for {}".format( hibernate.device.name ))
 
-            # Update AKIPS
-            akips = AKIPS()
-            result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
+            # # Update AKIPS
+            # akips = AKIPS()
+            # result = akips.set_maintenance_mode(hibernate.device.name, mode='False')
 
             # update the local database
-            hibernate.device.maintenance = False
+            hibernate.device.hibernate = False
             hibernate.device.save()
             hibernate.status = 'Closed'
             hibernate.save()

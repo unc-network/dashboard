@@ -21,6 +21,7 @@ class Device(models.Model):
     hierarcy = models.CharField(max_length=255, blank=True)
     type = models.CharField(max_length=255, blank=True)
     maintenance = models.BooleanField(default=False)
+    hibernate = models.BooleanField(default=False)
     last_refresh = models.DateTimeField()
 
     class Meta:
