@@ -8,7 +8,7 @@
 <div class="card">
     <div class="card-body table-responsive">
         <div class="row">
-            <div class="col-8">
+            <div class="col-md-8">
                 <table class="table table-sm">
                     <tr>
                         <th>AKiPS Name</th>
@@ -48,7 +48,7 @@
                     </tr>
                 </table>
             </div>
-            <div class="col-4 text-center">
+            <div class="col-md-4 text-center">
                 <div class="custom-control custom-switch">
                     {% if device.maintenance %}
                     <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
@@ -58,10 +58,17 @@
                         data-url="{% url 'set_maintenance' %}">
                     {% endif %}
                     <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
-                    {% if device.hibernate %}
-                    <p>Hibernated <span class="badge bg-primary"><i class="fas fa-bed"></i></span></p>
-                    {% endif %}
                 </div>
+                {% if device.hibernate %}
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked disabled>
+                    <label class="custom-control-label" for="hibernateSwitch">Hibernated</label>
+                </div>
+                {% endif %}
+                {% for hibernate in hibernate_list %}
+                <p>Hibernate last end: {{ hibernate.executed }}</p>
+                <p>Comment: {{ hibernate.comment }}</p>
+                {% endfor %}
             </div>
         </div>
     </div>

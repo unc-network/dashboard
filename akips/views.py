@@ -295,6 +295,9 @@ class DeviceView(LoginRequiredMixin, View):
         logger.debug("status_list {}".format(status_list))
         context['status_list'] = status_list
 
+        hibernate_list = HibernateRequest.objects.filter(device=device).exclude(status='Open')
+        context['hibernate_list'] = hibernate_list
+
         return render(request, self.template_name, context=context)
 
 
