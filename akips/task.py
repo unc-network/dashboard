@@ -661,6 +661,7 @@ def refresh_hibernate():
                 # update the local database
                 hibernate.device.hibernate = False
                 hibernate.device.save()
+                hibernate.executed = now
                 hibernate.status = 'Closed'
                 hibernate.save()
 
@@ -674,6 +675,7 @@ def refresh_hibernate():
             # update the local database
             hibernate.device.hibernate = False
             hibernate.device.save()
+            hibernate.executed = now
             hibernate.status = 'Closed'
             hibernate.save()
 

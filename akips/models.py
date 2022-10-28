@@ -22,6 +22,7 @@ class Device(models.Model):
     type = models.CharField(max_length=255, blank=True)
     maintenance = models.BooleanField(default=False)
     hibernate = models.BooleanField(default=False)
+    comment = models.CharField(max_length=1024, blank=True)
     last_refresh = models.DateTimeField()
 
     class Meta:
@@ -30,24 +31,6 @@ class Device(models.Model):
 
     def __str__(self):
         return str(self.name)
-
-
-class Status(models.Model):
-    ''' Representation of AKiPS status record '''
-    device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    child = models.CharField(max_length=255)
-    attribute = models.CharField(max_length=255)
-    value = models.CharField(max_length=255)
-    last_change = models.DateTimeField()
-
-    class Meta:
-        verbose_name_plural = 'statuses'
-        ordering = ['device']
-        indexes = [ models.Index(fields=['attribute']) ]
-
-    def __str__(self):
-        return str(self.id)
-
 
 class Unreachable(models.Model):
     STATUS_CHOICES = (
@@ -80,45 +63,46 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
-class HibernateRequest(models.Model):
-    TYPE_CHOICES = (
-        ('Auto', 'Auto'),
-        ('Time', 'Time'),
-        ('Manual', 'Manual'),
-    )
+class SNMPTrap(models.Model):
     STATUS_CHOICES = (
         ('Open', 'Open'),
         ('Closed', 'Closed'),
     )
+    tt = models.DateTimeField()
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
-    scheduled = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    ipaddr = models.GenericIPAddressField()
+    trap_oid = models.CharField(max_length=255)
+    uptime = models.CharField(max_length=255)
+    oids = models.CharField(max_length=1024)
+    ack = models.BooleanField(default=False)
     comment = models.CharField(max_length=1024, blank=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
+    incident = models.CharField(blank=True, max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    dup_count = models.IntegerField(default=0)
+    dup_last = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-tt']
 
     def __str__(self):
-        return str(self.device)
+        return str(self.id)
 
-# class BatteryEvent(models.Model):
-#     STATUS_CHOICES = (
-#         ('Open', 'Open'),
-#         ('Closed', 'Closed'),
-#     )
-#     # UPS battery events
-#     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-#     child = models.CharField(max_length=255)
-#     attribute = models.CharField(max_length=255)
-#     value = models.CharField(max_length=255)
-#     event_start = models.DateTimeField()
-#     last_refresh = models.DateTimeField()
-#     comment = models.CharField(max_length=1024, blank=True)
+class Status(models.Model):
+    ''' Representation of AKiPS status record '''
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    child = models.CharField(max_length=255)
+    attribute = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+    last_change = models.DateTimeField()
 
-#     class Meta:
-#         ordering = ['-event_start']
+    class Meta:
+        verbose_name_plural = 'statuses'
+        ordering = ['device']
+        indexes = [ models.Index(fields=['attribute']) ]
 
-#     def __str__(self):
-#         return str(self.device)
-
+    def __str__(self):
+        return str(self.id)
 
 class Summary(models.Model):
     ''' Summarized view of unreachable devices '''
@@ -163,32 +147,25 @@ class Summary(models.Model):
     def __str__(self):
         return str(self.name)
 
-
-class SNMPTrap(models.Model):
+class HibernateRequest(models.Model):
+    TYPE_CHOICES = (
+        ('Auto', 'Auto'),
+        ('Time', 'Time'),
+        ('Manual', 'Manual'),
+    )
     STATUS_CHOICES = (
         ('Open', 'Open'),
         ('Closed', 'Closed'),
     )
-    tt = models.DateTimeField()
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-    ipaddr = models.GenericIPAddressField()
-    trap_oid = models.CharField(max_length=255)
-    uptime = models.CharField(max_length=255)
-    oids = models.CharField(max_length=1024)
-    ack = models.BooleanField(default=False)
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    scheduled = models.DateTimeField(null=True, blank=True)
+    executed = models.DateTimeField(null=True, blank=True)
     comment = models.CharField(max_length=1024, blank=True)
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
-    incident = models.CharField(blank=True, max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    dup_count = models.IntegerField(default=0)
-    dup_last = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        ordering = ['-tt']
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     def __str__(self):
-        return str(self.id)
-
+        return str(self.device)
 
 # class ServiceNowGroup(models.Model):
 #     name = models.CharField(max_length=1024)

@@ -6,41 +6,44 @@ from akips.models import Device, SNMPTrap, Unreachable, Summary, Profile, Status
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'ip4addr', 'sysName', 'group', 'type', 'last_refresh']
+    list_display = ['id', 'name', 'sysName', 'ip4addr', 'group', 'type', 'last_refresh']
     list_filter = ['group', 'critical', 'maintenance', 'type', 'tier', 'building_name']
     search_fields = ['name', 'sysName', 'ip4addr']
 
-@admin.register(Status)
-class StatusAdmin(admin.ModelAdmin):
-    list_display = ['device', 'child', 'attribute', 'value', 'last_change']
-    list_filter = ['attribute', 'value']
-
-
-@admin.register(HibernateRequest)
-class HibernateRequestAdmin(admin.ModelAdmin):
-    list_display = ['device', 'type', 'comment', 'status']
-    list_filter = ['status']
-
 @admin.register(Unreachable)
 class UnreachableAdmin(admin.ModelAdmin):
-    list_display = ['id','device', 'ping_state', 'snmp_state', 'event_start', 'last_refresh', 'status']
+    list_display = ['id', 'device', 'ping_state', 'snmp_state', 'event_start', 'last_refresh', 'status']
     list_filter = ['status', 'last_refresh']
-    search_fields = ['id', 'ip4addr']
-
-
-@admin.register(Summary)
-class SummaryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'type', 'total_count', 'status', 'first_event', 'last_event', 'last_refresh']
-    list_filter = ['status', 'type']
-    search_fields = ['name']
-
+    search_fields = ['device__name', 'device__sysName', 'device__ip4addr']
+    autocomplete_fields = ['device']
 
 @admin.register(SNMPTrap)
 class SNMPTrapAdmin(admin.ModelAdmin):
-    list_display = ['trap_oid', 'device', 'ipaddr', 'tt', 'status']
+    list_display = ['id', 'device', 'trap_oid', 'ipaddr', 'tt', 'status']
     list_filter = ['status', 'trap_oid']
-    search_fields = ['trap_oid', 'ipaddr']
+    search_fields = ['device__name', 'device__sysName', 'device__ip4addr', 'trap_oid', 'ipaddr']
+    autocomplete_fields = ['device']
 
+@admin.register(Status)
+class StatusAdmin(admin.ModelAdmin):
+    list_display = ['id', 'device', 'child', 'attribute', 'value', 'last_change']
+    list_filter = ['attribute', 'value']
+    search_fields = ['device__name', 'device__sysName', 'device__ip4addr']
+    autocomplete_fields = ['device']
+
+@admin.register(Summary)
+class SummaryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'type', 'total_count', 'status', 'first_event', 'last_event', 'last_refresh']
+    list_filter = ['type', 'status']
+    search_fields = ['name']
+    autocomplete_fields = ['unreachables']
+
+@admin.register(HibernateRequest)
+class HibernateRequestAdmin(admin.ModelAdmin):
+    list_display = ['id', 'device', 'type', 'scheduled', 'executed', 'status']
+    list_filter = ['type', 'status']
+    search_fields = ['device__name', 'device__sysName', 'device__ip4addr']
+    autocomplete_fields = ['device']
 
 @admin.register(Profile)
 class ProfieleAdmin(admin.ModelAdmin):
