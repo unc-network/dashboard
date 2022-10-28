@@ -48,27 +48,40 @@
                     </tr>
                 </table>
             </div>
-            <div class="col-md-4 text-center">
-                <div class="custom-control custom-switch">
-                    {% if device.maintenance %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
-                        data-url="{% url 'set_maintenance' %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
-                        data-url="{% url 'set_maintenance' %}">
-                    {% endif %}
-                    <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        {% if device.maintenance %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+                    </div>
                 </div>
                 {% if device.hibernate %}
-                <div class="custom-control custom-switch">
-                    <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked disabled>
-                    <label class="custom-control-label" for="hibernateSwitch">Hibernated</label>
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked disabled>
+                        <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                    </div>
                 </div>
-                {% endif %}
                 {% for hibernate in hibernate_list %}
-                <p>Hibernate last end: {{ hibernate.executed }}</p>
                 <p>Comment: {{ hibernate.comment }}</p>
                 {% endfor %}
+                {% else %}
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="hibernateSwitch" disabled>
+                        <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                    </div>
+                </div>
+                {% for hibernate in hibernate_list %}
+                <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
+                {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
