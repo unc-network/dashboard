@@ -66,6 +66,7 @@
 
     <div class="text-right p-3">
         <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
     </div>
 
 </form>
@@ -269,6 +270,24 @@
             tr.css("background-color", "#FF3700");
             tr.fadeOut(400, function () {
                 tr.remove();
+            });
+        });
+
+        // Bind to the document so dynamicly added content will still work
+        // Configure the Clear All Traps button for traps
+        // $(document).on('click', 'button.clear_all_traps', function () {
+        $('#clear_all_traps').click(function () {
+            // var url = $(this).data("url");
+            // $.get(url, {})
+            $('.trap-clear').each(function (index) {
+                var tr = $(this).closest('tr');
+                var url = $(this).data("url");
+                console.log("clearing trap with " + url)
+                $.get(url, {})
+                tr.css("background-color", "#FF3700");
+                tr.fadeOut(400, function () {
+                    tr.remove();
+                });
             });
         });
 

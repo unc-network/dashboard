@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/summary/<summary_id>/ack', views.AckView.as_view(), name='ack'),
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
     path('api/trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),
+    # path('api/trap/clear-all', views.ClearTrapView.as_view(), name='clear_trap_all'),
     path('api/chart/', views.ChartDataView.as_view(), name='chart_data'),
     path('api/profile/', views.SetUserProfileView.as_view(), name='profile_api'),
     path('api/notifications/', views.UserAlertView.as_view(), name='api_notifications'),
