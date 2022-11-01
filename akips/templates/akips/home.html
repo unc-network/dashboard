@@ -82,6 +82,9 @@
             $.get( alert_url, function( data ) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
+                    // msg.lang = "en-US";
+                    // msg.rate = .75;
+                    // msg.pitch = 1;
                     speechSynthesis.speak(msg);
                 })
             } )
