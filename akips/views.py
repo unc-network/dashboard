@@ -583,13 +583,13 @@ class AckTrapView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
-class StatusExportView(LoginRequiredMixin, View):
+class StatusExportView(View):
     ''' API view '''
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
         result = {}
-        status = Status.objects.filter(attribute='PING.icmpState').values()
+        status = Status.objects.filter(attribute='PING.icmpState').values('device__name','device__sysName','device__ip4addr','attribute','value','last_change')
         
         result = {"status": list(status)}
         # Return the results
