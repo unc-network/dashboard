@@ -589,9 +589,9 @@ class StatusExportView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         result = {}
-        status = Status.objects.filter(attribute='PING.icmpState')
+        status = Status.objects.filter(attribute='PING.icmpState').values()
         
-        result = {"status": status}
+        result = {"status": list(status)}
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
