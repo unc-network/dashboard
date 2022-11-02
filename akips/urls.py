@@ -30,6 +30,7 @@ urlpatterns = [
 
     # API Update Views
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
+    path('api/status', views.StatusExportView.as_view(), name='status_export'),
     path('api/summary/<summary_id>/ack', views.AckView.as_view(), name='ack'),
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
     path('api/trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),

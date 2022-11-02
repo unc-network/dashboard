@@ -583,6 +583,22 @@ class AckTrapView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
+class StatusExportView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {}
+        status = Status.objects.filter(attribute='PING.icmpState')
+        
+        result = {"status": status}
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+
 class UserAlertView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
