@@ -510,7 +510,7 @@ def refresh_unreachable():
             }
         )
         if t_created:
-            logger.debug("Tier summary created {}".format(tier_name))
+            logger.debug("Tier summary created {}".format(ups.device.tier))
         else:
             t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             if t_summary.first_event > ups.last_change:
