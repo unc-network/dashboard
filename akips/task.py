@@ -719,8 +719,7 @@ def cleanup_dashboard_data():
 @shared_task
 def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
     ''' Testing duplicate task cleanup'''
-    logger.debug("Checking duplicate tasks")
-
+    logger.info("Duplicate task check for {}".format(task_name))
     task_args = '"' + str(tuple(task_args)) + '"'
     logger.info(f'Current Task Args - {task_args}')
     logger.info(f'Request ID - {request_id}')
