@@ -9,7 +9,7 @@
             <th>Trap</th>
             <th>Last Recorded</th>
             <th>Incident Request</th>
-            <th>Clear Trap</th>
+            <th>Clear</th>
         </tr>
     </thead>
     <tbody>
@@ -44,7 +44,7 @@
                 {% endif %}
             </td>
             <td><button type="button" class="btn btn-primary btn-sm trap-clear"
-                    data-url="{% url 'clear_trap' trap.id %}">Clear Trap</button></td>
+                    data-url="{% url 'clear_trap' trap.id %}">Clear</button></td>
         </tr>
         {% endfor %}
     </tbody>
