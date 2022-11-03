@@ -30,7 +30,8 @@
             <td><a href="{% url 'summary' summary.id %}">{% with summary.unreachables.all|first as u %}{{ u.device.sysName }}{% endwith %}</a></td>
             <td>{% with summary.unreachables.all|first as u %}{{ u.device.ip4addr }}{% endwith %}</td>
             <td class="d-inline-block text-truncate" style="max-width: 150px">{% with summary.unreachables.all|first as u %}{{ u.device.sysDescr }}{% endwith %}</td>
-            <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td>
+            <!-- <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td> -->
+            <td>{{ summary.first_event|date:'M-d g:i:s A' }}</td>
             <td class="text-center">
                 {% if summary.incident %}
                 {{ summary.incident }}
