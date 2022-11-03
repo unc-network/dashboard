@@ -195,6 +195,7 @@
     }
     function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+        var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
 
         $('.event-card').each(function (index) {
             var id = this.id;
@@ -213,9 +214,9 @@
                     body.html(result);
                     var len = $('#' + id + ' tr').length;
                     //console.log("Table " + id + " row count " + len);
-                    if ( len < 2 ) {
-                        // $('#' + id ).hide();
-                        // body.html('<span class="align-center"><i class="fas fa-water"></i></span>');
+                    if ( len < 2 && id != "bldg_card") {
+                        $('#' + id ).hide();
+                        // body.append(water);
                     }
                     if (id == "trap_card") {
                         refresh_dups();
