@@ -1,4 +1,5 @@
-from celery import shared_task
+from celery import shared_task, current_app
+from django_celery_results.models import TaskResult
 import logging
 import time
 import re
@@ -713,3 +714,23 @@ def cleanup_dashboard_data():
 
     finish_time = timezone.now()
     logger.info("Cleanup dashboard data runtime {}".format(finish_time - now))
+
+
+@shared_task
+def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
+    ''' Testing duplicate task cleanup'''
+    logger.debug("Checking duplicate tasks")
+
+    task_args = '"' + str(tuple(task_args)) + '"'
+    logger.info(f'Current Task Args - {task_args}')
+    logger.info(f'Request ID - {request_id}')
+    duplicate_tasks = list(TaskResult.objects.filter(
+        task_name=task_name,
+        status__in=['PENDING', 'RECEIVED', 'STARTED'],
+        task_args=task_args
+    ).exclude(
+        task_id=request_id
+    ).values_list('task_id', flat=True))
+
+    logger.info(f'revoking following duplicate tasks - {duplicate_tasks}')
+    current_app.control.revoke(duplicate_tasks, terminate=True, signal='SIGKILL')
