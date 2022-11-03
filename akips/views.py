@@ -87,7 +87,7 @@ class Devices(LoginRequiredMixin, View):
 
 class Users(LoginRequiredMixin, View):
     ''' Show users logged in recently '''
-    template_name = 'akips/users.html'
+    template_name = 'akips/recent_users.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
