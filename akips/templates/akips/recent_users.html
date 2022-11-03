@@ -28,8 +28,8 @@
                 {% for u in session_list %}
                 <tr>
                     <td>{{ u.user.username }}</td>
-                    <td>{{ u.start|date:'M-d g:i:s A' }}</td>
-                    <td>{{ u.expire|date:'M-d g:i:s A' }}</td>
+                    <td>{{ u.start|date:'M-j g:i:s A' }}</td>
+                    <td>{{ u.expire|date:'M-j g:i:s A' }}</td>
                     <td>{{ u.user.is_superuser }}</td>
                     <td>{{ u.user.profile.voice_enabled }}</td>
                     <td>{{ u.session_keys }}</td>
