@@ -80,6 +80,11 @@
             </td>
         </tr>
         {% endfor %}
+        {% if not summaries %}
+        <tr>
+            <td colspan="10" class="text-center">Tier 1 and Building events are currently clear</td>
+        </tr>
+        {% endif %}
     </tbody>
 </table>
 {% endblock %}
