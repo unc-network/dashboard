@@ -20,7 +20,7 @@
                 </tr>
                 <tr>
                     <th>Device</th>
-                    <td><a href="{% url 'device' trap.device.name %}">{{ trap.device }}</a> ({{ trap.ipaddr}})</td>
+                    <td><a href="{% url 'device' trap.device.name %}">{{ trap.device.sysName }}</a> ({{ trap.ipaddr}})</td>
                 </tr>
                 <tr>
                     <th>Uptime</th>
