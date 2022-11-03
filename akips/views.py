@@ -234,7 +234,7 @@ class SummaryView(LoginRequiredMixin, View):
 
 class RecentSummaryView(LoginRequiredMixin, View):
     ''' Generic recent summary view '''
-    template_name = 'akips/recent.html'
+    template_name = 'akips/recent_events.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
