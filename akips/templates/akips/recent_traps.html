@@ -20,7 +20,8 @@
                     <th>IP Address</th>
                     <th>Trap</th>
                     <th>Last Recorded</th>
-                    <th>Comment</th>
+                    <!-- <th>Comment</th> -->
+                    <th>Info</th>
                     <!-- <th>Status</th> -->
                 </tr>
             </thead>
@@ -34,7 +35,9 @@
                     </td>
                     <!-- <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m/d h:i:s a' }}{% else %}{{ trap.tt|date:'m/d h:i:s a' }}{% endif %}</td> -->
                     <td>{% if trap.dup_last %}{{ trap.dup_last|date:'M-j g:i:s A' }}{% else %}{{ trap.tt|date:'M-j g:i:s A' }}{% endif %}</td>
-                    <td>{{ trap.comment }}</td>
+                    <!-- <td>{{ trap.comment }}</td> -->
+                    <!-- <td><span class="hovertext" data-hover="{{ trap.comment }}"><i class="fas fa-info-circle text-primary"></i></span></td> -->
+                    <td><i class="fas fa-info-circle text-primary" data-container="body" data-toggle="popover" data-placement="top" data-content="{{ trap.comment }}"></i></td>
                     <!-- <td>{{ trap.status }}</td> -->
                 </tr>
                 {% endfor %}
@@ -103,6 +106,11 @@
             voice_alert();
         }, refresh_seconds);
 
+        $(function () {
+            $('[data-toggle="popover"]').popover({
+                trigger: 'hover'
+            })
+        })
     })
 </script>
 {% endblock js %}
