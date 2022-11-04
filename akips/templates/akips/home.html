@@ -221,13 +221,6 @@
                     if (id == "trap_card") {
                         refresh_dups();
                     }
-                    // Refresh popovers
-                    $(function () {
-                        $('[data-toggle="popover"]').popover({
-                            trigger: 'hover',
-                            delay: { "hide": 1000 }
-                        })
-                    })
                 },
                 error: function (xhr, status, error) {
                     body.replaceWith(body_clone);
@@ -283,6 +276,16 @@
             tr.fadeOut(400, function () {
                 tr.remove();
             });
+        });
+
+        // Bind to the document so dynamicly added content will still work
+        // enable popoover
+        $('body').popover({
+            // selector: '[rel="popover"]',
+            selector: '[data-toggle="popover"]',
+            trigger: 'hover',
+            delay: { "hide": 10 }
+
         });
 
         // Configure the Clear All Traps button for traps
