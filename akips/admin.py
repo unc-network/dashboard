@@ -1,5 +1,5 @@
 from django.contrib import admin
-from akips.models import Device, SNMPTrap, Unreachable, Summary, Profile, Status, HibernateRequest
+from akips.models import Device, Trap, Unreachable, Summary, Profile, Status, HibernateRequest
 
 # Register your models here.
 
@@ -17,8 +17,8 @@ class UnreachableAdmin(admin.ModelAdmin):
     search_fields = ['device__name', 'device__sysName', 'device__ip4addr']
     autocomplete_fields = ['device']
 
-@admin.register(SNMPTrap)
-class SNMPTrapAdmin(admin.ModelAdmin):
+@admin.register(Trap)
+class TrapAdmin(admin.ModelAdmin):
     list_display = ['id', 'device', 'trap_oid', 'ipaddr', 'tt', 'status']
     list_filter = ['status', 'trap_oid']
     search_fields = ['device__name', 'device__sysName', 'device__ip4addr', 'trap_oid', 'ipaddr']

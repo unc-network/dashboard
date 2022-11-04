@@ -53,9 +53,9 @@ class Unreachable(models.Model):
     device_added = models.DateTimeField()       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
     ip4addr = models.GenericIPAddressField( blank=True, null=True)    # extracted from value
-    last_refresh = models.DateTimeField()
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    last_refresh = models.DateTimeField()
 
     class Meta:
         ordering = ['-event_start']
@@ -63,13 +63,13 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
-class SNMPTrap(models.Model):
+class Trap(models.Model):
     STATUS_CHOICES = (
         ('Open', 'Open'),
         ('Closed', 'Closed'),
     )
-    tt = models.DateTimeField()
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    tt = models.DateTimeField()
     ipaddr = models.GenericIPAddressField()
     trap_oid = models.CharField(max_length=255)
     uptime = models.CharField(max_length=255)
@@ -133,11 +133,11 @@ class Summary(models.Model):
     ups_battery = models.IntegerField(default=0)
     first_event = models.DateTimeField(help_text="First up/down event in the summary time period")
     last_event = models.DateTimeField(help_text="Last up/down event in the summary time period")
-    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summmary data was refreshed")
     trend = models.CharField(default='New', max_length=255)
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
     incident = models.CharField(blank=True, max_length=255)
+    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summmary data was refreshed")
 
     class Meta:
         verbose_name_plural = 'summaries'

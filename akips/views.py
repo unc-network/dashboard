@@ -26,7 +26,7 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import HibernateRequest, Summary, Unreachable, Device, SNMPTrap, Status
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status
 from .forms import IncidentForm, HibernateForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow, pretty_duration
@@ -159,7 +159,7 @@ class TrapCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-        context['traps'] = SNMPTrap.objects.filter(
+        context['traps'] = Trap.objects.filter(
             status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
 
@@ -253,7 +253,7 @@ class RecentTrapsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
-        traps = SNMPTrap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
+        traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
@@ -288,7 +288,7 @@ class DeviceView(LoginRequiredMixin, View):
         unreachables = Unreachable.objects.filter( device=device).order_by('-last_refresh')
         context['unreachables'] = unreachables
 
-        traps = SNMPTrap.objects.filter(device=device).order_by('-tt')
+        traps = Trap.objects.filter(device=device).order_by('-tt')
         context['traps'] = traps
 
         status_list = Status.objects.filter(device=device)
@@ -311,8 +311,8 @@ class TrapView(LoginRequiredMixin, View):
         if trap_id is None:
             raise Http404("Invalid Device Name")
 
-        trap = get_object_or_404(SNMPTrap, id=trap_id)
-        #trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(Trap, id=trap_id)
+        #trap = Trap.objects.get(id=trap_id)
 
         trap_oids = json.loads(trap.oids)
         context['trap'] = trap
@@ -405,7 +405,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
         if summary_ids:
             context['summaries'] = Summary.objects.filter(id__in=summary_ids)
         if trap_ids:
-            context['traps'] = SNMPTrap.objects.filter(id__in=trap_ids)
+            context['traps'] = Trap.objects.filter(id__in=trap_ids)
 
         initial = {
             'summary_events': ','.join(summary_ids),
@@ -435,7 +435,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
             trap_ids = []
             if form.cleaned_data.get('trap_events'):
                 trap_ids = form.cleaned_data.get('trap_events').split(',')
-                traps = SNMPTrap.objects.filter(id__in=trap_ids)
+                traps = Trap.objects.filter(id__in=trap_ids)
                 ctx['traps'] = traps
 
             # Create the ServiceNow Incident
@@ -456,7 +456,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
                     summary.incident = incident['number']
                     summary.save()
                 for id in trap_ids:
-                    trap = SNMPTrap.objects.get(id=id)
+                    trap = Trap.objects.get(id=id)
                     trap.incident = incident['number']
                     trap.save()
                 messages.success(
@@ -544,8 +544,8 @@ class ClearTrapView(LoginRequiredMixin, View):
 
         user = request.user
 
-        trap = get_object_or_404(SNMPTrap, id=trap_id)
-        #trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(Trap, id=trap_id)
+        #trap = Trap.objects.get(id=trap_id)
         trap.status = 'Closed'
         trap.comment = "Cleared by {}".format(user)
         trap.save()
@@ -568,8 +568,8 @@ class AckTrapView(LoginRequiredMixin, View):
         logger.debug("Got ack {} for trap {}".format(ack, trap_id))
         result = {}
 
-        trap = get_object_or_404(SNMPTrap, id=trap_id)
-        #trap = SNMPTrap.objects.get(id=trap_id)
+        trap = get_object_or_404(Trap, id=trap_id)
+        #trap = Trap.objects.get(id=trap_id)
         if ack == 'True':
             trap.ack = True
         else:
@@ -639,7 +639,7 @@ class UserAlertView(LoginRequiredMixin, View):
                 result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
-            traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
+            traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
                 result['messages'].append("{} new traps,".format( len(traps) ))
                 times.append( traps.last().tt )
@@ -679,7 +679,7 @@ class UserAlertView(LoginRequiredMixin, View):
                     result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
-            traps = SNMPTrap.objects.filter(tt__gt=old_session_time).order_by('tt')
+            traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
                 trap_count = len(traps)
                 if trap_count == 1:
@@ -730,7 +730,7 @@ class UserAlertView(LoginRequiredMixin, View):
                     result['messages'].append("{} new building alerts,".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
-            traps = SNMPTrap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
+            traps = Trap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
             if traps:
                 trap_count = len(traps)
                 if trap_count == 1:
@@ -791,7 +791,7 @@ class ChartDataView(LoginRequiredMixin, View):
             event_data[this_label] += 1
 
         # Increment sums for unreachable events in each period
-        traps = SNMPTrap.objects.filter(tt__gte=min_label).order_by('tt')
+        traps = Trap.objects.filter(tt__gte=min_label).order_by('tt')
         for trap in traps:
             slot = self.round_dt_down( trap.tt, timedelta(minutes= self.period_minutes) ) 
             this_label = timezone.localtime(slot).strftime('%-I:%M')
@@ -905,7 +905,7 @@ def process_webhook_payload(payload):
 
     if payload['type'] == 'Trap':
         # Check for Open duplicates
-        duplicates = SNMPTrap.objects.filter( 
+        duplicates = Trap.objects.filter( 
             device=device, 
             trap_oid=payload['trap_oid'],
             oids=json.dumps(payload['oids']),
@@ -918,7 +918,7 @@ def process_webhook_payload(payload):
                 duplicate.dup_count += 1
                 duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
                 duplicate.save()
-            # SNMPTrap.objects.create(
+            # Trap.objects.create(
             #     tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
             #     device=device,
             #     ipaddr=payload['ipaddr'],
@@ -929,7 +929,7 @@ def process_webhook_payload(payload):
             #     status='Closed',
             # )
         else:
-            SNMPTrap.objects.create(
+            Trap.objects.create(
                 tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
                 device=device,
                 ipaddr=payload['ipaddr'],

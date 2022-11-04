@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, HibernateRequest, Unreachable, Summary, SNMPTrap, Status
+from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
 from akips.utils import AKIPS, NIT
 
 # Get an isntace of a logger
@@ -695,13 +695,13 @@ def cleanup_dashboard_data():
     seven_days_ago = now - timedelta(days=7)
 
     # Auto clear old traps (1 day)
-    SNMPTrap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment='Auto closed due to age')
+    Trap.objects.filter(status='Open',tt__lt=one_day_ago).exclude(dup_last__gt=one_day_ago).update(status='Closed', comment='Auto closed due to age')
 
     # Delete really old traps (7 days)
-    SNMPTrap.objects.filter(status='Closed',tt__lt=seven_days_ago).delete()
+    Trap.objects.filter(status='Closed',tt__lt=seven_days_ago).delete()
 
     # Remove old duplicate traps (2 hours)
-    SNMPTrap.objects.filter(status='Closed',tt__lt=two_hours_ago,comment='Auto-cleared as a duplicate').delete()
+    Trap.objects.filter(status='Closed',tt__lt=two_hours_ago,comment='Auto-cleared as a duplicate').delete()
 
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
