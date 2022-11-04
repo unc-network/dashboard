@@ -16,17 +16,21 @@
         {% for trap in traps %}
         <tr>
             <td>
-                <div class="custom-control custom-switch">
-                    {% if trap.ack %}
-                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
-                        data-url="{% url 'ack_trap' trap.id %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
-                        data-url="{% url 'ack_trap' trap.id %}">
-                    {% endif %}
-                    <label class="custom-control-label" for="ack-switch-{{ trap.id }}"></label>
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if trap.ack %}
+                        <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                            data-url="{% url 'ack_trap' trap.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                            data-url="{% url 'ack_trap' trap.id %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ trap.id }}"></label>
+                    </div>
                 </div>
-                </div>
+                {% if trap.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ trap.ack_by }} at {{ trap.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
             </td>
             <td><a href="{% url 'device' trap.device %}">{{ trap.device.sysName }}</a></td>
             <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>

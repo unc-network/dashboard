@@ -523,8 +523,12 @@ class AckView(LoginRequiredMixin, View):
         #summary = Summary.objects.get(id=summary_id)
         if ack == 'True':
             summary.ack = True
+            summary.ack_by = request.user.username
+            summary.ack_at = timezone.now()
         else:
             summary.ack = False
+            summary.ack_by = request.user.username
+            summary.ack_at = timezone.now()
         summary.save()
 
         # Return the results
@@ -573,8 +577,12 @@ class AckTrapView(LoginRequiredMixin, View):
         #trap = Trap.objects.get(id=trap_id)
         if ack == 'True':
             trap.ack = True
+            trap.ack_by = request.user.username
+            trap.ack_at = timezone.now()
         else:
             trap.ack = False
+            trap.ack_by = request.user.username
+            trap.ack_at = timezone.now()
         trap.save()
 
         result = {"ack": trap.ack}

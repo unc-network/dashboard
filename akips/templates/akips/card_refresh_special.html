@@ -20,16 +20,21 @@
         {% for summary in summaries %}
         <tr>
             <td>
-                <div class="custom-control custom-switch">
-                    {% if summary.ack %}
-                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
-                        data-url="{% url 'ack' summary.id %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
-                        data-url="{% url 'ack' summary.id %}">
-                    {% endif %}
-                    <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if summary.ack %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
+                    </div>
                 </div>
+                {% if summary.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ summary.ack_by }} at {{ summary.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
             </td>
             <td>
                 <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> 
