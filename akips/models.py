@@ -163,6 +163,8 @@ class HibernateRequest(models.Model):
     executed = models.DateTimeField(null=True, blank=True)
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+    created_by = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return str(self.device)

@@ -358,6 +358,7 @@ class HibernateView(LoginRequiredMixin, View):
                         "scheduled": form.cleaned_data.get('clear_time'),
                         "comment": form.cleaned_data.get('comment'),
                         "status": 'Open',
+                        "created_by": request.user.username,
                     }
                 )
                 if created:

@@ -62,25 +62,25 @@
                     </div>
                 </div>
                 {% if device.hibernate %}
-                <div class="form-group">
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked disabled>
-                        <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked disabled>
+                            <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                        </div>
                     </div>
-                </div>
-                {% for hibernate in hibernate_list %}
-                <p>Comment: {{ hibernate.comment }}</p>
-                {% endfor %}
+                    {% for hibernate in hibernate_list %}
+                        <p>Requested by {{ hibernate.created_by }} at {{ hibernate.created_at }}<br>{{ hibernate.comment }}</p>
+                    {% endfor %}
                 {% else %}
-                <div class="form-group">
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="hibernateSwitch" disabled>
-                        <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="hibernateSwitch" disabled>
+                            <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                        </div>
                     </div>
-                </div>
-                {% for hibernate in hibernate_list %}
-                <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
-                {% endfor %}
+                    {% for hibernate in hibernate_list %}
+                        <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
+                    {% endfor %}
                 {% endif %}
             </div>
         </div>
