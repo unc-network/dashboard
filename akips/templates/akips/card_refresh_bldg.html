@@ -9,7 +9,7 @@
             <th class="d-none d-md-table-cell">Switch</th>
             <th class="d-none d-md-table-cell">AP</th>
             <th class="d-none d-md-table-cell">UPS</th>
-            <th>All</th>
+            <!-- <th>All</th> -->
             <th class="d-none d-md-table-cell">% Affected</th>
             <th>Last Event</th>
             <th class="d-none d-md-table-cell">Trend</th>
@@ -56,7 +56,7 @@
             <td class="d-none d-md-table-cell">{{ summary.switch_count }}</td>
             <td class="d-none d-md-table-cell">{{ summary.ap_count }}</td>
             <td class="d-none d-md-table-cell">{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-three-quarters text-danger"></i>{% endif %}</td>
-            <td>{{ summary.total_count }}</td>
+            <!-- <td>{{ summary.total_count }}</td> -->
             <td class="d-none d-md-table-cell">
                 {% if summary.percent_down >= .10 %}
                 <span class="text-danger">{% widthratio summary.percent_down 1 100 %}%</span>
