@@ -377,9 +377,14 @@ def refresh_unreachable():
 
         if unreachable.device.critical:
             # Handle Critical devices
+            if unreachable.device.sysName:
+                d_name = unreachable.device.sysName
+            else:
+                d_name = unreachable.device.name
             c_summary, c_created = Summary.objects.get_or_create(
                 type='Critical',
-                name=unreachable.device.name,
+                #name=unreachable.device.name,
+                name=d_name,
                 status='Open',
                 defaults={
                     'first_event': unreachable.event_start,
