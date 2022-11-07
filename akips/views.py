@@ -655,7 +655,7 @@ class UserAlertView(LoginRequiredMixin, View):
 
             if times:
                 result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
-                result['level'] = 'danger'
+                result['level'] = 'info'
                 result['last_notified'] = max( times )
             else:
                 result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
@@ -701,7 +701,7 @@ class UserAlertView(LoginRequiredMixin, View):
 
             if times:
                 result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
-                result['level'] = 'danger'
+                result['level'] = 'info'
                 result['last_notified'] = max( times )
             else:
                 result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
