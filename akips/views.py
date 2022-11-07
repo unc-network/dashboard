@@ -655,9 +655,11 @@ class UserAlertView(LoginRequiredMixin, View):
 
             if times:
                 result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
+                result['level'] = 'warning'
                 result['last_notified'] = max( times )
             else:
                 result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
+                result['level'] = 'info'
                 result['last_notified'] = now
 
         elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
@@ -699,9 +701,11 @@ class UserAlertView(LoginRequiredMixin, View):
 
             if times:
                 result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
+                result['level'] = 'warning'
                 result['last_notified'] = max( times )
             else:
                 result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
+                result['level'] = 'info'
                 result['last_notified'] = now
 
         else:
@@ -751,9 +755,11 @@ class UserAlertView(LoginRequiredMixin, View):
 
             if times:
                 #result['messages'].insert(0,"Dashboard Alert:".format(cutoff_hours))
+                result['level'] = 'warning'
                 result['last_notified'] = max( times )
             else:
                 #result['messages'].append( "There are no new alerts.")
+                result['level'] = 'info'
                 result['last_notified'] = last_notified
             # for message in messages:
             #     result['messages'].append( message.message )

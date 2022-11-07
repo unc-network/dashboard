@@ -87,7 +87,8 @@
                 var long_msg = data.messages.join(' ');
                 if ( long_msg ) {
                     $(document).Toasts('create', {
-                        class: 'bg-warning',
+                        // class: 'bg-warning',
+                        class: 'bg-' + data.level,
                         title: 'OCNES Notification',
                         body: long_msg,
                         autohide: true,
