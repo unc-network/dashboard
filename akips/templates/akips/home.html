@@ -82,11 +82,18 @@
             $.get( alert_url, function( data ) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
-                    // msg.lang = "en-US";
-                    // msg.rate = .75;
-                    // msg.pitch = 1;
                     speechSynthesis.speak(msg);
-                })
+                });
+                var long_msg = data.messages.join(' ');
+                if ( long_msg ) {
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'OCNES Notification',
+                        body: long_msg,
+                        autohide: true,
+                        delay: 30000
+                    });
+                }
             } )
         }
     }
