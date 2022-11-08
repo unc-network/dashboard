@@ -622,15 +622,14 @@ class UserAlertView(LoginRequiredMixin, View):
         cutoff_hours = 2
         old_session_time = now - timedelta(hours=cutoff_hours)
 
-        logger.debug("cookie last_notified cookie value {}".format(last_notified_cookie))
-
         result = {
             'last_notified': now,
             'messages': []
         }
         tmp_messages = []
-        if last_notified_cookie is None:
-            # user has no notification history
+        #if last_notified_cookie is None:
+        if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:
+            # user has no notification history or it is an old session
             times = []
             #result['messages'].append("Greetings, {}.".format( request.user.first_name))
 
@@ -688,51 +687,51 @@ class UserAlertView(LoginRequiredMixin, View):
                 result['level'] = 'success'
                 result['last_notified'] = now
 
-        elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
-            # user is using an old session
-            times = []
-            # result['messages'].append("Welcome back, {}.".format( request.user.first_name))
+        # elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
+        #     # user is using an old session
+        #     times = []
+        #     # result['messages'].append("Welcome back, {}.".format( request.user.first_name))
 
-            # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
-            # if unreachables:
-            #     result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
-            #     times.append( unreachables.last().event_start )
+        #     # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
+        #     # if unreachables:
+        #     #     result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
+        #     #     times.append( unreachables.last().event_start )
 
-            criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
-            if criticals:
-                critical_count = len(criticals)
-                if critical_count == 1:
-                    result['messages'].append("{} new critical alert,".format( len(criticals) ))
-                else:
-                    result['messages'].append("{} new critical alerts,".format( len(criticals) ))
-                times.append( criticals.last().first_event )
+        #     criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
+        #     if criticals:
+        #         critical_count = len(criticals)
+        #         if critical_count == 1:
+        #             result['messages'].append("{} new critical alert,".format( len(criticals) ))
+        #         else:
+        #             result['messages'].append("{} new critical alerts,".format( len(criticals) ))
+        #         times.append( criticals.last().first_event )
 
-            buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
-            if buildings:
-                building_count = len(buildings)
-                if building_count == 1:
-                    result['messages'].append("{} new building alert,".format( len(buildings) ))
-                else:
-                    result['messages'].append("{} new building alerts,".format( len(buildings) ))
-                times.append( buildings.last().first_event )
+        #     buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
+        #     if buildings:
+        #         building_count = len(buildings)
+        #         if building_count == 1:
+        #             result['messages'].append("{} new building alert,".format( len(buildings) ))
+        #         else:
+        #             result['messages'].append("{} new building alerts,".format( len(buildings) ))
+        #         times.append( buildings.last().first_event )
 
-            traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
-            if traps:
-                trap_count = len(traps)
-                if trap_count == 1:
-                    result['messages'].append("{} new trap,".format( len(traps) ))
-                else:
-                    result['messages'].append("{} new traps,".format( len(traps) ))
-                times.append( traps.last().tt )
+        #     traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
+        #     if traps:
+        #         trap_count = len(traps)
+        #         if trap_count == 1:
+        #             result['messages'].append("{} new trap,".format( len(traps) ))
+        #         else:
+        #             result['messages'].append("{} new traps,".format( len(traps) ))
+        #         times.append( traps.last().tt )
 
-            if times:
-                result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
-                result['level'] = 'info'
-                result['last_notified'] = max( times )
-            else:
-                result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
-                result['level'] = 'success'
-                result['last_notified'] = now
+        #     if times:
+        #         result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
+        #         result['level'] = 'info'
+        #         result['last_notified'] = max( times )
+        #     else:
+        #         result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
+        #         result['level'] = 'success'
+        #         result['last_notified'] = now
 
         else:
             # user has a typical active session
