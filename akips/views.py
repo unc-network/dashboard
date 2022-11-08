@@ -641,29 +641,44 @@ class UserAlertView(LoginRequiredMixin, View):
 
             criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
             if criticals:
-                #result['messages'].append("{} new critical alerts,".format( len(criticals) ))
-                tmp_messages.append("{} new critical alerts".format( len(criticals) ))
+                critical_count = len(criticals)
+                if critical_count == 1:
+                    # result['messages'].append("{} new critical alert,".format( len(criticals) ))
+                    tmp_messages.append("{} new critical alert".format( len(criticals) ))
+                else:
+                    # result['messages'].append("{} new critical alerts,".format( len(criticals) ))
+                    tmp_messages.append("{} new critical alerts".format( len(criticals) ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
             if buildings:
-                #result['messages'].append("{} new building alerts,".format( len(buildings) ))
-                tmp_messages.append("{} new building alerts".format( len(buildings) ))
+                building_count = len(buildings)
+                if building_count == 1:
+                    # result['messages'].append("{} new building alert,".format( len(buildings) ))
+                    tmp_messages.append("{} new building alert".format( len(buildings) ))
+                else:
+                    # result['messages'].append("{} new building alerts,".format( len(buildings) ))
+                    tmp_messages.append("{} new building alerts".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
             if traps:
-                #result['messages'].append("{} new traps,".format( len(traps) ))
-                tmp_messages.append("{} new traps".format( len(traps) ))
+                trap_count = len(traps)
+                if trap_count == 1:
+                    # result['messages'].append("{} new trap".format( len(traps) ))
+                    tmp_messages.append("{} new trap".format( len(traps) ))
+                else:
+                    # result['messages'].append("{} new traps".format( len(traps) ))
+                    tmp_messages.append("{} new traps".format( len(traps) ))
                 times.append( traps.last().tt )
 
             if times:
                 result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
-                # make a nicer sentance
+                # make a nicer sentence
                 if len(tmp_messages) == 1:
                     result['messages'].append(tmp_messages)
                 elif len(tmp_messages) == 2:
-                    result['messages'].append(" and ".join(tmp_messages))
+                    result['messages'].append(' and '.join(tmp_messages))
                 else:
                     result['messages'].append('{}, and {}'.format(', '.join(tmp_messages[:-1]), tmp_messages[-1]))
                 result['level'] = 'info'
