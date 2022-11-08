@@ -626,11 +626,11 @@ class UserAlertView(LoginRequiredMixin, View):
             'last_notified': now,
             'messages': []
         }
-        tmp_messages = []
-        #if last_notified_cookie is None:
+
         if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:
             # user has no notification history or it is an old session
             times = []
+            tmp_messages = []
             #result['messages'].append("Greetings, {}.".format( request.user.first_name))
 
             # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
@@ -687,63 +687,12 @@ class UserAlertView(LoginRequiredMixin, View):
                 result['level'] = 'success'
                 result['last_notified'] = now
 
-        # elif datetime.fromisoformat(last_notified_cookie) < old_session_time:
-        #     # user is using an old session
-        #     times = []
-        #     # result['messages'].append("Welcome back, {}.".format( request.user.first_name))
-
-        #     # unreachables = Unreachable.objects.filter(event_start__gt=old_session_time).order_by('event_start')
-        #     # if unreachables:
-        #     #     result['messages'].append("There have been {} new unreachable devices in the last {} hours.".format( len(unreachables), cutoff_hours))
-        #     #     times.append( unreachables.last().event_start )
-
-        #     criticals = Summary.objects.filter(type='Critical',first_event__gt=old_session_time).order_by('first_event')
-        #     if criticals:
-        #         critical_count = len(criticals)
-        #         if critical_count == 1:
-        #             result['messages'].append("{} new critical alert,".format( len(criticals) ))
-        #         else:
-        #             result['messages'].append("{} new critical alerts,".format( len(criticals) ))
-        #         times.append( criticals.last().first_event )
-
-        #     buildings = Summary.objects.filter(type='Building',first_event__gt=old_session_time).order_by('first_event')
-        #     if buildings:
-        #         building_count = len(buildings)
-        #         if building_count == 1:
-        #             result['messages'].append("{} new building alert,".format( len(buildings) ))
-        #         else:
-        #             result['messages'].append("{} new building alerts,".format( len(buildings) ))
-        #         times.append( buildings.last().first_event )
-
-        #     traps = Trap.objects.filter(tt__gt=old_session_time).order_by('tt')
-        #     if traps:
-        #         trap_count = len(traps)
-        #         if trap_count == 1:
-        #             result['messages'].append("{} new trap,".format( len(traps) ))
-        #         else:
-        #             result['messages'].append("{} new traps,".format( len(traps) ))
-        #         times.append( traps.last().tt )
-
-        #     if times:
-        #         result['messages'].insert(0,"In the last {} hours there have been ".format(cutoff_hours))
-        #         result['level'] = 'info'
-        #         result['last_notified'] = max( times )
-        #     else:
-        #         result['messages'].append("There have been no new alerts in the last {} hours.".format( cutoff_hours))
-        #         result['level'] = 'success'
-        #         result['last_notified'] = now
-
         else:
             # user has a typical active session
-            #result['messages'].append("User has an active session")
-            #last_notified = timezone.make_aware(datetime.strptime(last_notified_cookie))
-            #last_notified = timezone.make_aware(datetime.fromisoformat(last_notified_cookie))
-            last_notified = datetime.fromisoformat(last_notified_cookie)
             times = []
-
-            # messages = UserAlert.objects.filter(created_at__gt=last_notified,enabled=True)
-            # if messages:
-            #     result['messages'].append( "There are {} alerts.".format( len(messages) ))
+            tmp_messages = []
+            last_notified = datetime.fromisoformat(last_notified_cookie)
+            #result['messages'].append("User has an active session")
 
             # unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
             # if unreachables:
@@ -754,43 +703,51 @@ class UserAlertView(LoginRequiredMixin, View):
             if criticals:
                 critical_count = len(criticals)
                 if critical_count == 1:
-                    result['messages'].append("{} new critical device alert for {},".format( critical_count, criticals.first().name ))
+                    # result['messages'].append("{} new critical device alert for {},".format( critical_count, criticals.first().name ))
+                    tmp_messages.append("{} critical device alert for {}".format( critical_count, criticals.first().name ))
                 else:
-                    result['messages'].append("{} new critical device alerts,".format( critical_count ))
+                    # result['messages'].append("{} new critical device alerts,".format( critical_count ))
+                    tmp_messages.append("{} critical device alerts".format( critical_count ))
                 times.append( criticals.last().first_event )
 
             buildings = Summary.objects.filter(type='Building',first_event__gt=last_notified,status='Open').order_by('first_event')
             if buildings:
                 building_count = len(buildings)
                 if building_count == 1:
-                    result['messages'].append("{} new alert for {},".format( building_count, buildings.first().name ))
+                    # result['messages'].append("{} new alert for {},".format( building_count, buildings.first().name ))
+                    tmp_messages.append("{} building alert for {}".format( building_count, buildings.first().name ))
                 else:
-                    result['messages'].append("{} new building alerts,".format( len(buildings) ))
+                    # result['messages'].append("{} new building alerts,".format( len(buildings) ))
+                    tmp_messages.append("{} building alerts".format( len(buildings) ))
                 times.append( buildings.last().first_event )
 
             traps = Trap.objects.filter(tt__gt=last_notified,status='Open').order_by('tt')
             if traps:
                 trap_count = len(traps)
                 if trap_count == 1:
-                    #result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
-                    result['messages'].append("{} new trap,".format( trap_count ))
+                    # result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
+                    # result['messages'].append("{} new trap,".format( trap_count ))
+                    tmp_messages.append("{} trap for {}".format( trap_count, traps.first().device.sysName ))
                 else:
-                    result['messages'].append("{} new traps,".format( trap_count ))
+                    # result['messages'].append("{} new traps,".format( trap_count ))
+                    tmp_messages.append("{} traps".format( trap_count ))
                 times.append( traps.last().tt )
 
             if times:
-                #result['messages'].insert(0,"Dashboard Alert:".format(cutoff_hours))
+                result['messages'].insert(0,"New:")
+                # make a nicer sentence
+                if len(tmp_messages) == 1:
+                    result['messages'].append(tmp_messages)
+                elif len(tmp_messages) == 2:
+                    result['messages'].append(' and '.join(tmp_messages))
+                else:
+                    result['messages'].append('{}, and {}'.format(', '.join(tmp_messages[:-1]), tmp_messages[-1]))
                 result['level'] = 'danger'
                 result['last_notified'] = max( times )
             else:
-                #result['messages'].append( "There are no new alerts.")
+                # result['messages'].append( "There are no new alerts.")
                 result['level'] = 'success'
                 result['last_notified'] = last_notified
-            # for message in messages:
-            #     result['messages'].append( message.message )
-            #result['messages'].append( "there are no new messages")
-
-        # result = {"alerts": list( alerts )}
 
         # Return the results
         if self.pretty_print:
