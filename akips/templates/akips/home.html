@@ -337,10 +337,10 @@
         $(document).on('change', 'input.voice-alert-toggle', function () {
             var url = $(this).data("url");
             if (this.checked) {
-                console.log("ack checkbox on");
+                console.log("voice checkbox on");
                 $.get(url, { "voice_enabled": 'True' })
             } else {
-                console.log("ack checkbox off")
+                console.log("voice checkbox off")
                 $.get(url, { "voice_enabled": 'False' })
             }
         });
