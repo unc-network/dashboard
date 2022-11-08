@@ -79,14 +79,27 @@
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         var alert_url = $('#voice-alert-toggle').data('alert-url')
         $.get( alert_url, function( data ) {
-            if (alert_toggle) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                });
-            }
             var long_msg = data.messages.join(' ');
+            if (alert_toggle) {
+                console.log("Allowed to speak ");
+                if ( long_msg ) {
+                    // If we have something to say, say it once
+                    console.log("Attempting to speak " + long_msg);
+                    const utterThis = new SpeechSynthesisUtterance(long_msg);
+
+                    utterThis.onend = function (event) {
+                        console.log("SpeechSynthesisUtterance.onend");
+                    };
+
+                    utterThis.onerror = function (event) {
+                        console.error("SpeechSynthesisUtterance.onerror");
+                    };
+                    
+                    speechSynthesis.speak(utterThis);
+                }
+            }
             if ( long_msg ) {
+                // Display the popup alert even if voice is off
                 $(document).Toasts('create', {
                     // class: 'bg-warning',
                     class: 'bg-' + data.level,
