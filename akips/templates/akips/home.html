@@ -78,25 +78,25 @@
     function voice_alert() {
         var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
         var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
+        $.get( alert_url, function( data ) {
+            if (alert_toggle) {
                 data.messages.forEach(function (item) {
                     var msg = new SpeechSynthesisUtterance(item);
                     speechSynthesis.speak(msg);
                 });
-                var long_msg = data.messages.join(' ');
-                if ( long_msg ) {
-                    $(document).Toasts('create', {
-                        // class: 'bg-warning',
-                        class: 'bg-' + data.level,
-                        title: 'OCNES Notification',
-                        body: long_msg,
-                        autohide: true,
-                        delay: 30000
-                    });
-                }
-            } )
-        }
+            }
+            var long_msg = data.messages.join(' ');
+            if ( long_msg ) {
+                $(document).Toasts('create', {
+                    // class: 'bg-warning',
+                    class: 'bg-' + data.level,
+                    title: 'OCNES Notification',
+                    body: long_msg,
+                    autohide: true,
+                    delay: 30000
+                });
+            }
+        } )
     }
 </script>
 <script type="text/javascript">
