@@ -80,25 +80,23 @@
         var alert_url = $('#voice-alert-toggle').data('alert-url')
         $.get( alert_url, function( data ) {
             var long_msg = data.messages.join(' ');
-            if (alert_toggle) {
-                console.log("Allowed to speak ");
-                if ( long_msg ) {
+            if ( long_msg ) {
+                if (alert_toggle) {
                     // If we have something to say, say it once
                     console.log("Attempting to speak " + long_msg);
                     const utterThis = new SpeechSynthesisUtterance(long_msg);
 
                     utterThis.onend = function (event) {
-                        console.log("SpeechSynthesisUtterance.onend");
+                        console.log(`Utterance has finished being spoken after ${event.elapsedTime} seconds.`);
                     };
 
                     utterThis.onerror = function (event) {
-                        console.error("SpeechSynthesisUtterance.onerror");
+                        console.error(`An error has occured with the speech synthesis: ${event.error}`);
                     };
                     
                     speechSynthesis.speak(utterThis);
                 }
-            }
-            if ( long_msg ) {
+
                 // Display the popup alert even if voice is off
                 $(document).Toasts('create', {
                     // class: 'bg-warning',
