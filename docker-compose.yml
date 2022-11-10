@@ -1,21 +1,15 @@
-# To run everything in dev, simply navigate to project root directory where
-# this file exists and run
+# See Docker.md for full details.
 #
-#    docker-compose up
-#
-# to spin up Redis, Celery workers, and OCNES in containers.  Or
-#
-#    docker-compose up -d
-#
-# to run them in the background if you do not want/need all the useful log
-# messages you typically want when developing.
-#
-# Then do Django dev work as usual.  When done, simply hit [CTRL][C] to bring
-# down the containers or, if you used `-d`, enter
-#
-#    docker-compose down
-#
-# to do the same.  That's it.
+# To run everything in dev:
+# - Navigate to project root directory where this file exists
+# - Create/modify .env file (copy Docker.md example content if needed)
+# - Run
+#     docker-compose up [-d]
+#   to spin up Redis, PostgreSQL, Celery workers, and OCNES containers.
+# - Do Django dev work as usual.
+# - When done, hit [CTRL][C] to bring down the containers.
+#   If you used `-d`, enter
+#     docker-compose down
 #
 # NOTE:  If you have issues, try using `docker-compose up --build` to force
 #        a rebuild of the containers in case things change.
@@ -24,9 +18,7 @@ services:
   # Bring up REDIS
   ########################################
   redis:
-    # Use official Redis image from hub.docker.com
-    # If you have M1 Mac, use
-    # image: arm64v8/redis:7-alpine
+    # Use official Redis image.
     image: "${DOCKER_ARCH}redis:7-alpine"
     # Expose port 6379 to host machine
     ports:
@@ -37,22 +29,14 @@ services:
   # Bring up PostgreSQL
   ########################################
   db:
-    # Use official PostgreSQL image from hub.docker.com
-    # If you have M1 Mac, use
-    # image: arm64v8/postgres:latest
+    # Use official PostgreSQL image
     image: "${DOCKER_ARCH}postgres:latest"
     # Expose port 5432 to host machine    
     ports:
       - 5432:5432
     volumes:
-      - ${PWD}/.docker/pgdata:/var/lib/postgresql/data
-    environment:
-      # The only required environment variable, which sets superuser password
-      POSTGRES_PASSWORD: OCNESisCOOL
-      # OPTIONAL VARIABLES with defaults
-      # POSTGRES_USER: postgres
-      # POSTGRES_DB: postgres (taken from POSTGRES_USER)
-      # PGDATA: /var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
+    env_file: .env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -77,27 +61,7 @@ services:
       - ${PWD}:/dashboard
     working_dir: /dashboard
     env_file: .env
-    environment:
-      # This is key.  It overrides the .env file which has the following
-      # environment variable pointing to localhost.
-      # The problem is that 'localhost' is unique to each container, and
-      # these are different from 'localhost' on the host machine.  Meaning
-      # this Celery worker container cannot reach the Redis container on
-      # 'localhost' because each container has its own network interface.
-      # Here we leverage a feature in Docker Compose where each service
-      # is reachable via its name; in this case, we have a URL going to
-      # a Redis server on host 'redis', port 6379.
-      CELERY_BROKER_URL: redis://redis:6379/0
-      # The following are pulled from OpenShift
-      DATABASE_SERVICE_NAME: postgresql
-      DATABASE_ENGINE: postgresql
-      DATABASE_NAME: postgres
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: OCNESisCOOL
-      POSTGRESQL_SERVICE_HOST: db
-      POSTGRESQL_SERVICE_PORT: 5432
     restart: unless-stopped
-
     command: [ 'celery', '--app', 'project', 'worker', '-B' ]
     depends_on:
       db:
@@ -122,29 +86,7 @@ services:
       - ${PWD}:/dashboard
     working_dir: /dashboard
     env_file: .env
-    environment:
-      # This is key.  It overrides the .env file
-      CELERY_BROKER_URL: redis://redis:6379/0
-      # The following are pulled from OpenShift
-      DATABASE_SERVICE_NAME: postgresql
-      DATABASE_ENGINE: postgresql
-      DATABASE_NAME: postgres
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: OCNESisCOOL
-      POSTGRESQL_SERVICE_HOST: db
-      POSTGRESQL_SERVICE_PORT: 5432
-      # The following entry is if running under Gunicorn
-      GUNICORN_CMD_ARGS: "--bind=0.0.0.0:8000 --access-logfile=-"
-    # Another interesting tidbit.  By default Django listens on 127.0.0.1:8000.
-    # However, without the last parameter below to have Django bind to all
-    # interfaces in the container, you can't access the code on port 8000 on
-    # the host.  Seems binding to the loopback in the container is just that.
-    # command: [ 'python', 'manage.py', 'runserver' , '0.0.0.0:8000']
-    # command: [ 'python', 'manage.py', 'migrate' ]
-
     restart: unless-stopped
-
-    # command: [ 'gunicorn', 'wsgi' ]
     command:
       - /bin/sh
       - -c
@@ -154,7 +96,6 @@ services:
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
         gunicorn wsgi
-
     depends_on:
       celery:
         condition: service_started
@@ -162,3 +103,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+volumes:
+  db-data:
