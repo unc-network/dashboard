@@ -770,7 +770,8 @@ class ChartDataView(LoginRequiredMixin, View):
         # Define graph time periods
         max_label = self.round_dt_down(now, timedelta(minutes= self.period_minutes ))
         min_label = max_label - timedelta(hours=self.hours)
-        keyList = [ timezone.localtime(dt).strftime('%-I:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
+        # keyList = [ timezone.localtime(dt).strftime('%-I:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
+        keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         #logger.debug("time stamps {}".format(keyList))
 
         # Initalize the graph time periods
@@ -784,14 +785,16 @@ class ChartDataView(LoginRequiredMixin, View):
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
         for unreachable in unreachables:
             slot = self.round_dt_down( unreachable.event_start, timedelta(minutes= self.period_minutes) ) 
-            this_label = timezone.localtime(slot).strftime('%-I:%M')
+            # this_label = timezone.localtime(slot).strftime('%-I:%M')
+            this_label = timezone.localtime(slot).strftime('%H:%M')
             event_data[this_label] += 1
 
         # Increment sums for unreachable events in each period
         traps = Trap.objects.filter(tt__gte=min_label).order_by('tt')
         for trap in traps:
             slot = self.round_dt_down( trap.tt, timedelta(minutes= self.period_minutes) ) 
-            this_label = timezone.localtime(slot).strftime('%-I:%M')
+            # this_label = timezone.localtime(slot).strftime('%-I:%M')
+            this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
         #logger.debug("periods {}".format(event_data.keys()))
