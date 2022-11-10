@@ -37,7 +37,7 @@
                     <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m-d H:i:s' }}{% else %}{{ trap.tt|date:'m-d H:i:s' }}{% endif %}</td>
                     <!-- <td>{{ trap.comment }}</td> -->
                     <!-- <td><span class="hovertext" data-hover="{{ trap.comment }}"><i class="fas fa-info-circle text-primary"></i></span></td> -->
-                    <td><i class="fas fa-info-circle text-primary" data-container="body" data-toggle="popover" data-placement="top" data-content="{{ trap.comment }}"></i></td>
+                    <td><i class="fas fa-info-circle text-primary" data-container="body" data-toggle="popover" data-placement="top" data-content="Cleared by {{ trap.cleared_by }} at {{ trap.cleared_at }}"></i></td>
                     <!-- <td>{{ trap.status }}</td> -->
                 </tr>
                 {% endfor %}

@@ -552,7 +552,9 @@ class ClearTrapView(LoginRequiredMixin, View):
         trap = get_object_or_404(Trap, id=trap_id)
         #trap = Trap.objects.get(id=trap_id)
         trap.status = 'Closed'
-        trap.comment = "Cleared by {}".format(user)
+        trap.cleared_by = request.user.username
+        trap.cleared_at = timezone.now()
+        # trap.comment = "Cleared by {}".format(user)
         trap.save()
 
         result = {"status": trap.status}
