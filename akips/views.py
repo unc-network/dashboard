@@ -877,7 +877,12 @@ def akips_webhook(request):
             content_type="text/plain",
         )
 
-    payload = json.loads(request.body)
+    try:
+        payload = json.loads(request.body)
+    except json.decoder.JSONDecodeError:
+        logger.warn("unable to parse body for json payload: {}".format(request.body))
+        return HttpResponse("Message failed.", content_type="text/plain")
+
     logger.info("payload: {}".format( str(payload) ))
     process_webhook_payload(payload)
     return HttpResponse("Message received.", content_type="text/plain")
