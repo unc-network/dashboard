@@ -79,6 +79,8 @@ class Trap(models.Model):
     ack_at = models.DateTimeField(null=True, blank=True)
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Open')
+    cleared_by = models.CharField(max_length=32, blank=True)
+    cleared_at = models.DateTimeField(null=True, blank=True)
     incident = models.CharField(blank=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     dup_count = models.IntegerField(default=0)

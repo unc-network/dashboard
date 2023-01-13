@@ -52,7 +52,7 @@
                 {% endif %}
             </td>
             <!-- <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td> -->
-            <td>{{ summary.last_event|date:'M-j g:i:s A' }}</td>
+            <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
             {% if summary.trend == 'New' %}
                 <td class="text-center bg-danger akips_trend"><i class="fas fa-plus"></i></td>
             {% elif summary.trend == 'Increasing' %}

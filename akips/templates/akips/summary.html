@@ -21,10 +21,12 @@
                     <tr>
                         <th>First Event</th>
                         <td>{{ summary.first_event }}</td>
+                        <!-- <td>{{ summary.first_event|date:'m-d H:i:s' }}</td> -->
                     </tr>
                     <tr>
                         <th>Last Event</th>
                         <td>{{ summary.last_event }}</td>
+                        <!-- <td>{{ summary.last_event|date:'m-d H:i:s' }}</td> -->
                     </tr>
                     <tr>
                         <th>Trend</th>
@@ -125,7 +127,7 @@
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
-                            <td>{{ unreachable.event_start }}</td>
+                            <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
                             <!-- <td>{{ unreachable.last_refresh }}</td> -->
                             <td class="text-center">
                                 <div class="form-check">
@@ -169,7 +171,7 @@
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
                             <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
-                            <td>{{ unreachable.event_start }}</td>
+                            <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
                             <td>{{ unreachable.last_refresh }}</td>
                         </tr>
                         {% endfor %}

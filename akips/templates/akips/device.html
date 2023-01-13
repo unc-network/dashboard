@@ -45,6 +45,7 @@
                     <tr>
                         <th>Last Refresh</th>
                         <td>{{ device.last_refresh }}</td>
+                        <!-- <td>{{ device.last_refresh|date:'m-d H:i:s' }}</td> -->
                     </tr>
                 </table>
             </div>
@@ -122,8 +123,8 @@
                             <!-- <td>{{ unreachable.id }}</td> -->
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
                                 {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <td>{{ unreachable.event_start }}</td>
-                            <td>{% if unreachable.status == 'Closed' %}{{ unreachable.last_refresh }}{% endif %}</td>
+                            <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
+                            <td>{% if unreachable.status == 'Closed' %}{{ unreachable.last_refresh|date:'m-d H:i:s' }}{% endif %}</td>
                             <td>{{ unreachable.incident }}</td>
                             <td>{{ unreachable.status }}</td>
                         </tr>
@@ -151,7 +152,7 @@
                             <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
                                 {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
                             </td>
-                            <td>{{ trap.tt }}</td>
+                            <td>{{ trap.tt|date:'m-d H:i:s' }}</td>
                             <td>{{ trap.incident }}</td>
                             <td>{{ trap.status }}</td>
                         </tr>
@@ -177,7 +178,7 @@
                         <tr>
                             <td>{{ status.attribute }}</td>
                             <td>{{ status.value }}</td>
-                            <td>{{ status.last_change }}</td>
+                            <td>{{ status.last_change|date:'m-d H:i:s' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

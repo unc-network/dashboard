@@ -30,8 +30,8 @@
                     <td><a href="{% url 'summary' summary.id %}">{{ summary.type }} {{ summary.name }}</a></td>
                     <td>{{ summary.tier }}</td>
                     <!-- <td>{{ summary.total_count }}</td> -->
-                    <td>{{ summary.first_event|date:'M-j g:i:s A' }}</td>
-                    <td>{{ summary.last_event|date:'M-j g:i:s A' }}</td>
+                    <td>{{ summary.first_event|date:'m-d H:i:s' }}</td>
+                    <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
                     <!-- <td>{{ summary.status }}</td> -->
                 </tr>
                 {% endfor %}
