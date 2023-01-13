@@ -1,0 +1,56 @@
+{% load static %}
+
+{% block content %}
+<table class="table table-hover table-sm">
+    <thead>
+        <tr>
+            <th>Ack</th>
+            <th>Device</th>
+            <th>Trap</th>
+            <th>Last Recorded</th>
+            <th>Incident Request</th>
+            <th>Clear</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trap in traps %}
+        <tr>
+            <td>
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if trap.ack %}
+                        <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                            data-url="{% url 'ack_trap' trap.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-{{ trap.id}}"
+                            data-url="{% url 'ack_trap' trap.id %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ trap.id }}"></label>
+                    </div>
+                </div>
+                {% if trap.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ trap.ack_by }} at {{ trap.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
+            </td>
+            <td><a href="{% url 'device' trap.device %}">{{ trap.device.sysName }}</a></td>
+            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
+                {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
+            </td>
+            <!-- <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m/d h:i:s a' }}{% else %}{{ trap.tt|date:'m/d h:i:s a' }}{% endif %}</td> -->
+            <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m-d H:i:s' }}{% else %}{{ trap.tt|date:'m-d H:i:s' }}{% endif %}</td>
+            <td class="text-center">
+                {% if trap.incident %}
+                {{ trap.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="event" value="trap_{{ trap.id }}">
+                </div>
+                {% endif %}
+            </td>
+            <td><button type="button" class="btn btn-primary btn-sm trap-clear"
+                    data-url="{% url 'clear_trap' trap.id %}">Clear</button></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

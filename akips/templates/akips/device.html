@@ -6,97 +6,245 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-body">
+    <div class="card-body table-responsive">
         <div class="row">
-            <div class="col-8">
-                <dl class="row">
-                    <dt class="col-sm-2">Name</dt>
-                    <dd class="col-sm-10">{{ device.sysName }}</dd>
-                    <dt class="col-sm-2">Address</dt>
-                    <dd class="col-sm-10">{{ device.ip4addr }}</dd>
-                    <dt class="col-sm-2">sysName</dt>
-                    <dd class="col-sm-10">{{ device.sysName }}</dd>
-                    <dt class="col-sm-2">sysLocation</dt>
-                    <dd class="col-sm-10">{{ device.sysLocation }}</dd>
-                    <dt class="col-sm-2">sysDescr</dt>
-                    <dd class="col-sm-10">{{ device.sysDescr }}</dd>
-                    <dt class="col-sm-2">Tier</dt>
-                    <dd class="col-sm-10">{{ device.tier }}</dd>
-                    <dt class="col-sm-2">Building</dt>
-                    <dd class="col-sm-10">{{ device.building_name }}</dd>
-                    <dt class="col-sm-2">Type</dt>
-                    <dd class="col-sm-10">{{ device.type }}</dd>
-                    <dt class="col-sm-2">Last Refresh</dt>
-                    <dd class="col-sm-10">{{ device.last_refresh }}</dd>
-                </dl>
+            <div class="col-md-8">
+                <table class="table table-sm">
+                    <tr>
+                        <th>AKiPS Name</th>
+                        <td><a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">{{ device.name }}</a></td>
+                    </tr>
+                    <tr>
+                        <th>Address</th>
+                        <td>{{ device.ip4addr }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysName</th>
+                        <td>{{ device.sysName }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysLocation</th>
+                        <td>{{ device.sysLocation }}</td>
+                    </tr>
+                    <tr>
+                        <th>sysDescr</th>
+                        <td>{{ device.sysDescr }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tier</th>
+                        <td>{{ device.tier }}</td>
+                    </tr>
+                    <tr>
+                        <th>Building</th>
+                        <td>{{ device.building_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ device.type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Refresh</th>
+                        <td>{{ device.last_refresh }}</td>
+                        <!-- <td>{{ device.last_refresh|date:'m-d H:i:s' }}</td> -->
+                    </tr>
+                </table>
             </div>
-            <div class="col-4">
-                <a href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a>
-                <div class="custom-control custom-switch">
-                    {% if device.maintenance %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" checked>
-                    {% else %}
-                    <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}" data-url="{% url 'set_maintenance' %}" >
-                    {% endif %}
-                    <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        {% if device.maintenance %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="maintSwitch1">Maintenance Mode</label>
+                    </div>
                 </div>
+                {% if device.hibernate %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="hibernateSwitch" checked>
+                            <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                        </div>
+                    </div>
+                    {% for hibernate in hibernate_list %}
+                        <p>Requested by {{ hibernate.created_by }} at {{ hibernate.created_at }}<br>{{ hibernate.comment }}</p>
+                    {% endfor %}
+                {% else %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="hibernateSwitch" disabled>
+                            <label class="custom-control-label" for="hibernateSwitch">Hibernate Mode</label>
+                        </div>
+                    </div>
+                    {% for hibernate in hibernate_list %}
+                        <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Unreachable History</h3>
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
+            aria-selected="true">Unreachable History ({{ unreachables|length }})</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
+            aria-selected="false">Trap History ({{ traps|length }})</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="status-tab" data-toggle="tab" href="#status" role="tab" aria-controls="status"
+            aria-selected="false">Current Status ({{ status_list|length }})</a>
+    </li>
+</ul>
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <!-- <th>id</th> -->
+                            <th>Down</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Incident</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unreachable in unreachables %}
+                        <tr>
+                            <!-- <td>{{ unreachable.id }}</td> -->
+                            <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} 
+                                {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
+                            <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
+                            <td>{% if unreachable.status == 'Closed' %}{{ unreachable.last_refresh|date:'m-d H:i:s' }}{% endif %}</td>
+                            <td>{{ unreachable.incident }}</td>
+                            <td>{{ unreachable.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>IP Address</th>
-                    <th>Start Event</th>
-                    <th>Last Event</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for device in devices %}
-                <tr>
-                    <td>{{ device.device.name }}</td>
-                    <td>{{ device.device.ip4addr }}</td>
-                    <td>{{ device.event_start }}</td>
-                    <td>{{ device.last_refresh }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Trap</th>
+                            <th>Recorded</th>
+                            <th>Incident</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trap in traps %}
+                        <tr>
+                            <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
+                                {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
+                            </td>
+                            <td>{{ trap.tt|date:'m-d H:i:s' }}</td>
+                            <td>{{ trap.incident }}</td>
+                            <td>{{ trap.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="status" role="tabpanel" aria-labelledby="status-tab">
+        <div class="card">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Value</th>
+                            <th>Last Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status in status_list %}
+                        <tr>
+                            <td>{{ status.attribute }}</td>
+                            <td>{{ status.value }}</td>
+                            <td>{{ status.last_change|date:'m-d H:i:s' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block js %}
 <script type="text/javascript">
-	function toggle_maintenance_mode() {
-        console.log("NYI")
-	}
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
 </script>
 <script type="text/javascript">
-$(document).ready(function() {
+    function toggle_maintenance_mode() {
+        console.log("NYI")
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var refresh_seconds = 30000;
 
-    $('#maintSwitch1').change(function() {
-        var url = $(this).data("url");
-        var name = $(this).data("name");
-        if(this.checked) {
-            //var returnVal = confirm("Are you sure?");
-            //$(this).prop("checked", returnVal);
-            console.log("maint checkbox on");
-            $.get(url, { "device_name": name, "maintenance_mode": 'True'})
-        } else {
-            console.log("maint checkbox off")
-            $.get(url, { "device_name": name, "maintenance_mode": 'False'})
-        }
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
+
+        $('#maintSwitch1').change(function () {
+            var url = $(this).data("url");
+            var name = $(this).data("name");
+            if (this.checked) {
+                //var returnVal = confirm("Are you sure?");
+                //$(this).prop("checked", returnVal);
+                console.log("maint checkbox on");
+                $.get(url, { "device_name": name, "maintenance_mode": 'True' })
+            } else {
+                console.log("maint checkbox off")
+                $.get(url, { "device_name": name, "maintenance_mode": 'False' })
+            }
+        });
     });
-});
 </script>
 {% endblock %}

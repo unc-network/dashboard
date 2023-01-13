@@ -1,0 +1,167 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    {% for hidden_field in form.hidden_fields %}
+    {{ hidden_field.errors }}
+    {{ hidden_field }}
+    {% endfor %}
+
+{% if create_message %}
+<p>{{ create_message }}</p>
+{% endif %}
+
+<p>You are about to submit a ServiceNow Incident.  The Incident will be populated with the information below.
+    Please select a criticality level and the group you wish to submit the request to.
+</p>
+
+{% if summaries %}
+<div class="card card-primary">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Switch Count</th>
+                    <th>AP Count</th>
+                    <th>UPS Count</th>
+                    <th>Total Count</th>
+                    <th>First Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for summary in summaries %}
+                <tr>
+                    <td>{{ summary.type }} / {{ summary.name }}</a></td>
+                    <td>{{ summary.switch_count }}</td>
+                    <td>{{ summary.ap_count }}</td>
+                    <td>{{ summary.ups_count }}</td>
+                    <td>{{ summary.total_count }}</td>
+                    <td>{{ summary.first_event }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if traps %}
+<div class="card card-primary">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Trap</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trap in traps %}
+                <tr>
+                    <td>{{ trap.device }}</td>
+                    <td>{{ trap.trap_oid }}</td>
+                    <td>{{ trap.tt }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<p>Please enter any comments about this event below.</p>
+<div class="form-group">
+    <label>{{ form.description.label }}</label>
+    {{ form.description }}
+</div>
+<p>{{ form.description.errors }}</p>
+
+<div class="row">
+    <div class="col-2">
+        <p>Assignment Group</p>
+    </div>
+    <div class="col-10">
+        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+            {% for radio in form.assignment_group %}
+            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                {{ radio.choice_label }}
+                {{ radio.tag }}
+            </label>
+            {% endfor %}
+        </div>
+        <p>{{ form.assignment_group.errors }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-2">
+        <p>Criticality Level</p>
+    </div>
+    <div class="col-10">
+        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+            {% for radio in form.criticality %}
+            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                {{ radio.choice_label }}
+                {{ radio.tag }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<div class="text-right">
+    <button type="submit" class="btn btn-primary">Create Incident</button>
+</div>
+
+</form>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var refresh_seconds = 30000;
+
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
+
+    })
+</script>
+{% endblock js %}

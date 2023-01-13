@@ -19,7 +19,7 @@
             <tbody>
                 {% for device in devices %}
                 <tr>
-                    <td><a href="{% url 'device' device.device.name %}">{{ device.device.name }}</a></td>
+                    <td><a href="{% url 'device' device.device.name %}">{{ device.device.name }}</a> {% if device.device.maintenance %}<i class="fa-solid fa-wrench"></i>{% endif %}</td>
                     <td>{{ device.device.ip4addr }}</td>
                     <td>{{ device.device.sysDescr }}</td>
                     <td>{{ device.last_refresh }}</td>

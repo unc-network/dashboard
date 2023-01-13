@@ -1,0 +1,108 @@
+# See Docker.md for full details.
+#
+# To run everything in dev:
+# - Navigate to project root directory where this file exists
+# - Create/modify .env file (copy Docker.md example content if needed)
+# - Run
+#     docker-compose up [-d]
+#   to spin up Redis, PostgreSQL, Celery workers, and OCNES containers.
+# - Do Django dev work as usual.
+# - When done, hit [CTRL][C] to bring down the containers.
+#   If you used `-d`, enter
+#     docker-compose down
+#
+# NOTE:  If you have issues, try using `docker-compose up --build` to force
+#        a rebuild of the containers in case things change.
+services:
+  ########################################
+  # Bring up REDIS
+  ########################################
+  redis:
+    # Use official Redis image.
+    image: "${DOCKER_ARCH}redis:7-alpine"
+    # Expose port 6379 to host machine
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+
+  ########################################
+  # Bring up PostgreSQL
+  ########################################
+  db:
+    # Use official PostgreSQL image
+    image: "${DOCKER_ARCH}postgres:latest"
+    # Expose port 5432 to host machine    
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ########################################
+  # Bring up Celery workers
+  ########################################
+  celery:
+    # Build Celery image
+    build:
+      context: .
+      dockerfile: Dockerfile.Celery
+      tags:
+        - "celery:latest"
+    # Expose port 5672 to host machine
+    ports:
+      - 5672:5672
+    volumes:
+      - ${PWD}:/dashboard
+    working_dir: /dashboard
+    env_file: .env
+    restart: unless-stopped
+    command: [ 'celery', '--app', 'project', 'worker', '-B' ]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  ########################################
+  # Bring up OCNES
+  ########################################
+  ocnes:
+    # Build OCNES image
+    build:
+      context: .
+      dockerfile: Dockerfile.OCNES
+      tags:
+        - "ocnes:latest"
+    # Expose port 8000 to host machine
+    ports:
+      - 8000:8000
+    volumes:
+      - ${PWD}:/dashboard
+    working_dir: /dashboard
+    env_file: .env
+    restart: unless-stopped
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Migrating the database before starting the server..."
+        python manage.py migrate
+        # Start Gunicorn processes
+        echo "Starting Gunicorn..."
+        gunicorn wsgi
+    depends_on:
+      celery:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  db-data:

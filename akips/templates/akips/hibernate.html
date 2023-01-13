@@ -1,0 +1,149 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+
+{% block style_sheets %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    {% for hidden_field in form.hidden_fields %}
+    {{ hidden_field.errors }}
+    {{ hidden_field }}
+    {% endfor %}
+
+{% if create_message %}
+<p>{{ create_message }}</p>
+{% endif %}
+
+<p>You are about to put the devices below in a hibernation mode.</p>
+
+<div class="card card-primary">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP Address</th>
+                    <th>Device Type</th>
+                    <th>First Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td>{{ device.name }}</a></td>
+                    <td>{{ device.ip4addr }}</a></td>
+                    <td>{{ device.type }}</a></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-2">
+        <p class="text-bold">Hibernate Type</p>
+    </div>
+    <div class="col-10">
+        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+            {% for radio in form.type %}
+            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                {{ radio.choice_label }}
+                {{ radio.tag }}
+            </label>
+            {% endfor %}
+        </div>
+        <p>{{ form.assignment_group.errors }}</p>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ form.clear_time.label }}</label>
+    <div class="input-group date" id="reservationdatetime" data-target-input="nearest">
+        {{ form.clear_time }}
+        <div class="input-group-append" data-target="#reservationdatetime" data-toggle="datetimepicker">
+            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+        </div>
+    </div>
+</div>
+<p>{{ form.clear_time.errors }}</p>
+
+<!-- <div class="form-group">
+    <label>{{ form.clear_time.label }}</label>
+    {{ form.clear_time }}
+</div>
+<p>{{ form.clear_time.errors }}</p> -->
+
+<div class="form-group">
+    <label>{{ form.comment.label }}</label>
+    {{ form.comment }}
+</div>
+<p>{{ form.comment.errors }}</p>
+
+
+
+<div class="text-right">
+    <button type="submit" class="btn btn-primary">Submit</button>
+</div>
+
+</form>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="{% static 'admin-lte/plugins/moment/moment.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+<script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var refresh_seconds = 30000;
+
+        //Date and time picker
+        $('#reservationdatetime').datetimepicker({ 
+            format: 'MM/DD/YYYY HH:mm',
+            icons: { time: 'far fa-clock' } 
+        });
+
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
+
+    })
+</script>
+{% endblock js %}

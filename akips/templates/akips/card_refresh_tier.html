@@ -16,21 +16,21 @@
         </tr>
     </thead>
     <tbody>
-        {% for tier in tiers %}
+        {% for summary in summaries %}
         <tr>
             <td>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ack_tier_{{ tier.id }}">
-                </div>
+
             </td>
-            <td><a href="{% url 'tier' tier.name %}">{{ tier.name }}</a></td>
-            <td>{{ tier.switch_count }}</td>
-            <td>{{ tier.ap_count }}</td>
-            <td>{{ tier.ups_count }}</td>
-            <td>{% widthratio tier.percent_down 1 100 %}%</td>
-            <td>{{ tier.last_event }}</td>
-            <td class="akips_trend">{{ tier.trend }}</td>
-            <td>{{ tier.incident }}</td>
+            <td><a href="{% url 'summary' summary.id %}">{{ summary.name }}</a> <a href="{% url 'summary' summary.id %}">*</a></td>
+            <!-- <td><a href="{% url 'summary' summary.id %}">{{ summary.name }}</a></td> -->
+            <td>{{ summary.switch_count }}</td>
+            <td>{{ summary.ap_count }}</td>
+            <td>{{ summary.ups_count }}</td>
+            <td>{% widthratio summary.percent_down 1 100 %}%</td>
+            <td>{{ summary.last_event }}</td>
+            <td class="akips_trend">{{ summary.trend }}</td>
+            <td class="text-center">
+            </td>
         </tr>
         {% endfor %}
     </tbody>

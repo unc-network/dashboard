@@ -6,117 +6,370 @@
 <!-- <meta http-equiv="refresh" content="30"> -->
 {% endblock %}
 
+{% block no_heading %}
+<div class="row">
+    <!-- <div class="col-8">
+    </div>
+    <div class="col text-right">
+        <div class="text-right small">Refresh in <span id="time-remain">30</span> seconds</div>
+    </div> -->
+    <div class="col text-right text-sm">
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
+            <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
+        </div>
+    </div>
+</div> 
+{% endblock %}
+
 {% block content %}
-<div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
-    <div class="card-body table-responsive p-0">
-    </div>
-</div>
+<form method="get" action="{% url 'create_incident' %}">
 
-<div id="tier_card" class="card card-primary event-card" data-url="{% url 'tier_card' %}">
-    <div class="card-body table-responsive p-0">
+    <div id="chart" class="card">
+        <div class="card-header">
+            <h3 class="card-title">Event Trends</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="chart">
+                <div class="chartjs-size-monitor">
+                    <div class="chartjs-size-monitor-expand">
+                        <div class=""></div>
+                    </div>
+                    <div class="chartjs-size-monitor-shrink">
+                        <div class=""></div>
+                    </div>
+                </div>
+            <canvas id="barChart" style="min-height: 100px; height: 100px; max-height: 100px; max-width: 100%; display: block; width: 414px;" width="414" height="250" class="chartjs-render-monitor" data-url="{% url 'chart_data' %}"></canvas>
+            </div>
+        </div>
     </div>
-</div>
 
-<div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
-    <div class="card-body table-responsive p-0">
+    <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th>Ack</th>
-                    <th>Device</th>
-                    <th>Trap</th>
-                    <th>Recorded</th>
-                    <th>Incident Request</th>
-                    <th>Clear Trap</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
-                        </div>
-                    </td>
-                    <td>dummy row</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% for trap in traps %}
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
     </div>
-</div>
 
-<audio id="audiotag1" src="{% static 'akips/sound/mixkit-wrong-answer-fail-notification-946.wav' %}" preload="auto"></audio>
-<a href="javascript:play_single_sound();">Test sound</a>
+    <div id="spec_card" class="card card-primary event-card" data-url="{% url 'spec_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
+    </div>
+
+    <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
+        <div class="card-body table-responsive p-0">
+        </div>
+    </div>
+
+    <div class="text-right p-3">
+        <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
+    </div>
+
+</form>
 {% endblock %}
 
 {% block js %}
+<script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
-	function play_single_sound() {
-		document.getElementById('audiotag1').play();
-	}
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        $.get( alert_url, function( data ) {
+            var long_msg = data.messages.join(' ');
+            if ( long_msg ) {
+                if (alert_toggle) {
+                    // If we have something to say, say it once
+                    console.log("Attempting to speak " + long_msg);
+                    const utterThis = new SpeechSynthesisUtterance(long_msg);
+
+                    utterThis.onend = function (event) {
+                        console.log(`Utterance has finished being spoken after ${event.elapsedTime} seconds.`);
+                    };
+
+                    utterThis.onerror = function (event) {
+                        console.error(`An error has occured with the speech synthesis: ${event.error}`);
+                    };
+                    
+                    speechSynthesis.speak(utterThis);
+                }
+
+                // Display the popup alert even if voice is off
+                $(document).Toasts('create', {
+                    // class: 'bg-warning',
+                    class: 'bg-' + data.level,
+                    title: 'OCNES Notification',
+                    body: long_msg,
+                    autohide: true,
+                    delay: 30000
+                });
+            }
+        } )
+    }
 </script>
 <script type="text/javascript">
-	function refresh_cards() {
-        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+    function setup_chart() {
+        /* ChartJS
+        * -------
+        * Here we will create a few charts using ChartJS
+        */
+    
+        // Bar Chart
+        var barChartCanvas = $('#barChart').get(0).getContext('2d');
+        var barChartData = {
+            labels  : [],
+            datasets: [
+            {
+                label               : 'Unreachables',
+                backgroundColor     : 'rgba(60,141,188,0.9)',
+                borderColor         : 'rgba(60,141,188,0.8)',
+                pointRadius          : false,
+                pointColor          : '#3b8bba',
+                pointStrokeColor    : 'rgba(60,141,188,1)',
+                pointHighlightFill  : '#fff',
+                pointHighlightStroke: 'rgba(60,141,188,1)',
+                data                : []
+            },
+            {
+                label               : 'Traps',
+                backgroundColor     : 'rgba(210,214,222,1)',
+                borderColor         : 'rgba(210,214,222,1)',
+                pointRadius          : false,
+                pointColor          : 'rgba(210, 214, 222, 1)',
+                pointStrokeColor    : '#c1c7d1',
+                pointHighlightFill  : '#fff',
+                pointHighlightStroke: 'rgba(220,220,220,1)',
+                data                : []
+            },
+            ]
+        }
+        
+        var barChartOptions = {
+            maintainAspectRatio : false,
+            response : true,
+            legend: {
+                position: 'right',
+                display: true,
+            },
+            datasetFill : false,
+            scales: {
+                // y: { 
+                //     type: 'logarithmic'
+                // },
+                xAxes: [{
+                    gridLines : { display : true },
+                    stacked: true
+                }],
+                yAxes: [{
+                    gridLines : { display : true },
+                    stacked: true,
+                    ticks: {
+                        min: 0
+                    },
+                    //type: 'logarithmic'
+                }]
+            }
+        }
 
-        $('.event-card').each(function( index ) {
+        var barchart = new Chart(barChartCanvas, {
+            type: 'bar',
+            data: barChartData,
+            options: barChartOptions
+        })
+
+        refresh_chart(barchart);
+        return barchart;
+    }
+    function refresh_chart( barchart ) {
+        var url = $('#barChart').data("url")
+        $.ajax({
+            type: "GET",
+            url: url,
+            dataType: "json",
+            data: {},
+            success: function (result, status, xhr) {
+                barchart.data.labels = result['chart_labels'];
+                barchart.data.datasets[0].data = result['chart_event_data'];
+                barchart.data.datasets[1].data = result['chart_trap_data'];
+                barchart.update();
+            },
+            error: function (xhr, status, error) {
+                console.log("Unable to refresh chart");
+            }
+        });
+    }
+    function refresh_dups() {
+        $('.dup-data').each(function (index) {
+            var now = new Date();
+            var last = new Date( $(this).data("last") );
+            var FIVE_MIN=5*60*1000;
+            if ( (now - last) < FIVE_MIN) {
+                //console.log('Date is in the last 5 minutes old');
+                $(this).removeClass("bg-primary").addClass("bg-danger");
+            }
+        });
+    }
+    function refresh_cards() {
+        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+        var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
+
+        $('.event-card').each(function (index) {
+            var id = this.id;
+            $('#' + id ).show();
             var url = $(this).data("url");
             var body = $(this).find(".card-body");
+            var body_clone = body.clone();
             body.append(overlay);
 
             $.ajax({
-            type: "GET",
-            url: url,
-            dataType: "html",
-            data: {},
-            success: function (result, status, xhr) {
-                body.html(result);
-                //console.log("ajax success ")
-
-               //$('.akips_trend:contains(New)').each(function( index ) {
-                body.find('.akips_trend:contains(New), .akips_trend:contains(Increasing)').each(function( index ) {
-                    document.getElementById('audiotag1').play();
-                    //console.log( index + ": found New in " + $( this ).text() );
-                });
-            },
-            error: function (xhr, status, error) {
-                console.log("ajax failed")
-            }
+                type: "GET",
+                url: url,
+                dataType: "html",
+                data: {},
+                success: function (result, status, xhr) {
+                    body.html(result);
+                    var len = $('#' + id + ' tr').length;
+                    //console.log("Table " + id + " row count " + len);
+                    if ( len < 2 ) {
+                        $('#' + id ).hide();
+                        // body.append(water);
+                    }
+                    if (id == "trap_card") {
+                        refresh_dups();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    body.replaceWith(body_clone);
+                    body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
+                }
             });
         });
-	}
+
+        voice_alert();
+
+    }
 </script>
 <script type="text/javascript">
-    $(document).ready(function() {
-        var refresh_seconds = 30000;
+    $(document).ready(function () {
+        var refresh_seconds = 30;
+        var auto_refresh = true;
 
+        // Bind to the document so dynamicly added content will still work
+        // Configure the ACK switch for events
+        $(document).on('change', 'input.ack-switch', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "ack": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "ack": 'False' })
+            }
+        });
+
+        // Bind to the document so dynamicly added content will still work
+        // Configure the ACK switch for traps
+        $(document).on('change', 'input.ack-trap', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "ack": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "ack": 'False' })
+            }
+        });
+
+        // Bind to the document so dynamicly added content will still work
+        // Configure the Clear Trap button for traps
+        $(document).on('click', 'button.trap-clear', function () {
+            //$(this).prop('disabled', true);
+            var tr = $(this).closest('tr');
+            var url = $(this).data("url");
+            $.get(url, {})
+
+            tr.css("background-color", "#FF3700");
+            tr.fadeOut(400, function () {
+                tr.remove();
+            });
+        });
+
+        // Bind to the document so dynamicly added content will still work
+        // enable popoover
+        $('body').popover({
+            // selector: '[rel="popover"]',
+            selector: '[data-toggle="popover"]',
+            trigger: 'hover',
+            delay: { "hide": 10 }
+
+        });
+
+        // Configure the Clear All Traps button for traps
+        // $(document).on('click', 'button.clear_all_traps', function () {
+        $('#clear_all_traps').click(function () {
+            // var url = $(this).data("url");
+            // $.get(url, {})
+            $('.trap-clear').each(function (index) {
+                var tr = $(this).closest('tr');
+                var url = $(this).data("url");
+                console.log("clearing trap with " + url)
+                $.get(url, {})
+                tr.css("background-color", "#FF3700");
+                tr.fadeOut(400, function () {
+                    tr.remove();
+                });
+            });
+        });
+
+        // Configure the Create Incident button for events and traps
+        $('#incident_button').click(function () {
+            checked = $("input[name=event]:checked").length;
+            if (!checked) {
+                alert("Please select one summary to create an incident.");
+                return false;
+            }
+        });
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("voice checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("voice checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Populate the page content for the first time
         refresh_cards();
+        var chart = setup_chart();
 
-        // $('.akips_trend:contains(New)').each(function( index ) {
-		//     document.getElementById('audiotag1').play();
-        // });
+        // Update the refresh counter
+        var max_remaining = refresh_seconds;
+        var remaining = max_remaining;
+        var remainingId = setInterval(function() {
+            remaining = remaining - 1;
+            if ( $('#refresh-toggle').is(':checked') ) {
+                $('#time-remain').text(remaining);
+            } else {
+                $('#time-remain').text('no');
+            }
+        }, 1000);
 
-        var intervalId = window.setInterval(function(){
-            refresh_cards();
-        }, refresh_seconds);
+        // Update the dynamic page content on a refresh interval
+        var intervalId = window.setInterval(function () {
+            remaining = max_remaining;
+            if ( $('#refresh-toggle').is(':checked') ) {
+                refresh_cards();
+                refresh_chart(chart);
+            }
+        }, refresh_seconds * 1000);
+
     })
 </script>
 {% endblock %}

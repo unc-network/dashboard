@@ -5,34 +5,93 @@
     <thead>
         <tr>
             <th>Ack</th>
-            <th>Building</th>
-            <th>Switch Count</th>
-            <th>AP Count</th>
-            <th>UPS Count</th>
-            <th>Percent Down</th>
+            <th>Tier1 / Building</th>
+            <th class="d-none d-md-table-cell">Switch</th>
+            <th class="d-none d-md-table-cell">AP</th>
+            <th class="d-none d-md-table-cell">UPS</th>
+            <!-- <th>All</th> -->
+            <th class="d-none d-md-table-cell">% Affected</th>
             <th>Last Event</th>
-            <th>Trend</th>
-            <th>Incident Request</th>
+            <th class="d-none d-md-table-cell">Trend</th>
+            <th class="d-none d-md-table-cell">Incident Request</th>
         </tr>
     </thead>
     <tbody>
-        {% for bldg in bldgs %}
+        {% for summary in summaries %}
+        {% if summary.type == 'Distribution' %}
+        <tr class="bg-light">
+            <td></td>
+            {% else %}
         <tr>
             <td>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="ack_bldg_{{ bldg.id }}">
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if summary.ack %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
+                    </div>
                 </div>
+                {% if summary.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ summary.ack_by }} at {{ summary.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
             </td>
-            <td><a href="{% url 'building' bldg.name %}">{{ bldg.name }}</a></td>
-            <td>{{ bldg.switch_count }}</td>
-            <td>{{ bldg.ap_count }}</td>
-            <td>{{ bldg.ups_count }}</td>
-            <td>{% widthratio bldg.percent_down 1 100 %}%</td>
-            <td>{{ bldg.last_event }}</td>
-            <td class="akips_trend">{{ bldg.trend }}</td>
-            <td>{{ bldg.incident }}</td>
+            {% endif %}
+            {% if summary.type == 'Distribution' %}
+            <!-- <td class="font-weight-bold text-center"> -->
+            <td class="font-weight-bold">
+                <!-- <a href="{% url 'summary' summary.id %}">{{ summary.name }} <i class="fas fa-caret-down"></i></a> -->
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-caret-down"></i> {{ summary.name }}</a>
+            </td>
+            {% else %}
+            <td>
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> 
+                <!-- <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>  -->
+            </td>
+            {% endif %}
+            <td class="d-none d-md-table-cell">{{ summary.switch_count }}</td>
+            <td class="d-none d-md-table-cell">{{ summary.ap_count }}</td>
+            <td class="d-none d-md-table-cell">{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-three-quarters text-danger"></i>{% endif %}</td>
+            <!-- <td>{{ summary.total_count }}</td> -->
+            <td class="d-none d-md-table-cell">
+                {% if summary.percent_down >= .10 %}
+                <span class="text-danger">{% widthratio summary.percent_down 1 100 %}%</span>
+                {% else %}
+                {% widthratio summary.percent_down 1 100 %}%
+                {% endif %}
+            </td>
+            <!-- <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td> -->
+            <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
+            <!-- <td>{{ summary.last_event|date:'M-j g:i:s A' }}</td> -->
+            {% if summary.trend == 'New' %}
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-plus"></i></td>
+            {% elif summary.trend == 'Increasing' %}
+                <td class="text-center bg-warning akips_trend d-none d-md-table-cell"><i class="fas fa-level-up-alt"></i></td>
+            {% elif summary.trend == 'Decreasing' %}
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-level-down-alt"></i></td>
+            {% else %}
+                <td class="text-center akips_trend d-none d-md-table-cell"><i class="fas fa-long-arrow-alt-right"></i></td>
+            {% endif %}
+            <td class="text-center d-none d-md-table-cell">
+                {% if summary.incident %}
+                {{ summary.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="event" value="summary_{{ summary.id }}">
+                </div>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
+        {% if not summaries %}
+        <tr>
+            <td colspan="10" class="text-center">Tier 1 and Building events are currently clear</td>
+        </tr>
+        {% endif %}
     </tbody>
 </table>
 {% endblock %}

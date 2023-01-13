@@ -1,36 +1,53 @@
 {% load static %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th>Ack</th>
-                    <th>Critical Device</th>
-                    <th>IP Address</th>
-                    <th>Description</th>
-                    <th>Last Event</th>
-                    <th>Incident Request</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for crit in critical %}
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="ack_crit_{{ crit.id }}">
+<table class="table table-hover table-sm">
+    <thead>
+        <tr>
+            <th>Ack</th>
+            <th>Critical Device</th>
+            <th>IP Address</th>
+            <th>Description</th>
+            <th>First Event</th>
+            <th>Incident Request</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for summary in summaries %}
+        <tr>
+            <td>
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if summary.ack %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}" data-url="{% url 'ack' summary.id %}" >
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
                         </div>
-                    </td>
-                    <td><a href="{% url 'device' crit.name %}">{{ crit.name }}</a></td>
-                    <td>{{ crit.device.ip4addr }}</td>
-                    <td>{{ crit.device.sysDescr }}</td>
-                    <td>{{ crit.last_event }}</td>
-                    <td>{{ crit.incident }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                    </div>
+                </div>
+                {% if summary.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ summary.ack_by }} at {{ summary.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
+            </td>
+            <!-- <td><a href="{% url 'summary' summary.id %}">{{ summary.name }}</a></td> -->
+            <td><a href="{% url 'summary' summary.id %}">{% with summary.unreachables.all|first as u %}{{ u.device.sysName }}{% endwith %}</a></td>
+            <td>{% with summary.unreachables.all|first as u %}{{ u.device.ip4addr }}{% endwith %}</td>
+            <td class="d-inline-block text-truncate" style="max-width: 150px">{% with summary.unreachables.all|first as u %}{{ u.device.sysDescr }}{% endwith %}</td>
+            <!-- <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td> -->
+            <td>{{ summary.first_event|date:'m-d H:i:s' }}</td>
+            <td class="text-center">
+                {% if summary.incident %}
+                {{ summary.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="event" value="{{ summary.id }}">
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

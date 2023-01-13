@@ -1,0 +1,116 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Recent Traps{% endblock %}
+{% block page_name %}Recent Traps (Last 24 Hours){% endblock %}
+
+{% block style_sheets %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive">
+        <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
+
+        <table id="myTable" class="table table-hover dataTable table-sm">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>IP Address</th>
+                    <th>Trap</th>
+                    <th>Last Recorded</th>
+                    <!-- <th>Comment</th> -->
+                    <th>Info</th>
+                    <!-- <th>Status</th> -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for trap in traps %}
+                <tr>
+                    <td><a href="{% url 'device' trap.device %}">{{ trap.device.sysName }}</a></td>
+                    <td>{{ trap.device.ip4addr }}</td>
+                    <td><a href="{% url 'trap' trap.id %}">{{ trap.trap_oid }}</a>
+                        {% if trap.dup_count > 0 %}<span class="float-right badge bg-primary dup-data" data-last='{{ trap.dup_last|date:"c" }}'>{{ trap.dup_count }} dup</span>{% endif %}
+                    </td>
+                    <!-- <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m/d h:i:s a' }}{% else %}{{ trap.tt|date:'m/d h:i:s a' }}{% endif %}</td> -->
+                    <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m-d H:i:s' }}{% else %}{{ trap.tt|date:'m-d H:i:s' }}{% endif %}</td>
+                    <!-- <td>{{ trap.comment }}</td> -->
+                    <!-- <td><span class="hovertext" data-hover="{{ trap.comment }}"><i class="fas fa-info-circle text-primary"></i></span></td> -->
+                    <td><i class="fas fa-info-circle text-primary" data-container="body" data-toggle="popover" data-placement="top" data-content="Cleared by {{ trap.cleared_by }} at {{ trap.cleared_at }}"></i></td>
+                    <!-- <td>{{ trap.status }}</td> -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/jszip/jszip.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/pdfmake.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/vfs_fonts.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
+<script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var refresh_seconds = 30000;
+
+        $("#myTable").DataTable({
+          "responsive": true, "lengthChange": false, "autoWidth": false,
+          "buttons": ["copy", "csv", "excel", "pdf", "print"],
+          "pageLength": 25,
+          "ordering": false,
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
+
+        $(function () {
+            $('[data-toggle="popover"]').popover({
+                trigger: 'hover'
+            })
+        })
+    })
+</script>
+{% endblock js %}

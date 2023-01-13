@@ -220,8 +220,8 @@ DEFAULT_FROM_EMAIL = 'devops@office.unc.edu'
 SERVER_EMAIL = 'devops@office.unc.edu'
 
 # Session settings
-#SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-#SESSION_COOKIE_AGE = 3600
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 1209600    # default 2 weeks, in seconds
 
 # Logging configuration
 LOGGING = {
@@ -299,3 +299,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Incoming Webhook, default to something for testing
+AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')

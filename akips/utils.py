@@ -100,7 +100,7 @@ class AKIPS:
             return data
         return None
 
-    def set_maintenance_mode(self, device_name, mode=True):
+    def set_maintenance_mode(self, device_name, mode='True'):
         ''' Set mantenance mode on or off for a device '''
         params = {
             'function': 'web_manual_grouping',
@@ -151,45 +151,112 @@ class AKIPS:
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
         params = {
-            'cmds': 'mget * * ping4 PING.icmpState value /down/',
+            #'cmds': 'mget * * ping4 PING.icmpState value /down/',
+            #'cmds': 'mget * * /ping4|sys/ * value /down/',
+            'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
+            #'cmds': 'mget * * /ping4|sys/ /PING.icmpState|SNMP.snmpState/ value /down/'
         }
         text = self.get(params=params)
         if text:
-            data = {} 
+            #data = []
+            data = {}
             # Data comes back as 'plain/text' type so we have to parse it
             # Example output, data on each line:
-            # 152.19.198.33 ping4 PING.icmpState = 1,down,1519844016,1646695881,152.19.198.33
-            # 152.19.198.37 ping4 PING.icmpState = 1,down,1519844016,1642967467,152.19.198.37
-            # 172.22.37.68 ping4 PING.icmpState = 1,down,1443798140,1659405567,172.22.37.68
+            # 172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
+            # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+            # CrN-082-SmithCenter-AP_Stats_Table ping4 PING.icmpState = 1,down,1605595895,1656331597,172.29.94.63
+            # CrN-082-SmithCenter-AP_Talent_Table ping4 PING.icmpState = 1,down,1641624705,1646101757,172.29.94.112
             #
             # Example child attribute values
             # ping4	PING.icmpState	1,down,1575702020,1662054938,172.29.172.68
             # sys	SNMP.snmpState	1,down,1575702020,1662054911,
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)$", line)
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
                 if match:
-                    if match.group(1) not in data:
-                        # Populate a default entry for all desired fields
-                        data[ match.group(1) ] = {
-                            'child': match.group(2),
-                            'attribute': match.group(3),
-                            'index': match.group(4),
-                            'state': match.group(5),
-                            'device_added': match.group(6), # epoch in local timezone
-                            'event_start': match.group(7),  # epoch in local timezone
-                            'ip4addr': match.group(8),
+                    name = match.group(1)
+                    attribute = match.group(3)
+                    event_start = match.group(7)    # epoch in local timezone
+                    if name not in data:
+                        # populate a starting point for this device
+                        data[name] = { 
+                            'name': name,
+                            'ping_state': 'up',
+                            'snmp_state': 'unreported',
+                            'event_start': event_start  # epoch in local timezone
                         }
-                    # Save this attribute value to data
-                    #data[ match.group(1) ][ match.group(3) ] = match.group(4)
-            logger.debug("Found {} devices in akips".format( len( data.keys() )))
+                    if attribute == 'PING.icmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['ping_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['ip4addr'] = match.group(8)
+                    elif attribute == 'SNMP.snmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['snmp_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['ip4addr'] = None
+                    if event_start < data[name]['event_start']:
+                        data[name]['event_start'] = event_start
+            logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("data: {}".format(data))
             return data
         return None
 
-    def get_threshold_events(self, period='last1h'):
-        ''' Pull a list of unreachable IPv4 ping devices '''
+    def get_status(self, type='ping'):
+        ''' Pull the status values we are most interested in '''
+        if type == 'ups':
+            params = { 'cmds': 'mget * * ups UPS-MIB.upsOutputSource' }
+            # command: mget * * * UPS-MIB.upsOutputSource
+            # 172.28.12.11 ups UPS-MIB.upsOutputSource = 3,normal,1473262633,1633441440,
+            # 172.28.12.121 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+            # 172.28.12.128 ups UPS-MIB.upsOutputSource = 3,normal,1423715292,1632171420,
+        elif type == 'ping':
+            params = { 'cmds': 'mget * * ping4 PING.icmpState' }
+            # 172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
+            # CrN-082-SmithCenter-AP_Stats_Table ping4 PING.icmpState = 1,down,1605595895,1656331597,172.29.94.63
+            # CrN-082-SmithCenter-AP_Talent_Table ping4 PING.icmpState = 1,down,1641624705,1646101757,172.29.94.112
+        elif type == 'snmp':
+            params = { 'cmds': 'mget * * sys SNMP.snmpState' }
+            # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+        else:
+            logger.warning("Invalid get status type {}".format(type))
+            return None
+
+        text = self.get(params=params)
+        if text:
+            data = []
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$", line)
+                if match:
+                    entry = {
+                        'device': match.group(1),
+                        'child': match.group(2),
+                        'attribute':  match.group(3),
+                        'index': match.group(4),
+                        'state': match.group(5),
+                        'device_added': match.group(6), # epoch in local timezone
+                        'event_start': match.group(7),  # epoch in local timezone
+                        'ipaddr': match.group(8)
+                    }
+                    data.append( entry )
+            logger.debug("Found {} states in akips".format( len( data ) ))
+            return data
+        return None
+
+    def get_events(self, type='all', period='last1h'):
+        ''' Pull a list of events.  Command syntax:
+            mget event {all,critical,enum,threshold,uptime}
+            time {time filter} [{parent regex} {child regex}
+            {attribute regex}] [profile {profile name}]
+            [any|all|not group {group name} ...] '''
+
         params = {
-            'cmds': 'mget event threshold time last1h'
+            'cmds': 'mget event {} time {}'.format(type,period)
         }
         text = self.get(params=params)
         if text:
@@ -197,25 +264,27 @@ class AKIPS:
             # Data comes back as 'plain/text' type so we have to parse it.  Format expected:
             # {epoch} {parent} {child} {attribute} threshold {flags} {rule exceeded} [{child description}]
             # Example output, data on each line:
-            # 1662741840 172.29.149.209 cpu.196609 HOST-RESOURCES-MIB.hrProcessorLoad threshold warning,above last5m,avg,90 GenuineIntel: Intel(R) Xeon(R) CPU E5-2658 v2 @ 2.40GHz
             # 1662741900 172.29.170.78 ping4 PING.icmpRtt threshold warning,below last30m,avg,20000 172.29.170.78
-            # 1662741960 172.29.149.209 cpu.1.49.2 F5-BIGIP-SYSTEM-MIB.sysMultiHostCpuUsageRatio1m threshold warning,above last5m,avg,90 1
+            # 1663646539 CrNR-136-HortonRHHJNO-AP_336 ping4 PING.icmpState enum warning down 172.29.69.6
+            # 1663661689 MetE-371-CLLCRH-AP_2 ap.168.189.39.203.11.228 WLSX-WLAN-MIB.wlanAPUpTime uptime warning 5053738
             lines = text.split('\n')
             for line in lines:
-                match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\sthreshold\s(?P<flags>\S+)\s(?P<rule_exceeded>\S+)\s(?P<child_description>.*)$', line)
+                #match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\sthreshold\s(?P<flags>\S+)\s(?P<rule_exceeded>\S+)\s(?P<child_description>.*)$', line)
+                match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\s(?P<type>\S+)\s(?P<flags>\S+)\s(?P<details>.*)$', line)
                 if match:
                     entry = {
                         'epoch': match.group('epoch'),
                         'parent': match.group('parent'),
                         'child': match.group('child'),
                         'attribute': match.group('attribute'),
+                        'type': match.group('type'),
                         'flags': match.group('flags'),
-                        'rule_exceeded': match.group('rule_exceeded'),
+                        'details': match.group('details'),
                     }
-                    if match.group('child_description'):
-                        entry['child_description'] = match.group('child_description'),
+                    #if match.group('child_description'):
+                    #    entry['child_description'] = match.group('child_description'),
                     data.append(entry)
-            logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("Found {} events of type {} in akips".format( len( data ), type))
             return data
         return None
 
@@ -281,3 +350,150 @@ class NIT:
             logger.debug('API request finished successfully, response code: %i %s'
                         % (r.status_code, r.reason))
             return json.loads(r.text)
+
+class ServiceNow:
+    # Class to handle interactions with ServiceNow
+    url = os.getenv('SN_URL', '')
+    username = os.getenv('SN_USERNAME', '')
+    password = os.getenv('SN_PASSWORD', '')
+    session = requests.Session()
+
+    def create_incident(self, group, description, callerid=None, severity=None, work_notes=None):
+        ''' Create a new SN incident '''
+        # Set proper headers
+        headers = {"Content-Type":"application/json", "Accept":"application/json"}
+
+        data = {
+            # Required fields
+            'u_assignment_group': group,
+            'u_caller_id': self.username,
+            'u_short_description': "OCNES: {}".format(description),
+
+            # Optional fields
+            #'u_business_service': 'Network: IP Services',
+            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
+            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
+            #'u_opened_by': user,             # optional
+            #'u_work_notes': '',            # optional
+
+            # u_category is not listed in API doc as supported on create,
+            # but it is required to close an incident and can be set here
+            'u_category': 'Network',     # optional
+        }
+        if callerid:
+            data['u_caller_id'] = callerid
+        if severity == 'Critical':
+            # "1 - Critical" servicenow priority
+            data['u_impact'] = '1'
+            data['u_urgency'] = '1'
+        elif severity == 'High':
+            # "2 - High" servicenow priority
+            data['u_impact'] = '1'
+            data['u_urgency'] = '2'
+        elif severity == 'Moderate':
+            # "3 - Moderate" servicenow priority
+            data['u_impact'] = '2'
+            data['u_urgency'] = '2'
+        elif severity == 'Low':
+            # "4 - Low" servicenow priority
+            data['u_impact'] = '3'
+            data['u_urgency'] = '2'
+
+        if work_notes:
+            data['u_work_notes'] = work_notes
+
+        logger.debug("data: {}".format(data))
+        # Do the HTTP request
+        response = requests.post(self.url, auth=(self.username,self.password), headers=headers ,data=json.dumps(data))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        for entry in result_data['result']:
+            logger.debug("Result: {}".format(entry))
+            # Example entry for success
+            # {
+            #     "display_name": "number",
+            #     "display_value": "INC0319066",
+            #     "record_link": "https://uncchdev.service-now.com/api/now/table/incident/08bd97cc970ad5502d6274671153af52",
+            #     "status": "inserted",
+            #     "sys_id": "08bd97cc970ad5502d6274671153af52",
+            #     "table": "incident",
+            #     "transform_map": "Incident In"
+            # }
+            if entry['status'] == 'error':
+                logger.error("Failed to create ServiceNow Incident {}".format(entry['error_message']))
+                return 
+            else:
+                return {'number': entry['display_value'], 'link': entry['record_link']}
+
+    def update_incident(self, number, work_notes):
+        ''' Update an existing SN incident '''
+
+        # Set proper headers
+        headers = {"Content-Type":"application/json", "Accept":"application/json"}
+
+        # Resolving is not allowed by the API
+        data = {
+            'u_number': number,
+            #'u_category': 'Network',     # optional
+            #'u_state': 'In Progress',    # optional: New, In Progress, On Hold, Resolved, Canceled
+                                        # resolved requires fields we can't set in the api
+            ### create fields below are optional
+            #'u_assignment_group': 'IP-Services',
+            #'u_caller_id': "wew",
+            #'u_short_description': "create test",
+            #'u_business_service': 'Network: IP Services',
+            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
+            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
+            #'u_opened_by': 'wew',
+            'u_work_notes': work_notes,
+        }
+
+        # Do the HTTP request
+        response = requests.post(self.url, auth=(self.username, self.password), headers=headers ,data=json.dumps(data))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        for entry in result_data['result']:
+            logger.debug("Result: {}".format(entry))
+            if entry['status'] == 'error':
+                logger.error("Failed to update ServiceNow Incident {}".format(entry['error_message']))
+                return 
+            else:
+                return {'number': entry['display_value'], 'link': entry['record_link']}
+
+# Gives a human-readable uptime string
+def pretty_duration(seconds):
+    total_seconds = int( seconds )
+    # Helper vars:
+    MINUTE  = 60
+    HOUR    = MINUTE * 60
+    DAY     = HOUR * 24
+
+    # Get the days, hours, etc:
+    days    = int( total_seconds / DAY )
+    hours   = int( ( total_seconds % DAY ) / HOUR )
+    minutes = int( ( total_seconds % HOUR ) / MINUTE )
+    seconds = int( total_seconds % MINUTE )
+
+    # Build up the pretty string (like this: "N days, N hours, N minutes, N seconds")
+    string = ""
+    if days > 0:
+        string += str(days) + " " + (days == 1 and "day" or "days" ) + ", "
+    if len(string) > 0 or hours > 0:
+        string += str(hours) + " " + (hours == 1 and "hour" or "hours" ) + ", "
+    if len(string) > 0 or minutes > 0:
+        string += str(minutes) + " " + (minutes == 1 and "minute" or "minutes" ) + ", "
+    string += str(seconds) + " " + (seconds == 1 and "second" or "seconds" )
+
+    return string

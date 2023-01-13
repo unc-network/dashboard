@@ -1,0 +1,25 @@
+{% extends "akips/error_base.html" %}
+{% block title %}{% endblock %}
+{% load static %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-body login-card-body">
+      <div class="error-page">
+        <h2 class="headline text-primary">404</h2>
+
+        <div class="error-content">
+          <h3><i class="fas fa-info-circle text-primary"></i> Page Not Found</h3>
+          <p>
+            The page or resource you tried to access does not exist. <a href="{% url 'home' %}">Return to the main dashboard</a>.
+          </p>
+
+        </div>
+      </div>
+      <!-- /.error-page -->
+    </div>
+    <!-- /.login-card-body -->
+  </div>
+
+{% endblock %}

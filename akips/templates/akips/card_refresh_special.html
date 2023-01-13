@@ -1,0 +1,78 @@
+{% load static %}
+
+{% block content %}
+<table class="table table-hover table-sm">
+    <thead>
+        <tr>
+            <th>Ack</th>
+            <th>Special Grouping</th>
+            <!-- <th>Switch</th> -->
+            <!-- <th>AP</th> -->
+            <!-- <th>UPS</th> -->
+            <th>All</th>
+            <th>% Affected</th>
+            <th>Last Event</th>
+            <th>Trend</th>
+            <th>Incident Request</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for summary in summaries %}
+        <tr>
+            <td>
+                <div class="form-group float-left m-0">
+                    <div class="custom-control custom-switch">
+                        {% if summary.ack %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-{{ summary.id}}"
+                            data-url="{% url 'ack' summary.id %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="ack-switch-{{ summary.id }}"></label>
+                    </div>
+                </div>
+                {% if summary.ack %}
+                <span data-container="body" data-toggle="popover" data-content="Ack by {{ summary.ack_by }} at {{ summary.ack_at }}"><i class="fas fa-info-circle text-primary"></i></span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> 
+                <!-- <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>  -->
+            </td>
+            <!-- <td>{{ summary.switch_count }}</td> -->
+            <!-- <td>{{ summary.ap_count }}</td> -->
+            <!-- <td>{{ summary.ups_count }}{% if summary.ups_battery > 0 %} <i class="fas fa-battery-three-quarters text-danger"></i>{% endif %}</td> -->
+            <td>{{ summary.total_count }}</td>
+            <td>
+                {% if summary.percent_down >= .10 %}
+                <span class="text-danger">{% widthratio summary.percent_down 1 100 %}%</span>
+                {% else %}
+                {% widthratio summary.percent_down 1 100 %}%
+                {% endif %}
+            </td>
+            <!-- <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td> -->
+            <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
+            {% if summary.trend == 'New' %}
+                <td class="text-center bg-danger akips_trend"><i class="fas fa-plus"></i></td>
+            {% elif summary.trend == 'Increasing' %}
+                <td class="text-center bg-warning akips_trend"><i class="fas fa-level-up-alt"></i></td>
+            {% elif summary.trend == 'Decreasing' %}
+                <td class="text-center bg-success akips_trend"><i class="fas fa-level-down-alt"></i></td>
+            {% else %}
+                <td class="text-center akips_trend"><i class="fas fa-long-arrow-alt-right"></i></td>
+            {% endif %}
+            <td class="text-center">
+                {% if summary.incident %}
+                {{ summary.incident }}
+                {% else %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="event" value="summary_{{ summary.id }}">
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

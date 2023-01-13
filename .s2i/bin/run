@@ -51,7 +51,7 @@ cd "$APP_HOME"
 if [ ! -z "$RUN_CELERY" ]; then
   echo "---> Starting Celery..."
   #exec celery --app project worker -l DEBUG -B 
-  exec celery --app project worker -B 
+  exec celery --app project worker -B  --discard
 fi
 
 if [ -z "$APP_SCRIPT" ] && [ -z "$APP_FILE" ] && [ -z "$APP_MODULE" ]; then
