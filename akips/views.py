@@ -802,7 +802,10 @@ class ChartDataView(LoginRequiredMixin, View):
             trap_data[this_label] += 1
 
         # Increment sums for ups battery events in each period
-        battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True)
+        battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',
+                                        value='battery',
+                                        last_change__gte=min_label,
+                                        device__maintenance=False).exclude(device__hibernate=True)
         for ups in battery:
             slot = self.round_dt_down( ups.last_change, timedelta(minutes= self.period_minutes) ) 
             this_label = timezone.localtime(slot).strftime('%H:%M')
