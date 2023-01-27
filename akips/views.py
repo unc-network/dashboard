@@ -779,9 +779,11 @@ class ChartDataView(LoginRequiredMixin, View):
         # Initalize the graph time periods
         event_data = {}
         trap_data = {}
+        battery_data = {}
         for i in keyList:
             event_data[i] = 0
             trap_data[i] = 0
+            battery_data[i] = 0
 
         # Increment sums for unreachable events in each period
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
@@ -799,6 +801,13 @@ class ChartDataView(LoginRequiredMixin, View):
             this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
+        # Increment sums for ups battery events in each period
+        battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True)
+        for ups in battery:
+            slot = self.round_dt_down( ups.last_change, timedelta(minutes= self.period_minutes) ) 
+            this_label = timezone.localtime(slot).strftime('%H:%M')
+            battery_data[this_label] += 1
+
         #logger.debug("periods {}".format(event_data.keys()))
         #logger.debug("event values {}".format(event_data.values()))
         #logger.debug("trap values {}".format(trap_data.values()))
@@ -806,6 +815,7 @@ class ChartDataView(LoginRequiredMixin, View):
             'chart_labels': list( event_data.keys() ),
             'chart_event_data': list( event_data.values() ),
             'chart_trap_data': list( trap_data.values() ),
+            'chart_battery_data': list( battery_data.values() ),
         }
 
         # Return the results

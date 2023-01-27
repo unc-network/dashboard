@@ -205,6 +205,7 @@
                 barchart.data.labels = result['chart_labels'];
                 barchart.data.datasets[0].data = result['chart_event_data'];
                 barchart.data.datasets[1].data = result['chart_trap_data'];
+                barchart.data.datasets[2].data = result['chart_battery_data'];
                 barchart.update();
             },
             error: function (xhr, status, error) {
