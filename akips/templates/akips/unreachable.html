@@ -28,8 +28,8 @@
                 {% for unreachable in unreachables %}
                 <tr>
                     <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a>
-                    {% if unreachable.device.hibernate %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-bed"></i></span>{% endif %}
-                    {% if unreachable.device.maintenance %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-tools"></i></span>{% endif %}
+                    {% if unreachable.device.hibernate %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-bed" title="OCNES hibernation"></i></span>{% endif %}
+                    {% if unreachable.device.maintenance %}<span class="float-right badge bg-primary dup-data"><i class="fas fa-tools" title="AKIPS maintenance mode"></i></span>{% endif %}
                 </td>
                     <td>{{ unreachable.device.ip4addr }}</td>
                     <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
