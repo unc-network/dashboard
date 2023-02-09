@@ -63,6 +63,11 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+
+        # akips = AKIPS()
+        # device_name = akips.get_device_by_ip('152.19.187.21')
+        # logger.debug("Found device name {}".format(device_name))
+
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
@@ -930,10 +935,14 @@ def process_webhook_payload(payload):
     if not device:
         akips = AKIPS()
         device_name = akips.get_device_by_ip(payload['device'])
-        try:
-            device = Device.objects.get(name=device_name)
-        except Device.DoesNotExist:
-            logger.warn("Trap source ip {} could not be mapped to a device record".format(payload['device']))
+        if device_name:
+            try:
+                device = Device.objects.get(name=device_name)
+            except Device.DoesNotExist:
+                logger.warn("Trap source ip {} could not be mapped to a device record".format(payload['device']))
+                return False
+            logger.info("Found device {} from alternate address {}".format(device,payload['device']))
+        else:
             return False
 
     if payload['type'] == 'Trap':
