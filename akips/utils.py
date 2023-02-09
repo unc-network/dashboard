@@ -153,10 +153,10 @@ class AKIPS:
         # Search for a device by an alterate IP address
         # This makes use of a special site script and not the normal api
         cache_key = 'device_name_' + ipaddr
+        cache_timeout = 3600
 
         # Try cache first.  Doing this since it's an extra akips call.
         device_name = cache.get(cache_key)
-        logger.debug("Check cache for {} got {}".format(cache_key,device_name))
         if use_cache and device_name:
             logger.debug("cache hit: {} as {}".format(cache_key, device_name))
             return device_name
@@ -178,9 +178,8 @@ class AKIPS:
                 if match:
                     input = match.group(1)
                     device = match.group(2)
-                    logger.debug("Found {} on {}".format( input, device ))
-                    cache.set(cache_key, device, 30)
-                    logger.debug("Saving cache key {} as {}".format(cache_key, device))
+                    logger.debug("found {} on {}".format( input, device ))
+                    cache.set(cache_key, device, cache_timeout)
                     return device
         return None
 
