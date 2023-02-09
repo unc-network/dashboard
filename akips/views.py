@@ -65,7 +65,8 @@ class Home(LoginRequiredMixin, View):
         context = {}
 
         # akips = AKIPS()
-        # device_name = akips.get_device_by_ip('152.19.187.21')
+        # #device_name = akips.get_device_by_ip('152.19.187.21')
+        # device_name = akips.get_device_by_ip('172.29.149.203')
         # logger.debug("Found device name {}".format(device_name))
 
         return render(request, self.template_name, context=context)

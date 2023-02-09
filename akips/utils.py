@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 import os
 import logging
 import requests
@@ -148,9 +149,19 @@ class AKIPS:
             return data
         return None
 
-    def get_device_by_ip(self, ipaddr):
+    def get_device_by_ip(self, ipaddr, use_cache=True):
         # Search for a device by an alterate IP address
         # This makes use of a special site script and not the normal api
+        cache_key = 'device_name_' + ipaddr
+
+        # Try cache first.  Doing this since it's an extra akips call.
+        device_name = cache.get(cache_key)
+        logger.debug("Check cache for {} got {}".format(cache_key,device_name))
+        if use_cache and device_name:
+            logger.debug("cache hit: {} as {}".format(cache_key, device_name))
+            return device_name
+
+        # Hit the akips api
         params = {
             'function': 'web_find_device_by_ip',
             'ipaddr': ipaddr
@@ -168,6 +179,8 @@ class AKIPS:
                     input = match.group(1)
                     device = match.group(2)
                     logger.debug("Found {} on {}".format( input, device ))
+                    cache.set(cache_key, device, 30)
+                    logger.debug("Saving cache key {} as {}".format(cache_key, device))
                     return device
         return None
 
