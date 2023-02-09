@@ -148,6 +148,29 @@ class AKIPS:
             return data
         return None
 
+    def get_device_by_ip(self, ipaddr):
+        # Search for a device by an alterate IP address
+        # This makes use of a special site script and not the normal api
+        params = {
+            'function': 'web_find_device_by_ip',
+            'ipaddr': ipaddr
+        }
+        text = self.get(section='/api-script/', params=params)
+        #logger.debug("api result: {}".format(text))
+        if text:
+            # Output examples:
+            # IP Address 10.194.200.65 is configured on cisco-sw1
+            # IP Address 10.194.200.99 is not configured on any devices
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("IP Address (\S+) is configured on (\S+)", line)
+                if match:
+                    input = match.group(1)
+                    device = match.group(2)
+                    logger.debug("Found {} on {}".format( input, device ))
+                    return device
+        return None
+
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
         params = {
