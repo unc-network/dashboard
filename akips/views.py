@@ -924,12 +924,13 @@ def process_webhook_payload(payload):
         logger.warn("Trap alert is missing type field")
         return False
 
+    device = None
     try:
         device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
         logger.warn("Trap {} received from unknown device {} with address {}".format(
             payload['trap_oid'], payload['device'], payload['ipaddr']))
-        #return False
+        # return False
 
     # Check the api for alternte addresses if we don't have a device match
     if not device:
@@ -939,10 +940,11 @@ def process_webhook_payload(payload):
             try:
                 device = Device.objects.get(name=device_name)
             except Device.DoesNotExist:
-                logger.warn("Trap source ip {} could not be mapped to a device record".format(payload['device']))
+                logger.warn("Trap from {} could not be mapped to a device record".format(payload['device']))
                 return False
             logger.info("Found device {} from alternate address {}".format(device,payload['device']))
         else:
+            logger.warn("Trap from {} could not be mapped to a device record".format(payload['device']))
             return False
 
     if payload['type'] == 'Trap':
