@@ -63,10 +63,6 @@ class Home(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-
-        akips = AKIPS()
-        data = akips.get_device_by_ip('152.19.187.22')
-
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
