@@ -927,7 +927,11 @@ def process_webhook_payload(payload):
 
     device = None
     try:
-        device = Device.objects.get(name=payload['device'])
+        # The trap data has 'device' and 'ipaddr' but they are always
+        # the source ip of the trap.  AKIPS doesn't populate 'device' as
+        # expected.  There is a support ticket in for that.
+        # device = Device.objects.get(name=payload['device'])
+        device = Device.objects.get(ip4addr=payload['ipaddr'])
     except Device.DoesNotExist:
         logger.warn("Trap {} received from unknown device {} with address {}".format(
             payload['trap_oid'], payload['device'], payload['ipaddr']))
@@ -936,7 +940,8 @@ def process_webhook_payload(payload):
     # Check the api for alternte addresses if we don't have a device match
     if not device:
         akips = AKIPS()
-        device_name = akips.get_device_by_ip(payload['device'])
+        # device_name = akips.get_device_by_ip(payload['device'])
+        device_name = akips.get_device_by_ip(payload['ipaddr'])
         if device_name:
             try:
                 device = Device.objects.get(name=device_name)
