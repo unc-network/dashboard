@@ -910,7 +910,7 @@ def akips_webhook(request):
         logger.warn("unable to parse body for json payload: {}".format(request.body))
         return HttpResponseBadRequest()
 
-    logger.debug("payload: {}".format( str(payload) ))
+    logger.info("Trap payload: {}".format( str(payload) ))
     response_data['success'] = process_webhook_payload(payload)
     return JsonResponse(response_data)
 
@@ -930,28 +930,29 @@ def process_webhook_payload(payload):
         # The trap data has 'device' and 'ipaddr' but they are always
         # the source ip of the trap.  AKIPS doesn't populate 'device' as
         # expected.  There is a support ticket in for that.
-        # device = Device.objects.get(name=payload['device'])
-        device = Device.objects.get(ip4addr=payload['ipaddr'])
+        # Status updates do not have an ipaddr field though and use 'device'.
+        if 'ipaddr' in payload:
+            device = Device.objects.get(ip4addr=payload['ipaddr'])
+        else:
+            device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
         logger.warn("Trap {} received from unknown device {} with address {}".format(
             payload['trap_oid'], payload['device'], payload['ipaddr']))
-        # return False
 
     # Check the api for alternte addresses if we don't have a device match
-    if not device:
+    if not device and 'ipaddr' in payload:
         akips = AKIPS()
-        # device_name = akips.get_device_by_ip(payload['device'])
         device_name = akips.get_device_by_ip(payload['ipaddr'])
         if device_name:
             try:
                 device = Device.objects.get(name=device_name)
             except Device.DoesNotExist:
                 logger.warn("Trap from {} could not be mapped to a device record".format(payload['device']))
-                return False
-            logger.info("Found device {} from alternate address {}".format(device,payload['device']))
-        else:
-            logger.warn("Trap from {} could not be mapped to a device record".format(payload['device']))
-            return False
+
+    # If All attempts at matching a device record fail, stop going forward
+    if not device:
+        logger.warn("Webhook call from {} could not be mapped to a device record".format(payload['device']))
+        return False
 
     if payload['type'] == 'Trap':
         # Check for Open duplicates
