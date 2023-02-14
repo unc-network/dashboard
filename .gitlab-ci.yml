@@ -20,7 +20,7 @@ default:
   # Only needed when using a docker container to run your tests in.
   # Check out: https://docs.gitlab.com/ee/ci/services/index.html
   services:
-    - postgres:15
+    - postgres:10
   #
   # This folder is cached between builds
   # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
