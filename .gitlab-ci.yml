@@ -21,7 +21,7 @@ default:
   # Only needed when using a docker container to run your tests in.
   # Check out: https://docs.gitlab.com/ee/ci/services/index.html
   services:
-    - postgres:10
+    - postgres:15
   #
   # This folder is cached between builds
   # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
@@ -29,8 +29,8 @@ default:
     paths:
       - ~/.cache/pip/
   before_script:
-    - yum -y install python39 python39-psycopg2 python3-virtualenv postgresql-server libpq libpq-devel
-    - yum -y upgrade
+    # - yum -y install python39 python39-psycopg2 python3-virtualenv postgresql-server libpq libpq-devel
+    # - yum -y upgrade
     - pip3 install --user -r requirements.txt
 
 # Stage 1:  Build the app
