@@ -14,7 +14,7 @@ variables:
 
 # Define default settings that apply to all jobs unless overridden
 default:
-  image: python
+  image: python:3
   # image: rockylinux:8
   #
   # Pick zero or more services to be used on all builds.
@@ -31,6 +31,10 @@ default:
   before_script:
     # - yum -y install python39 python39-psycopg2 python3-virtualenv postgresql-server libpq libpq-devel
     # - yum -y upgrade
+    # Install needed modules so LDAP bits in pip modules will install properly
+    - apt-get update
+    - apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
+    - pip3 install --upgrade pip
     - pip3 install --user -r requirements.txt
 
 # Stage 1:  Build the app
