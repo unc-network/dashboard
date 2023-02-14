@@ -14,7 +14,8 @@ variables:
 
 # Define default settings that apply to all jobs unless overridden
 default:
-  image: rockylinux:8
+  image: python
+  # image: rockylinux:8
   #
   # Pick zero or more services to be used on all builds.
   # Only needed when using a docker container to run your tests in.
