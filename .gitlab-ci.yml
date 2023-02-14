@@ -1,49 +1,64 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
-
-stages:          # List of stages for jobs, and their order of execution
+# List of stages for jobs, and their order of execution
+# All jobs within a stage run in parallel
+stages:
   - build
   - test
   - deploy
 
-build-job:       # This job runs in the build stage, which runs first.
+# Define variables needed by the various jobs
+variables:
+  POSTGRES_DB: $POSTGRES_DB
+  POSTGRES_USER: $POSTGRES_USER
+  POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  POSTGRES_HOST_AUTH_METHOD: trust
+
+# Define default settings that apply to all jobs unless overridden
+default:
+  image: rockylinux:8
+  #
+  # Pick zero or more services to be used on all builds.
+  # Only needed when using a docker container to run your tests in.
+  # Check out: https://docs.gitlab.com/ee/ci/services/index.html
+  services:
+    - postgres:15
+  #
+  # This folder is cached between builds
+  # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
+  cache:
+    paths:
+      - ~/.cache/pip/
+  before_script:
+    - yum install python39 python3-virtualenv postgresql-server
+    - yum upgrade
+    - pip3 install -r requirements.txt
+
+# Stage 1:  Build the app
+migrations:
   stage: build
   script:
-    - echo "Compiling the code..."
-    - echo "Compile complete."
+    - python3 manage.py makemigrations
+    # - python3 manage.py makemigrations myapp
+    - python3 manage.py migrate
+    - python3 manage.py check
 
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
+# Stage 2:  Test the app
+django-tests:
+  stage: test
   script:
-    - echo "Running unit tests... This will take about 6 seconds."
-    - sleep 6
-    - echo "Code coverage is 90%"
+    # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+    # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+    # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+    # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+    - python3 manage.py test
 
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
-  script:
-    - echo "Linting code... This will take about 1 seconds."
-    - sleep 1
-    - echo "No lint issues found."
-
-deploy-job:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+# Stage 3:  Deploy the app
+deploy:
+  stage: deploy
+  script: echo "Define your deployment script!"
   environment: production
-  script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
+
+
+# References:
+# From GitLab example templates: https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates
+# - Testing Django with MySQL: https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Django.gitlab-ci.yml
+# - https://docs.gitlab.com/ee/ci/services/postgres.html
