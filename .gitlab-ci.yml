@@ -30,7 +30,7 @@ default:
   before_script:
     - yum -y install python39 python39-psycopg2 python3-virtualenv postgresql-server libpq libpq-devel
     - yum -y upgrade
-    - pip3 install -r requirements.txt
+    - pip3 install --user -r requirements.txt
 
 # Stage 1:  Build the app
 migrations:
