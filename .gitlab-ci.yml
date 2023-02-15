@@ -61,7 +61,7 @@ django-tests:
 
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
-Stage 3:  Deploy the app
+# Stage 3:  Deploy the app
 deploy:
   stage: deploy
   environment: production
@@ -74,7 +74,7 @@ deploy:
     - docker:dind
   variables:
     # Next line needed so client and server can communicate with same certs
-    - DOCKER_TLS_CERTDIR: '/certs'
+    DOCKER_TLS_CERTDIR: "/certs"
   script:
     - echo "Building containers..."
 
