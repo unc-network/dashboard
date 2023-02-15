@@ -5,6 +5,11 @@ stages:
   - test
   - deploy
 
+workflow:
+  rules:
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+    - if: $CI_COMMIT_BRANCH == "main"
+
 # Define variables needed by the various jobs
 variables:
   POSTGRES_DB: $POSTGRES_DB
@@ -29,8 +34,6 @@ default:
     paths:
       - ~/.cache/pip/
   before_script:
-    # - yum -y install python39 python39-psycopg2 python3-virtualenv postgresql-server libpq libpq-devel
-    # - yum -y upgrade
     # Install needed modules so LDAP bits in pip modules will install properly
     - apt-get update
     - apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
@@ -56,11 +59,25 @@ django-tests:
     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
     - python3 manage.py test
 
-# Stage 3:  Deploy the app
+# If the previous stages all succeeded, then it is time to build the containers to run in production
+
+Stage 3:  Deploy the app
 deploy:
   stage: deploy
-  script: echo "Define your deployment script!"
   environment: production
+  # image provides Docker client
+  image: docker:latest
+  # [job container] ===> [service container]
+  # e.g., [python container] ===> [mysql db container]
+  # service provides Docker daemon
+  services:
+    - docker:dind
+  variables:
+    # Next line needed so client and server can communicate with same certs
+    - DOCKER_TLS_CERTDIR: '/certs'
+  script:
+    - echo "Building containers..."
+
 
 
 # References:
