@@ -57,6 +57,18 @@ logger = logging.getLogger(__name__)
 #             request.session.set_expiry(0)
 #     return auth_views.login(request, *args, **kwargs)
 
+# Testing a remember me
+# class UpdatedLoginView(LoginView):
+#     form_class = LoginForm
+    
+#     def form_valid(self, form):
+       
+#         remember_me = form.cleaned_data['remember_me']  # get remember me data from cleaned_data of form
+#         if not remember_me:
+#             self.request.session.set_expiry(0)  # if remember me is 
+#             self.request.session.modified = True
+#         return super(UpdatedLoginView, self).form_valid(form)
+
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
