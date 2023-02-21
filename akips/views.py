@@ -919,10 +919,10 @@ def akips_webhook(request):
 def process_webhook_payload(payload):
     # Handle the webhook action, return success (True/False)
     if 'device' not in payload:
-        logger.warn("Trap alert is missing device field")
+        logger.warn("Webhook is missing device field")
         return False
     elif 'type' not in payload:
-        logger.warn("Trap alert is missing type field")
+        logger.warn("Webhook is missing type field")
         return False
 
     device = None
@@ -936,8 +936,9 @@ def process_webhook_payload(payload):
         else:
             device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
-        logger.warn("Trap {} received from unknown device {} with address {}".format(
-            payload['trap_oid'], payload['device'], payload['ipaddr']))
+        logger.warn("Webhook received for unknown device {}".format(payload))
+        # logger.warn("Trap {} received from unknown device {} with address {}".format(
+        #     payload['trap_oid'], payload['device'], payload['ipaddr']))
 
     # Check the api for alternte addresses if we don't have a device match
     if not device and 'ipaddr' in payload:
