@@ -27,7 +27,7 @@
 
     <div id="chart" class="card">
         <div class="card-header">
-            <h3 class="card-title">Event Trends</h3>
+            <h3 class="card-title">New Event Trends</h3>
         </div>
         <div class="card-body p-0">
             <div class="chart">
@@ -123,7 +123,7 @@
             labels  : [],
             datasets: [
             {
-                label               : 'Unreachables',
+                label               : 'Unreachable',
                 backgroundColor     : 'rgba(60,141,188,0.9)',
                 borderColor         : 'rgba(60,141,188,0.8)',
                 pointRadius          : false,
@@ -134,7 +134,7 @@
                 data                : []
             },
             {
-                label               : 'Traps',
+                label               : 'Trap',
                 backgroundColor     : 'rgba(210,214,222,1)',
                 borderColor         : 'rgba(210,214,222,1)',
                 pointRadius          : false,
@@ -144,6 +144,17 @@
                 pointHighlightStroke: 'rgba(220,220,220,1)',
                 data                : []
             },
+            {
+                label               : 'Battery',
+                backgroundColor     : 'rgba(204,112,113,0.9)',
+                borderColor         : 'rgba(204,112,113,0.8)',
+                pointRadius          : false,
+                pointColor          : 'rgba(204,112,113,1)',
+                pointStrokeColor    : '#c1c7d1',
+                pointHighlightFill  : '#fff',
+                pointHighlightStroke: 'rgba(204,112,113,1)',
+                data                : []
+            }
             ]
         }
         
@@ -156,20 +167,17 @@
             },
             datasetFill : false,
             scales: {
-                // y: { 
-                //     type: 'logarithmic'
-                // },
                 xAxes: [{
                     gridLines : { display : true },
                     stacked: true
                 }],
                 yAxes: [{
+                    // type: 'logarithmic',
                     gridLines : { display : true },
                     stacked: true,
                     ticks: {
                         min: 0
-                    },
-                    //type: 'logarithmic'
+                    }
                 }]
             }
         }
@@ -194,6 +202,7 @@
                 barchart.data.labels = result['chart_labels'];
                 barchart.data.datasets[0].data = result['chart_event_data'];
                 barchart.data.datasets[1].data = result['chart_trap_data'];
+                barchart.data.datasets[2].data = result['chart_battery_data'];
                 barchart.update();
             },
             error: function (xhr, status, error) {

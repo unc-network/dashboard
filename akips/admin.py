@@ -27,7 +27,7 @@ class TrapAdmin(admin.ModelAdmin):
 @admin.register(Status)
 class StatusAdmin(admin.ModelAdmin):
     list_display = ['id', 'device', 'child', 'attribute', 'value', 'last_change']
-    list_filter = ['attribute', 'value']
+    list_filter = ['child', 'attribute']
     search_fields = ['device__name', 'device__sysName', 'device__ip4addr']
     autocomplete_fields = ['device']
 

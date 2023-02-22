@@ -1,0 +1,86 @@
+# List of stages for jobs, and their order of execution
+# All jobs within a stage run in parallel
+stages:
+  - build
+  - test
+  - deploy
+
+workflow:
+  rules:
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# Define variables needed by the various jobs
+variables:
+  POSTGRES_DB: $POSTGRES_DB
+  POSTGRES_USER: $POSTGRES_USER
+  POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  POSTGRES_HOST_AUTH_METHOD: trust
+
+# Define default settings that apply to all jobs unless overridden
+default:
+  image: python:3
+  # image: rockylinux:8
+  #
+  # Pick zero or more services to be used on all builds.
+  # Only needed when using a docker container to run your tests in.
+  # Check out: https://docs.gitlab.com/ee/ci/services/index.html
+  services:
+    - postgres:15
+  #
+  # This folder is cached between builds
+  # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
+  cache:
+    paths:
+      - ~/.cache/pip/
+  before_script:
+    # Install needed modules so LDAP bits in pip modules will install properly
+    - apt-get update
+    - apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
+    - pip3 install --upgrade pip
+    - pip3 install --user -r requirements.txt
+
+# Stage 1:  Build the app
+migrations:
+  stage: build
+  script:
+    - python3 manage.py makemigrations
+    # - python3 manage.py makemigrations myapp
+    - python3 manage.py migrate
+    - python3 manage.py check
+
+# Stage 2:  Test the app
+django-tests:
+  stage: test
+  script:
+    # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+    # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+    # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+    # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+    - python3 manage.py test
+
+# If the previous stages all succeeded, then it is time to build the containers to run in production
+
+# Stage 3:  Deploy the app
+deploy:
+  stage: deploy
+  environment: production
+  # image provides Docker client
+  image: docker:latest
+  # [job container] ===> [service container]
+  # e.g., [python container] ===> [mysql db container]
+  # service provides Docker daemon
+  services:
+    - docker:dind
+  variables:
+    # Next line needed so client and server can communicate with same certs
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - echo "Building containers..."
+
+
+
+# References:
+# From GitLab example templates: https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates
+# - Testing Django with MySQL: https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Django.gitlab-ci.yml
+# - https://docs.gitlab.com/ee/ci/services/postgres.html

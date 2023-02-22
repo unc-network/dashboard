@@ -99,6 +99,9 @@ if should_migrate; then
   fi
 fi
 
+# Create cache table
+python "$manage_file" createcachetable
+
 # If not set, use 8080 as the default port
 if [ -z "$PORT" ]; then
   PORT=8080

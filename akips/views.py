@@ -8,7 +8,7 @@ import math
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
-from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 #from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
@@ -57,12 +57,28 @@ logger = logging.getLogger(__name__)
 #             request.session.set_expiry(0)
 #     return auth_views.login(request, *args, **kwargs)
 
+# Testing a remember me
+# class UpdatedLoginView(LoginView):
+#     form_class = LoginForm
+#     def form_valid(self, form):
+#         remember_me = form.cleaned_data['remember_me']  # get remember me data from cleaned_data of form
+#         if not remember_me:
+#             self.request.session.set_expiry(0)  # if remember me is 
+#             self.request.session.modified = True
+#         return super(UpdatedLoginView, self).form_valid(form)
+
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
+
+        # akips = AKIPS()
+        # #device_name = akips.get_device_by_ip('152.19.187.21')
+        # device_name = akips.get_device_by_ip('172.29.149.203')
+        # logger.debug("Found device name {}".format(device_name))
+
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
@@ -779,9 +795,11 @@ class ChartDataView(LoginRequiredMixin, View):
         # Initalize the graph time periods
         event_data = {}
         trap_data = {}
+        battery_data = {}
         for i in keyList:
             event_data[i] = 0
             trap_data[i] = 0
+            battery_data[i] = 0
 
         # Increment sums for unreachable events in each period
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
@@ -799,6 +817,16 @@ class ChartDataView(LoginRequiredMixin, View):
             this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
+        # Increment sums for ups battery events in each period
+        battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',
+                                        value='battery',
+                                        last_change__gte=min_label,
+                                        device__maintenance=False).exclude(device__hibernate=True)
+        for ups in battery:
+            slot = self.round_dt_down( ups.last_change, timedelta(minutes= self.period_minutes) ) 
+            this_label = timezone.localtime(slot).strftime('%H:%M')
+            battery_data[this_label] += 1
+
         #logger.debug("periods {}".format(event_data.keys()))
         #logger.debug("event values {}".format(event_data.values()))
         #logger.debug("trap values {}".format(trap_data.values()))
@@ -806,6 +834,7 @@ class ChartDataView(LoginRequiredMixin, View):
             'chart_labels': list( event_data.keys() ),
             'chart_event_data': list( event_data.values() ),
             'chart_trap_data': list( trap_data.values() ),
+            'chart_battery_data': list( battery_data.values() ),
         }
 
         # Return the results
@@ -873,42 +902,68 @@ class SetUserProfileView(LoginRequiredMixin, View):
 @require_POST
 @non_atomic_requests
 def akips_webhook(request):
+    # Accept webhook calls and authenticate before proceeding
     given_token = request.headers.get("Akips-Webhook-Token", "")
+    if not given_token:
+        logger.debug("No token provided")
+        return HttpResponseBadRequest()
     if not compare_digest(given_token, settings.AKIPS_WEBHOOK_TOKEN):
         logger.debug("expected token {}".format(settings.AKIPS_WEBHOOK_TOKEN))
         logger.debug("got token      {}".format(given_token))
-        return HttpResponseForbidden(
-            "Incorrect token in Akips-Webhook-Token header.",
-            content_type="text/plain",
-        )
+        return HttpResponseForbidden()
 
+    # Extract valid jason data
+    response_data = {}
     try:
         payload = json.loads(request.body)
     except json.decoder.JSONDecodeError:
         logger.warn("unable to parse body for json payload: {}".format(request.body))
-        return HttpResponse("Message failed.", content_type="text/plain")
+        return HttpResponseBadRequest()
 
-    logger.info("payload: {}".format( str(payload) ))
-    process_webhook_payload(payload)
-    return HttpResponse("Message received.", content_type="text/plain")
+    logger.info("Trap payload: {}".format( str(payload) ))
+    response_data['success'] = process_webhook_payload(payload)
+    return JsonResponse(response_data)
 
 
 @atomic
 def process_webhook_payload(payload):
-    ''' Add it to the database '''
+    # Handle the webhook action, return success (True/False)
     if 'device' not in payload:
-        logger.warn("Trap alert is missing device field")
-        return
+        logger.warn("Webhook is missing device field")
+        return False
     elif 'type' not in payload:
-        logger.warn("Trap alert is missing type field")
-        return
+        logger.warn("Webhook is missing type field")
+        return False
 
+    device = None
     try:
-        device = Device.objects.get(name=payload['device'])
+        # The trap data has 'device' and 'ipaddr' but they are always
+        # the source ip of the trap.  AKIPS doesn't populate 'device' as
+        # expected.  There is a support ticket in for that.
+        # Status updates do not have an ipaddr field though and use 'device'.
+        if 'ipaddr' in payload:
+            device = Device.objects.get(ip4addr=payload['ipaddr'])
+        else:
+            device = Device.objects.get(name=payload['device'])
     except Device.DoesNotExist:
-        logger.warn("Trap {} received from unknown device {} with address {}".format(
-            payload['trap_oid'], payload['device'], payload['ipaddr']))
-        return
+        logger.warn("Webhook received for unknown device {}".format(payload))
+        # logger.warn("Trap {} received from unknown device {} with address {}".format(
+        #     payload['trap_oid'], payload['device'], payload['ipaddr']))
+
+    # Check the api for alternte addresses if we don't have a device match
+    if not device and 'ipaddr' in payload:
+        akips = AKIPS()
+        device_name = akips.get_device_by_ip(payload['ipaddr'])
+        if device_name:
+            try:
+                device = Device.objects.get(name=device_name)
+            except Device.DoesNotExist:
+                logger.warn("Trap from {} could not be mapped to a device record".format(payload['device']))
+
+    # If All attempts at matching a device record fail, stop going forward
+    if not device:
+        logger.warn("Webhook call from {} could not be mapped to a device record".format(payload['device']))
+        return False
 
     if payload['type'] == 'Trap':
         # Check for Open duplicates
@@ -916,26 +971,17 @@ def process_webhook_payload(payload):
             device=device, 
             trap_oid=payload['trap_oid'],
             oids=json.dumps(payload['oids']),
-            #ack=True,
             status='Open')
 
         if duplicates:
+            # Update for duplications
             logger.info("Trap has repeated")
             for duplicate in duplicates:
                 duplicate.dup_count += 1
                 duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
                 duplicate.save()
-            # Trap.objects.create(
-            #     tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
-            #     device=device,
-            #     ipaddr=payload['ipaddr'],
-            #     trap_oid=payload['trap_oid'],
-            #     uptime=payload['uptime'],
-            #     oids=json.dumps(payload['oids']),
-            #     comment="Auto-cleared as a duplicate",
-            #     status='Closed',
-            # )
         else:
+            # Update for unique
             Trap.objects.create(
                 tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
                 device=device,
@@ -944,6 +990,8 @@ def process_webhook_payload(payload):
                 uptime=payload['uptime'],
                 oids=json.dumps(payload['oids'])
             )
+        return True
+
     elif payload['type'] == 'Status':
         Status.objects.update_or_create(
             device=device,
@@ -954,5 +1002,8 @@ def process_webhook_payload(payload):
                 'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
             }
         )
+        return True
+
     else:
         logger.warn("Unknown type value {}".format( str(payload) ))
+        return False

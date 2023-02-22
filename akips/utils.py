@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 import os
 import logging
 import requests
@@ -146,6 +147,40 @@ class AKIPS:
                 data['name'] = name
             logger.debug("Found device {} in akips".format( data ))
             return data
+        return None
+
+    def get_device_by_ip(self, ipaddr, use_cache=True):
+        # Search for a device by an alterate IP address
+        # This makes use of a special site script and not the normal api
+        cache_key = 'device_name_' + ipaddr
+        cache_timeout = 3600
+
+        # Try cache first.  Doing this since it's an extra akips call.
+        device_name = cache.get(cache_key)
+        if use_cache and device_name:
+            logger.debug("cache hit: {} as {}".format(cache_key, device_name))
+            return device_name
+
+        # Hit the akips api
+        params = {
+            'function': 'web_find_device_by_ip',
+            'ipaddr': ipaddr
+        }
+        text = self.get(section='/api-script/', params=params)
+        #logger.debug("api result: {}".format(text))
+        if text:
+            # Output examples:
+            # IP Address 10.194.200.65 is configured on cisco-sw1
+            # IP Address 10.194.200.99 is not configured on any devices
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match("IP Address (\S+) is configured on (\S+)", line)
+                if match:
+                    input = match.group(1)
+                    device = match.group(2)
+                    logger.debug("found {} on {}".format( input, device ))
+                    cache.set(cache_key, device, cache_timeout)
+                    return device
         return None
 
     def get_unreachable(self):

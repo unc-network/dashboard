@@ -1,6 +1,12 @@
 from django import forms
 from django.forms import ValidationError
+from django.contrib.auth.forms import AuthenticationForm
 
+class LoginForm(AuthenticationForm):
+    ''' A form for logging a user in '''
+    remember_me = forms.BooleanField(required=False)  # and add the remember_me field
+
+## Form specific list of options
 DEPT_CHOICES = (
     ('ITS-Net-Deployment', 'Deployment'),
     ('ITS-Networking', 'Engineering'),
