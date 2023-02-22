@@ -261,6 +261,43 @@ def refresh_ups_status():
     logger.info("refresh ups status runtime {}".format(finish_time - now))
 
 @shared_task
+def refresh_battery_test_status():
+    logger.debug("refreshing battery test status")
+    now = timezone.now()
+    sleep_delay = 0
+
+    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        sleep_delay = 0.01
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+    else:
+        logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+    akips = AKIPS()
+    data = akips.get_status(type='battery_test')
+    if data:
+        for entry in data:
+            logger.debug("updating {}".format(entry))
+            try:
+                device = Device.objects.get(name=entry['device'])
+            except Device.DoesNotExist:
+                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                continue
+
+            Status.objects.update_or_create(
+                device=device,
+                child=entry['child'],
+                attribute=entry['attribute'],
+                defaults={
+                    'value': entry['state'],
+                    'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                }
+            )
+            time.sleep(sleep_delay)
+
+    finish_time = timezone.now()
+    logger.info("refresh battery test status runtime {}".format(finish_time - now))
+
+@shared_task
 def refresh_nit():
     logger.debug("Refeshing nit device data")
     now = timezone.now()

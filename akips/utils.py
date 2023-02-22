@@ -257,6 +257,9 @@ class AKIPS:
         elif type == 'snmp':
             params = { 'cmds': 'mget * * sys SNMP.snmpState' }
             # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+        elif type == 'battery_test':
+            params = { 'cmds': 'mget * * battery LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult' }
+            # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
         else:
             logger.warning("Invalid get status type {}".format(type))
             return None
