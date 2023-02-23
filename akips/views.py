@@ -101,6 +101,18 @@ class Devices(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class UPSProblems(LoginRequiredMixin, View):
+    ''' List UPS current in a problem state '''
+    template_name = 'akips/ups_problems.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        bad_battery_tests = Status.objects.filter(attribute='LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult',value='failed')
+        context['bad_battery_tests'] = bad_battery_tests
+
+        return render(request, self.template_name, context=context)
+
 class Users(LoginRequiredMixin, View):
     ''' Show users logged in recently '''
     template_name = 'akips/recent_users.html'
