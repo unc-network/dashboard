@@ -329,13 +329,24 @@ def refresh_nit():
                 type = ''
             if device['building_name'] is None:
                 device['building_name'] = ''
+            
+            inventory_url = ''
+            if type.upper() == 'SWITCH':
+                inventory_url = 'https://nit.net.unc.edu/search_switches.pl?ip={}&submit=submit'.format(device['ip'])
+            elif type.upper() == 'AP':
+                inventory_url = 'https://nit.net.unc.edu/search_aps.pl?ip={}&submit=submit'.format(device['ip'])
+            elif type.upper() == 'UPS':
+                inventory_url = 'https://nit.net.unc.edu/search_upses.pl?ip={}&submit=submit'.format(device['ip'])
+            logger.info("inventory url {}".format(inventory_url))
+
             Device.objects.filter(ip4addr=device['ip']).update(
                 # tier=device['tier1'],
                 # building_name=device['building_name'],
                 type=type.upper(),
-                hierarcy=hierarcy.upper()
+                hierarcy=hierarcy.upper(),
                 # type=device['type'].upper()
                 # type=device['hierarchy'].upper()
+                inventory_url=inventory_url
             )
             #logger.debug("Found devices {}".format(devices))
             time.sleep(sleep_delay)

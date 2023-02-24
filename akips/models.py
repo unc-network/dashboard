@@ -24,6 +24,7 @@ class Device(models.Model):
     hibernate = models.BooleanField(default=False)
     comment = models.CharField(max_length=1024, blank=True)
     last_refresh = models.DateTimeField()
+    inventory_url = models.URLField(blank=True,default='')
 
     class Meta:
         ordering = ['name']
