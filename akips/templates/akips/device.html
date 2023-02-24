@@ -83,6 +83,13 @@
                         <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
                     {% endfor %}
                 {% endif %}
+                {% if device.type == 'SWITCH' %}
+                <a class="btn btn-primary" href="https://nit.net.unc.edu/search_switches.pl?ip={{ device.ip4addr }}&submit=submit">View Switch in NIT</a>
+                {% elif device.type == 'AP' %}
+                <a class="btn btn-primary" href="https://nit.net.unc.edu/search_aps.pl?ip={{ device.ip4addr }}&submit=submit">View AP in NIT</a>
+                {% elif device.type == 'UPS' %}
+                <a class="btn btn-primary" href="https://nit.net.unc.edu/search_upses.pl?ip={{ device.ip4addr }}&submit=submit">View UPS in NIT</a>
+                {% endif %}
             </div>
         </div>
     </div>
