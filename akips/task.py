@@ -23,7 +23,7 @@ def example_task():
 
 @shared_task
 def refresh_akips_devices():
-    logger.debug("refreshing akips devices")
+    logger.info("refreshing akips devices")
     now = timezone.now()
     sleep_delay = 0
 
@@ -151,7 +151,7 @@ def refresh_akips_devices():
 
 @shared_task
 def refresh_ping_status():
-    logger.debug("refreshing ping status")
+    logger.info("refreshing ping status")
     now = timezone.now()
     sleep_delay = 0
 
@@ -188,7 +188,7 @@ def refresh_ping_status():
 
 @shared_task
 def refresh_snmp_status():
-    logger.debug("refreshing snmp status")
+    logger.info("refreshing snmp status")
     now = timezone.now()
     sleep_delay = 0
 
@@ -225,7 +225,7 @@ def refresh_snmp_status():
 
 @shared_task
 def refresh_ups_status():
-    logger.debug("refreshing ups status")
+    logger.info("refreshing ups status")
     now = timezone.now()
     sleep_delay = 0
 
@@ -262,7 +262,7 @@ def refresh_ups_status():
 
 @shared_task
 def refresh_battery_test_status():
-    logger.debug("refreshing battery test status")
+    logger.info("refreshing battery test status")
     now = timezone.now()
     sleep_delay = 0
 
@@ -299,7 +299,7 @@ def refresh_battery_test_status():
 
 @shared_task
 def refresh_nit():
-    logger.debug("Refeshing nit device data")
+    logger.info("Refeshing nit device data")
     now = timezone.now()
     sleep_delay = 0
 
@@ -356,7 +356,7 @@ def refresh_nit():
 
 @shared_task
 def refresh_unreachable():
-    logger.debug("AKIPS unreachable refresh starting")
+    logger.info("AKIPS unreachable refresh starting")
     now = timezone.now()
     sleep_delay = 0
 
@@ -407,7 +407,7 @@ def refresh_unreachable():
 # @shared_task
 # def refresh_summary():
 
-    logger.debug("AKIPS summary refresh starting")
+    logger.info("AKIPS summary refresh starting")
     now = timezone.now()
     sleep_delay = 0
 
@@ -676,7 +676,7 @@ def refresh_unreachable():
 
 @shared_task
 def refresh_hibernate():
-    logger.debug("Refeshing hibernated devices")
+    logger.info("Refeshing hibernated devices")
     now = timezone.now()
     sleep_delay = 0
 
@@ -738,7 +738,7 @@ def refresh_hibernate():
 @shared_task
 #def clear_traps():
 def cleanup_dashboard_data():
-    logger.debug("Cleanup dashboard data is starting")
+    logger.info("Cleanup dashboard data is starting")
     now = timezone.now()
 
     # Define the periods we care about
