@@ -83,9 +83,9 @@
                         <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
                     {% endfor %}
                 {% endif %}
-                <a class="btn btn-primary" href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a></td>
+                <a class="btn btn-primary m-1" href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a></td>
                 {% if device.inventory_url %}
-                <a class="btn btn-primary" href="{{ device.inventory_url }}">View in Inventory</a>
+                <a class="btn btn-primary m-1" href="{{ device.inventory_url }}">View in Inventory</a>
                 {% endif %}
             </div>
         </div>
