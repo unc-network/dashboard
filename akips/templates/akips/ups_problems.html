@@ -17,6 +17,7 @@
             <thead>
                 <tr>
                     <th>Device</th>
+                    <th>Address</th>
                     <th>Attribute</th>
                     <th>Value</th>
                     <th>Last Change</th>
@@ -25,7 +26,8 @@
             <tbody>
                 {% for status in bad_battery_tests %}
                 <tr>
-                    <td><a href="{% url 'device' status.device %}">{{ status.device }}</a></td>
+                    <td><a href="{% url 'device' status.device %}">{{ status.device.sysName }}</a></td>
+                    <td>{{ status.device.ip4addr }}</td>
                     <td>{{ status.attribute }}</td>
                     <td>{{ status.value }}</td>
                     <td>{{ status.last_change|date:'m-d H:i:s' }}</td>
