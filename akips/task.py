@@ -368,6 +368,8 @@ def refresh_unreachable():
 
     akips = AKIPS()
     unreachables = akips.get_unreachable()
+    #unreachables = akips.get_unreachable_status()
+    logger.debug("unrachables: {}".format(unreachables))
     if unreachables:
         for k, v in unreachables.items():
             logger.debug("{}".format(v['name']))
@@ -381,15 +383,18 @@ def refresh_unreachable():
                 device=device,
                 #status='Open',
                 #child = entry['child'],
-                event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
+                # event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
+                event_start = v['event_start'],
                 defaults={
                     # 'name': key,                        # akips device name
                     'child': v['child'],            # ping4
                     'ping_state': v['ping_state'],            # down
                     'snmp_state': v['snmp_state'],            # down
                     'index': v['index'],            # 1
-                    'device_added': datetime.fromtimestamp(int(v['device_added']), tz=timezone.get_current_timezone()),
-                    'event_start': datetime.fromtimestamp(int(v['event_start']), tz=timezone.get_current_timezone()),
+                    # 'device_added': datetime.fromtimestamp(int(v['device_added']), tz=timezone.get_current_timezone()),
+                    'device_added': v['device_added'],
+                    # 'event_start': datetime.fromtimestamp(int(v['event_start']), tz=timezone.get_current_timezone()),
+                    'event_start': v['event_start'],
                     'ip4addr': v['ip4addr'],
                     'last_refresh': now,
                     'status': 'Open',

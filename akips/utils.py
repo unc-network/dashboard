@@ -1,12 +1,17 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
+
 import os
-import logging
 import requests
 import re
 import pprint
 import json
 import ipaddress
+import logging
+from datetime import datetime
+
+from .models import Status
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
@@ -211,7 +216,8 @@ class AKIPS:
                 if match:
                     name = match.group(1)
                     attribute = match.group(3)
-                    event_start = match.group(7)    # epoch in local timezone
+                    # event_start = match.group(7)    # epoch in local timezone
+                    event_start = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                     if name not in data:
                         # populate a starting point for this device
                         data[name] = { 
@@ -224,15 +230,19 @@ class AKIPS:
                         data[name]['child'] = match.group(2),
                         data[name]['ping_state'] =  match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = match.group(6) # epoch in local timezone
-                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        # data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=timezone.get_current_timezone())
+                        # data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                         data[name]['ip4addr'] = match.group(8)
                     elif attribute == 'SNMP.snmpState':
                         data[name]['child'] = match.group(2),
                         data[name]['snmp_state'] =  match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = match.group(6) # epoch in local timezone
-                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        # data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=timezone.get_current_timezone())
+                        # data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                         data[name]['ip4addr'] = None
                     if event_start < data[name]['event_start']:
                         data[name]['event_start'] = event_start
@@ -240,6 +250,41 @@ class AKIPS:
             logger.debug("data: {}".format(data))
             return data
         return None
+
+    def get_unreachable_status(self):
+        ''' Pull a list of unreachable devices from status tables'''
+        data = {}
+
+        list = Status.objects.filter(value='down').filter(attribute__in=['PING.icmpState','SNMP.snmpState'])
+        for entry in list:
+            name = entry.device.name
+            event_start = str(int(entry.last_change.timestamp()))   # workaround string of timestamp
+            if name not in data:
+                # populate a starting point for this device
+                data[ name ] = { 
+                    'name': name,
+                    'ping_state': 'up',         # default for ping
+                    'snmp_state': 'unreported', # default for snmp
+                    'event_start': event_start  # epoch in local timezone
+                }
+            if entry.attribute == 'PING.icmpState':
+                data[name]['child'] = entry.child
+                data[name]['ping_state'] =  entry.value
+                data[name]['index'] = 0                     # dummy value
+                data[name]['device_added'] = str(0)         # workaround has to be string
+                data[name]['event_start'] = event_start
+                data[name]['ip4addr'] = None
+            elif entry.attribute == 'SNMP.snmpState':
+                data[name]['child'] = entry.child
+                data[name]['snmp_state'] =  entry.value
+                data[name]['index'] = 0                     # dummy value
+                data[name]['device_added'] = str(0)         # workaround has to be string
+                data[name]['event_start'] = event_start
+                data[name]['ip4addr'] = None
+            if event_start < data[name]['event_start']: # use earlier of date if ping and snmp
+                data[name]['event_start'] = event_start
+
+        return data
 
     def get_status(self, type='ping'):
         ''' Pull the status values we are most interested in '''
