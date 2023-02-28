@@ -98,8 +98,11 @@ class Status(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
+    index = models.CharField(max_length=255,blank=True)
     value = models.CharField(max_length=255)
+    device_added = models.DateTimeField(blank=True,null=True)
     last_change = models.DateTimeField()
+    ip4addr = models.GenericIPAddressField(blank=True,null=True)
 
     class Meta:
         verbose_name_plural = 'statuses'

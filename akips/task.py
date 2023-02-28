@@ -177,8 +177,11 @@ def refresh_ping_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -214,8 +217,11 @@ def refresh_snmp_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -251,8 +257,11 @@ def refresh_ups_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -288,8 +297,11 @@ def refresh_battery_test_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -355,7 +367,7 @@ def refresh_nit():
 
 
 @shared_task
-def refresh_unreachable():
+def refresh_unreachable(mode='poll'):
     logger.info("AKIPS unreachable refresh starting")
     now = timezone.now()
     sleep_delay = 0
@@ -367,9 +379,11 @@ def refresh_unreachable():
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     akips = AKIPS()
-    unreachables = akips.get_unreachable()
-    #unreachables = akips.get_unreachable_status()
-    logger.debug("unrachables: {}".format(unreachables))
+    if mode == 'status':
+        unreachables = akips.get_unreachable_status()
+    else:
+        unreachables = akips.get_unreachable()
+    logger.debug("unreachables: {}".format( len(unreachables) ))
     if unreachables:
         for k, v in unreachables.items():
             logger.debug("{}".format(v['name']))

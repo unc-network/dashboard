@@ -258,7 +258,8 @@ class AKIPS:
         list = Status.objects.filter(value='down').filter(attribute__in=['PING.icmpState','SNMP.snmpState'])
         for entry in list:
             name = entry.device.name
-            event_start = str(int(entry.last_change.timestamp()))   # workaround string of timestamp
+            # event_start = str(int(entry.last_change.timestamp()))   # workaround string of timestamp
+            event_start = entry.last_change   # workaround string of timestamp
             if name not in data:
                 # populate a starting point for this device
                 data[ name ] = { 
@@ -270,17 +271,17 @@ class AKIPS:
             if entry.attribute == 'PING.icmpState':
                 data[name]['child'] = entry.child
                 data[name]['ping_state'] =  entry.value
-                data[name]['index'] = 0                     # dummy value
-                data[name]['device_added'] = str(0)         # workaround has to be string
+                data[name]['index'] = entry.index
+                data[name]['device_added'] = entry.device_added
                 data[name]['event_start'] = event_start
-                data[name]['ip4addr'] = None
+                data[name]['ip4addr'] = entry.ip4addr
             elif entry.attribute == 'SNMP.snmpState':
                 data[name]['child'] = entry.child
                 data[name]['snmp_state'] =  entry.value
-                data[name]['index'] = 0                     # dummy value
-                data[name]['device_added'] = str(0)         # workaround has to be string
+                data[name]['index'] = entry.index
+                data[name]['device_added'] = entry.device_added
                 data[name]['event_start'] = event_start
-                data[name]['ip4addr'] = None
+                data[name]['ip4addr'] = entry.ip4addr
             if event_start < data[name]['event_start']: # use earlier of date if ping and snmp
                 data[name]['event_start'] = event_start
 

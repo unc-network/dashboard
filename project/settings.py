@@ -307,6 +307,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_TASK_TRACK_STARTED = True
 
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
