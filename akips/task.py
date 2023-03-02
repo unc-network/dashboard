@@ -686,8 +686,9 @@ def refresh_unreachable(mode='poll'):
         time.sleep(sleep_delay)
 
     # Close building type events open with no down devices
-    #Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
-    Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
+    #Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
+    five_minutes_ago = now - timedelta(minutes=5)
+    Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
 
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
