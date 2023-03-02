@@ -669,7 +669,9 @@ def refresh_unreachable(mode='poll'):
         logger.debug("Moving average: last={}, total={}, new={}".format(summary.moving_average,total_count,new_average))
 
         new_threshold = now - timedelta(minutes=5)
-        if summary.first_event >= new_threshold:
+        if total_count == 0:
+            summary.trend = 'Recovered'
+        elif summary.first_event >= new_threshold:
             summary.trend = 'New'
         elif total_count > new_average * 1.05:
             summary.trend = 'Increasing'
