@@ -172,7 +172,7 @@
                             <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
-                            <td>{{ unreachable.last_refresh }}</td>
+                            <td>{{ unreachable.last_refresh|date:'m-d H:i:s' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -198,7 +198,7 @@
                             <td><a href="{% url 'device' status.device.name %}">{{ status.device.name }}</a></td>
                             <td>{{ status.device.ip4addr }}</td>
                             <td>{{ status.value }}</td>
-                            <td>{{ status.last_change }}</td>
+                            <td>{{ status.last_change|date:'m-d H:i:s' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
