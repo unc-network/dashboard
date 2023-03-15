@@ -68,15 +68,15 @@
             <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
             <!-- <td>{{ summary.last_event|date:'M-j g:i:s A' }}</td> -->
             {% if summary.trend == 'New' %}
-                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-plus"></i></td>
+                <td class="text-center text-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-up"></i></td>
             {% elif summary.trend == 'Increasing' %}
-                <td class="text-center bg-warning akips_trend d-none d-md-table-cell"><i class="fas fa-level-up-alt"></i></td>
+                <td class="text-center text-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-up"></i></td>
             {% elif summary.trend == 'Decreasing' %}
-                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-level-down-alt"></i></td>
+                <td class="text-center text-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-down"></i></td>
             {% elif summary.trend == 'Recovered' %}
-                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up"></i></td>
+                <td class="text-center text-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up"></i></td>
             {% else %}
-                <td class="text-center akips_trend d-none d-md-table-cell"><i class="fas fa-long-arrow-alt-right"></i></td>
+                <td class="text-center akips_trend d-none d-md-table-cell"></td>
             {% endif %}
             <td class="text-center d-none d-md-table-cell">
                 {% if summary.incident %}
