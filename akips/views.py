@@ -199,8 +199,8 @@ class UnreachableView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        #unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).order_by('-event_start')
-        unreachables = Unreachable.objects.filter(status='Open').order_by('-event_start')
+        unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).order_by('-event_start')
+        # unreachables = Unreachable.objects.filter(status='Open').order_by('-event_start')
         context['unreachables'] = unreachables
 
         return render(request, self.template_name, context=context)
