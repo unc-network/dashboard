@@ -39,13 +39,13 @@
             <!-- <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td> -->
             <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
             {% if summary.trend == 'New' %}
-                <td class="text-center text-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-up" title="New"></i></td>
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="New"></i></td>
             {% elif summary.trend == 'Increasing' %}
-                <td class="text-center text-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-up" title="Increasing"></i></td>
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="Increasing"></i></td>
             {% elif summary.trend == 'Decreasing' %}
-                <td class="text-center text-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-square-down" title="Decreasing"></i></td>
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-down" title="Decreasing"></i></td>
             {% elif summary.trend == 'Recovered' %}
-                <td class="text-center text-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up" title="Recovered"></i></td>
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up" title="Recovered"></i></td>
             {% else %}
                 <td class="text-center akips_trend d-none d-md-table-cell"></td>
             {% endif %}
