@@ -281,7 +281,8 @@ class RecentTrapsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
-        traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
+        # traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
+        traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
