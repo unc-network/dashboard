@@ -11,7 +11,7 @@ import ipaddress
 import logging
 from datetime import datetime
 
-from .models import Status
+from .models import Status, ServiceNowIncident
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
@@ -444,6 +444,68 @@ class ServiceNow:
 
     def create_incident(self, group, description, callerid=None, severity=None, work_notes=None):
         ''' Create a new SN incident '''
+        # Set proper headers
+        headers = {
+            "Content-Type": "application/json", 
+            "Accept": "application/json"
+        }
+        params = {
+            "sysparm_exclude_ref_link": "true"
+        }
+
+        body = {
+            # servicenow incident table api fields
+            'caller_id': self.username,
+            # 'business_service': 'Network: IP Services',
+            'assignment_group': group,
+            'category': 'Network',
+            'short_description': "OCNES: {}".format(description),
+        }
+        # if callerid:
+        #     body['u_caller_id'] = callerid
+        # if severity == 'Critical':
+        #     # "1 - Critical" servicenow priority
+        #     body['u_impact'] = '1'
+        #     body['u_urgency'] = '1'
+        # elif severity == 'High':
+        #     # "2 - High" servicenow priority
+        #     body['u_impact'] = '1'
+        #     body['u_urgency'] = '2'
+        # elif severity == 'Moderate':
+        #     # "3 - Moderate" servicenow priority
+        #     body['u_impact'] = '2'
+        #     body['u_urgency'] = '2'
+        # elif severity == 'Low':
+        #     # "4 - Low" servicenow priority
+        #     body['u_impact'] = '3'
+        #     body['u_urgency'] = '2'
+
+        # if work_notes:
+        #     body['u_work_notes'] = work_notes
+        
+        # Call HTTP POST
+        logger.debug("params: {}".format(params))
+        logger.debug("headers: {}".format(headers))
+        logger.debug("data: {}".format(body))
+        logger.debug("url: {}",format(self.url))
+        response = requests.post(self.url, auth=(self.username,self.password), headers=headers, data=json.dumps(body))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        logger.debug("Result: {}".format(result_data))
+        sn_incident = ServiceNowIncident.objects.create(
+            number=result_data['result']['number'],
+            sys_id=result_data['result']['sys_id']
+        )
+        return sn_incident
+
+    def create_incident_import(self, group, description, callerid=None, severity=None, work_notes=None):
+        ''' Create a new SN incident with UNC import API '''
         # Set proper headers
         headers = {"Content-Type":"application/json", "Accept":"application/json"}
 

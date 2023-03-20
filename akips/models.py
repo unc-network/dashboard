@@ -64,6 +64,14 @@ class Unreachable(models.Model):
     def __str__(self):
         return str(self.device)
 
+class ServiceNowIncident(models.Model):
+    number = models.CharField(max_length=10)
+    sys_id = models.UUIDField(blank=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.number)
+
 class Trap(models.Model):
     STATUS_CHOICES = (
         ('Open', 'Open'),
@@ -83,6 +91,7 @@ class Trap(models.Model):
     cleared_by = models.CharField(max_length=32, blank=True)
     cleared_at = models.DateTimeField(null=True, blank=True)
     incident = models.CharField(blank=True, max_length=255)
+    sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     dup_count = models.IntegerField(default=0)
     dup_last = models.DateTimeField(null=True, blank=True)
@@ -147,7 +156,8 @@ class Summary(models.Model):
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
     incident = models.CharField(blank=True, max_length=255)
-    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summmary data was refreshed")
+    sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summary data was refreshed")
 
     class Meta:
         verbose_name_plural = 'summaries'

@@ -478,19 +478,23 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 callerid=request.user.username
             )
             if incident:
-                context['create_message'] = "Incident {} was created.".format(
-                    incident['number'])
-                logger.debug("created {}".format(incident['number']))
+                #context['create_message'] = "Incident {} was created.".format(incident['number'])
+                context['create_message'] = "Incident {} was created.".format(incident.number)
+                #logger.debug("created {}".format(incident['number']))
+                logger.debug("created {}".format(incident.number))
                 for id in summary_ids:
                     summary = Summary.objects.get(id=id)
-                    summary.incident = incident['number']
+                    #summary.incident = incident['number']
+                    summary.sn_incident = incident
                     summary.save()
                 for id in trap_ids:
                     trap = Trap.objects.get(id=id)
-                    trap.incident = incident['number']
+                    #trap.incident = incident['number']
+                    trap.sn_incident = incident
                     trap.save()
                 messages.success(
-                    request, "ServiceNow Incident {} was created.".format(incident['number']))
+                    #request, "ServiceNow Incident {} was created.".format(incident['number']))
+                    request, "ServiceNow Incident {} was created.".format(incident.number))
                 return HttpResponseRedirect(reverse('home'))
             else:
                 messages.error(request, "ServiceNow Incident creation failed.")
