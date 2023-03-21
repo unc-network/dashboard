@@ -40,7 +40,7 @@
             <td>{% if trap.dup_last %}{{ trap.dup_last|date:'m-d H:i:s' }}{% else %}{{ trap.tt|date:'m-d H:i:s' }}{% endif %}</td>
             <td class="text-center">
                 {% if trap.sn_incident %}
-                <a href="https://uncchdev.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}">{{ trap.sn_incident.number }}</a>
+                <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a>
                 {% else %}
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" name="event" value="trap_{{ trap.id }}">

@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.db.models import Count
 
 from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
-from akips.utils import AKIPS, NIT
+from akips.utils import AKIPS, NIT, ServiceNow
 
 # Get an isntace of a logger
 logger = logging.getLogger(__name__)
@@ -531,13 +531,19 @@ def refresh_unreachable(mode='poll'):
                     b_summary.last_event = unreachable.event_start
                 b_summary.last_refresh = now
                 b_summary.save()
+            # if not b_summary.unreachables.filter(id=unreachable.id).exists():
+            #     b_summary.unreachables.add(unreachable)
+            #     if b_summary.sn_incident:
+            #         update_incident.delay( b_summary.sn_incident.number, "This is a celery update")
             b_summary.unreachables.add(unreachable)
+            # if b_summary.sn_incident:
+            #     update_incident.delay( b_summary.sn_incident.number, "This is a celery update")
 
         else:
             # non critical and non default devices
             logger.debug("Processing special group {}".format( unreachable.device.group ))
 
-            # Find the speciality summary to update
+            # Find the specialty summary to update
             s_summary, s_created = Summary.objects.get_or_create(
                 type='Speciality',
                 name= unreachable.device.group,
@@ -550,7 +556,7 @@ def refresh_unreachable(mode='poll'):
                 }
             )
             if s_created:
-                logger.debug("Speciality summary created {}".format( unreachable.device.group ))
+                logger.debug("Specialty summary created {}".format( unreachable.device.group ))
             else:
                 s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
                 if s_summary.first_event > unreachable.event_start:
@@ -695,6 +701,11 @@ def refresh_unreachable(mode='poll'):
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
 
+@shared_task
+def update_incident(number, message):
+    logger.debug("Updating incident {}".format( number ))
+    servicenow = ServiceNow()
+    servicenow.update_incident( number, "This in an unreachable update")
 
 @shared_task
 def refresh_hibernate():

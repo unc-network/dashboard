@@ -66,7 +66,8 @@ class Unreachable(models.Model):
 
 class ServiceNowIncident(models.Model):
     number = models.CharField(max_length=10)
-    sys_id = models.UUIDField(blank=True)
+    sys_id = models.CharField(max_length=32,blank=True)
+    instance = models.CharField(max_length=32,default='uncchdev')
     active = models.BooleanField(default=True)
 
     def __str__(self):

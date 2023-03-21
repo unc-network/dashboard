@@ -47,7 +47,7 @@ class HibernateRequestAdmin(admin.ModelAdmin):
 
 @admin.register(models.ServiceNowIncident)
 class ServiceNowIncidentAdmin(admin.ModelAdmin):
-    list_display = ['number', 'sys_id', 'active']
+    list_display = ['number', 'active', 'instance', 'sys_id']
 
 @admin.register(models.Profile)
 class ProfieleAdmin(admin.ModelAdmin):

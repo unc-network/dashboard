@@ -438,21 +438,20 @@ class NIT:
 class ServiceNow:
     # Class to handle interactions with ServiceNow
     url = os.getenv('SN_URL', '')
+    instance = os.getenv('SN_INSTANCE', '')
     username = os.getenv('SN_USERNAME', '')
     password = os.getenv('SN_PASSWORD', '')
     session = requests.Session()
 
-    def create_incident(self, group, description, callerid=None, severity=None, work_notes=None):
+    def create_incident(self, group, description, caller_id=None, severity=None, work_notes=None):
         ''' Create a new SN incident '''
         # Set proper headers
         headers = {
             "Content-Type": "application/json", 
             "Accept": "application/json"
         }
-        params = {
-            "sysparm_exclude_ref_link": "true"
-        }
 
+        # populate the details
         body = {
             # servicenow incident table api fields
             'caller_id': self.username,
@@ -461,34 +460,78 @@ class ServiceNow:
             'category': 'Network',
             'short_description': "OCNES: {}".format(description),
         }
-        # if callerid:
-        #     body['u_caller_id'] = callerid
-        # if severity == 'Critical':
-        #     # "1 - Critical" servicenow priority
-        #     body['u_impact'] = '1'
-        #     body['u_urgency'] = '1'
-        # elif severity == 'High':
-        #     # "2 - High" servicenow priority
-        #     body['u_impact'] = '1'
-        #     body['u_urgency'] = '2'
-        # elif severity == 'Moderate':
-        #     # "3 - Moderate" servicenow priority
-        #     body['u_impact'] = '2'
-        #     body['u_urgency'] = '2'
-        # elif severity == 'Low':
-        #     # "4 - Low" servicenow priority
-        #     body['u_impact'] = '3'
-        #     body['u_urgency'] = '2'
 
-        # if work_notes:
-        #     body['u_work_notes'] = work_notes
+        if caller_id:
+            body['caller_id'] = caller_id
+
+        if severity == 'Critical':
+            # "1 - Critical" servicenow priority
+            body['impact'] = '1'
+            body['urgency'] = '1'
+        elif severity == 'High':
+            # "2 - High" servicenow priority
+            body['impact'] = '1'
+            body['urgency'] = '2'
+        elif severity == 'Moderate':
+            # "3 - Moderate" servicenow priority
+            body['impact'] = '2'
+            body['urgency'] = '2'
+        elif severity == 'Low':
+            # "4 - Low" servicenow priority
+            body['impact'] = '3'
+            body['urgency'] = '2'
+
+        if work_notes:
+            body['work_notes'] = work_notes
         
         # Call HTTP POST
-        logger.debug("params: {}".format(params))
+        sn_url = "https://{}.service-now.com/api/now/table/incident".format(self.instance)
+        logger.debug("url: {}",format(self.url))
         logger.debug("headers: {}".format(headers))
         logger.debug("data: {}".format(body))
-        logger.debug("url: {}",format(self.url))
-        response = requests.post(self.url, auth=(self.username,self.password), headers=headers, data=json.dumps(body))
+        response = requests.post(sn_url, auth=(self.username,self.password), headers=headers, data=json.dumps(body))
+
+        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
+        if response.status_code != 201:
+            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response and update the database
+        result_data = response.json()
+        logger.debug("Result: {}".format(result_data))
+        sn_incident = ServiceNowIncident.objects.create(
+            number=result_data['result']['number'],
+            sys_id=result_data['result']['sys_id'],
+            instance=self.instance
+        )
+        return sn_incident
+
+    def update_incident(self, number, work_notes):
+        ''' Update an existing SN incident '''
+
+        try:
+            incident = ServiceNowIncident.objects.get(number=number)
+        except ServiceNowIncident.DoesNotExist:
+            logger.warning("Unable to find servicenow ticket {} in database".format(number))
+            return
+
+        # Set proper headers
+        headers = {
+            "Content-Type":"application/json", 
+            "Accept":"application/json"
+        }
+
+        # Define the update data
+        body = {
+            'work_notes': work_notes,
+        }
+
+        # Call HTTP PUT for update
+        sn_url = "https://{}.service-now.com/api/now/table/incident/{}".format(incident.instance,incident.sys_id)
+        logger.debug("url: {}".format(sn_url))
+        logger.debug("headers: {}".format(headers))
+        logger.debug("data: {}".format(body))
+        response = requests.put(sn_url, auth=(self.username, self.password), headers=headers ,data=json.dumps(body))
 
         # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
         if response.status_code != 201:
@@ -497,12 +540,13 @@ class ServiceNow:
 
         # Decode the JSON response into a dictionary and use the data
         result_data = response.json()
-        logger.debug("Result: {}".format(result_data))
-        sn_incident = ServiceNowIncident.objects.create(
-            number=result_data['result']['number'],
-            sys_id=result_data['result']['sys_id']
-        )
-        return sn_incident
+        for entry in result_data['result']:
+            logger.debug("Result: {}".format(entry))
+            if entry['status'] == 'error':
+                logger.error("Failed to update ServiceNow Incident {}".format(entry['error_message']))
+                return 
+            else:
+                return {'number': entry['display_value'], 'link': entry['record_link']}
 
     def create_incident_import(self, group, description, callerid=None, severity=None, work_notes=None):
         ''' Create a new SN incident with UNC import API '''
@@ -577,7 +621,7 @@ class ServiceNow:
             else:
                 return {'number': entry['display_value'], 'link': entry['record_link']}
 
-    def update_incident(self, number, work_notes):
+    def update_incident_import(self, number, work_notes):
         ''' Update an existing SN incident '''
 
         # Set proper headers

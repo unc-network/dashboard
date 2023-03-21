@@ -475,7 +475,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 form.cleaned_data.get('description'),
                 severity=form.cleaned_data.get('criticality'),
                 work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                callerid=request.user.username
+                caller_id=request.user.username
             )
             if incident:
                 #context['create_message'] = "Incident {} was created.".format(incident['number'])
