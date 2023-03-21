@@ -506,6 +506,33 @@ class ServiceNow:
         )
         return sn_incident
 
+    def get_incident(self, instance, sys_id):
+        ''' Refresh a local SN incident '''
+
+        # Set proper headers
+        headers = {
+            "Content-Type":"application/json", 
+            "Accept":"application/json"
+        }
+
+        # Call HTTP GET
+        sn_url = "https://{}.service-now.com/api/now/table/incident/{}".format(instance,sys_id)
+        logger.debug("url: {}".format(sn_url))
+        logger.debug("headers: {}".format(headers))
+        response = requests.get(sn_url, auth=(self.username, self.password), headers=headers)
+
+        # All requests return a 200 HTTP status code even if there is an error.
+        if response.status_code != 200:
+            logger.warn('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        logger.debug("Result: {}".format(result_data))
+
+        return result_data['result']
+
+
     def update_incident(self, number, work_notes):
         ''' Update an existing SN incident '''
 

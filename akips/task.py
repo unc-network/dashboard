@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
 
-from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
+from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
 from akips.utils import AKIPS, NIT, ServiceNow
 
 # Get an isntace of a logger
@@ -702,6 +702,36 @@ def refresh_unreachable(mode='poll'):
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
 
 @shared_task
+def refresh_incidents():
+    ''' Check for any needed updates '''
+    logger.debug("Refreshing incidents")
+    now = timezone.now()
+    servicenow = ServiceNow()
+
+    open_incidents = ServiceNowIncident.objects.filter(active=True)
+    for incident in open_incidents:
+        # pull the real incident from servicenow
+        sn_incident = servicenow.get_incident( incident.instance, incident.sys_id )
+
+        if sn_incident:
+            logger.debug("{} state {} is active {}".format( sn_incident['number'], sn_incident['state'], sn_incident['active'] ))
+
+            # State codes for reference
+            # New=1
+            # Active=2
+            # Awaiting Problem=3
+            # Awaiting User Info=4
+            # Awaiting Evidence=5
+            # Resolved=6
+            # Closed=7
+            if int(sn_incident['state']) == 6 or int(sn_incident['state']) == 7:
+                incident.active=False
+                incident.save()
+
+    finish_time = timezone.now()
+    logger.info("ServiceNow incident refresh runtime {}".format(finish_time - now))
+
+@shared_task
 def update_incident(number, message):
     logger.debug("Updating incident {}".format( number ))
     servicenow = ServiceNow()
@@ -709,7 +739,7 @@ def update_incident(number, message):
 
 @shared_task
 def refresh_hibernate():
-    logger.info("Refeshing hibernated devices")
+    logger.info("Refreshing hibernated devices")
     now = timezone.now()
     sleep_delay = 0
 
