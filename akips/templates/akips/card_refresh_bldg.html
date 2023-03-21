@@ -78,7 +78,7 @@
             {% else %}
                 <td class="text-center akips_trend d-none d-md-table-cell"></td>
             {% endif %}
-            <td class="text-center d-none d-md-table-cell">
+            <td class="text-center text-primary d-none d-md-table-cell">
                 {% if summary.sn_incident %}
                 <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a>
                     {% if trap.sn_incident.active %}
