@@ -52,7 +52,7 @@
             <td class="text-center text-primary">
                 {% if summary.sn_incident %}
                 <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a>
-                    {% if trap.sn_incident.active %}
+                    {% if summary.sn_incident.active %}
                         <i class="fas fa-door-open"></i>
                     {% else %}
                         <i class="fas fa-door-closed"></i>
