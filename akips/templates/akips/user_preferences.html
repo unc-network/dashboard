@@ -1,0 +1,235 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES {{ name }}{% endblock %}
+{% block page_name %}User Preferences {{ name }}{% endblock %}
+
+
+{% block content %}
+<div class="card">
+    <div class="card-body table-responsive">
+        <div class="row">
+            <div class="col-md-4">
+                <table class="table table-sm">
+                    <tr>
+                        <th>User</th>
+                        <td>{{ user.username }} </td>
+                    </tr>
+                    <tr>
+                        <th>Full Name</th>
+                        <td>{{ user.get_full_name }} </td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user.email }} </td>
+                    </tr>
+                    <tr>
+                        <th>Sound Enabled</th>
+                        <td>{{ user.profile.voice_enabled }}</td>
+                    </tr>
+                    <tr>
+                        <th>Voice Enabled</th>
+                        <td>{{ user.profile.voice_enabled }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-8">
+
+                <h1>Speech synthesiser</h1>
+
+                <p>
+                  Enter some text in the input below and press return or the "play" button
+                  to hear it. change voices using the dropdown menu.
+                </p>
+            
+                <form>
+                  <label for="txt">Enter text</label>
+                  <input id="txt" type="text" class="txt" />
+                  <div>
+                    <label for="rate">Rate</label
+                    ><input type="range" min="0.5" max="2" value="1" step="0.1" id="rate" />
+                    <div class="rate-value">1</div>
+                    <div class="clearfix"></div>
+                  </div>
+                  <div>
+                    <label for="pitch">Pitch</label
+                    ><input type="range" min="0" max="2" value="1" step="0.1" id="pitch" />
+                    <div class="pitch-value">1</div>
+                    <div class="clearfix"></div>
+                  </div>
+                  <select></select>
+                  <div class="controls">
+                    <button id="play" type="submit">Play</button>
+                  </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    function voice_alert() {
+        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
+        var alert_url = $('#voice-alert-toggle').data('alert-url')
+        if (alert_toggle) {
+            $.get( alert_url, function( data ) {
+                data.messages.forEach(function (item) {
+                    var msg = new SpeechSynthesisUtterance(item);
+                    speechSynthesis.speak(msg);
+                })
+            } )
+        }
+    }
+</script>
+<script type="text/javascript">
+    function toggle_maintenance_mode() {
+        console.log("NYI")
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var refresh_seconds = 30000;
+
+        voice_alert();
+
+        // Configure the user preference switch
+        $(document).on('change', 'input.voice-alert-toggle', function () {
+            var url = $(this).data("url");
+            if (this.checked) {
+                console.log("ack checkbox on");
+                $.get(url, { "voice_enabled": 'True' })
+            } else {
+                console.log("ack checkbox off")
+                $.get(url, { "voice_enabled": 'False' })
+            }
+        });
+
+        // Update the page content on a dynamic refresh interval
+        var intervalId = window.setInterval(function () {
+            voice_alert();
+        }, refresh_seconds);
+
+        $('#maintSwitch1').change(function () {
+            var url = $(this).data("url");
+            var name = $(this).data("name");
+            if (this.checked) {
+                //var returnVal = confirm("Are you sure?");
+                //$(this).prop("checked", returnVal);
+                console.log("maint checkbox on");
+                $.get(url, { "device_name": name, "maintenance_mode": 'True' })
+            } else {
+                console.log("maint checkbox off")
+                $.get(url, { "device_name": name, "maintenance_mode": 'False' })
+            }
+        });
+    });
+</script>
+<script type="text/javascript">
+    const synth = window.speechSynthesis;
+
+    const inputForm = document.querySelector("form");
+    const inputTxt = document.querySelector(".txt");
+    const voiceSelect = document.querySelector("select");
+
+    const pitch = document.querySelector("#pitch");
+    const pitchValue = document.querySelector(".pitch-value");
+    const rate = document.querySelector("#rate");
+    const rateValue = document.querySelector(".rate-value");
+
+    let voices = [];
+
+    function populateVoiceList() {
+        voices = synth.getVoices().sort(function (a, b) {
+            const aname = a.name.toUpperCase();
+            const bname = b.name.toUpperCase();
+
+            if (aname < bname) {
+                return -1;
+            } else if (aname == bname) {
+                return 0;
+            } else {
+                return +1;
+            }
+        });
+        const selectedIndex =
+            voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
+        voiceSelect.innerHTML = "";
+
+        for (let i = 0; i < voices.length; i++) {
+            const option = document.createElement("option");
+            option.textContent = `${voices[i].name} (${voices[i].lang})`;
+
+            if (voices[i].default) {
+            option.textContent += " -- DEFAULT";
+            }
+
+            if ( voices[i].lang == 'en-US') {
+            option.setAttribute("data-lang", voices[i].lang);
+            option.setAttribute("data-name", voices[i].name);
+            voiceSelect.appendChild(option);
+            }
+        }
+        voiceSelect.selectedIndex = selectedIndex;
+    }
+
+    populateVoiceList();
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    function speak() {
+        if (synth.speaking) {
+            console.error("speechSynthesis.speaking");
+            return;
+        }
+
+        if (inputTxt.value !== "") {
+            const utterThis = new SpeechSynthesisUtterance(inputTxt.value);
+
+            utterThis.onend = function (event) {
+                console.log("SpeechSynthesisUtterance.onend");
+            };
+
+            utterThis.onerror = function (event) {
+                console.error("SpeechSynthesisUtterance.onerror");
+            };
+
+            const selectedOption =
+            voiceSelect.selectedOptions[0].getAttribute("data-name");
+
+            for (let i = 0; i < voices.length; i++) {
+                if (voices[i].name === selectedOption) {
+                    utterThis.voice = voices[i];
+                    break;
+                }
+            }
+            utterThis.pitch = pitch.value;
+            utterThis.rate = rate.value;
+            synth.speak(utterThis);
+        }
+    }
+
+    inputForm.onsubmit = function (event) {
+        event.preventDefault();
+
+        speak();
+
+        inputTxt.blur();
+    };
+
+    pitch.onchange = function () {
+        pitchValue.textContent = pitch.value;
+    };
+
+    rate.onchange = function () {
+        rateValue.textContent = rate.value;
+    };
+
+    voiceSelect.onchange = function () {
+        speak();
+    };
+</script>
+{% endblock %}

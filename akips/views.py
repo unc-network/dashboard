@@ -140,6 +140,15 @@ class Users(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+class UserPreferences(LoginRequiredMixin, View):
+    ''' Edit user preferences '''
+    template_name = 'akips/user_preferences.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        return render(request, self.template_name, context=context)
+
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_crit.html'
