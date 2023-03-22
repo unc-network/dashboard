@@ -5,6 +5,7 @@
 
 
 {% block content %}
+<form>
 <div class="card">
     <div class="card-body table-responsive">
         <div class="row">
@@ -23,25 +24,45 @@
                         <td>{{ user.email }} </td>
                     </tr>
                     <tr>
-                        <th>Sound Enabled</th>
-                        <td>{{ user.profile.voice_enabled }}</td>
-                    </tr>
-                    <tr>
-                        <th>Voice Enabled</th>
-                        <td>{{ user.profile.voice_enabled }}</td>
+                        <th>Alerts</th>
+                        <td>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    {% if user.profile.alert_enabled %}
+                                    <input type="checkbox" class="custom-control-input" id="alertSwitch" data-name="{{ device.name }}"
+                                        data-url="{% url 'set_maintenance' %}" checked>
+                                    {% else %}
+                                    <input type="checkbox" class="custom-control-input" id="alertSwitch" data-name="{{ device.name }}"
+                                        data-url="{% url 'set_maintenance' %}">
+                                    {% endif %}
+                                    <label class="custom-control-label" for="maintSwitch1">Enabled</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    {% if user.profile.voice_enabled %}
+                                    <input type="checkbox" class="custom-control-input" id="voiceSwitch" data-name="{{ device.name }}"
+                                        data-url="{% url 'set_maintenance' %}" checked>
+                                    {% else %}
+                                    <input type="checkbox" class="custom-control-input" id="voiceSwitch" data-name="{{ device.name }}"
+                                        data-url="{% url 'set_maintenance' %}">
+                                    {% endif %}
+                                    <label class="custom-control-label" for="maintSwitch1">Use Voice</label>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 </table>
             </div>
             <div class="col-md-8">
 
-                <h1>Speech synthesiser</h1>
+                <h3>Speech Synthesizer</h3>
 
                 <p>
                   Enter some text in the input below and press return or the "play" button
                   to hear it. change voices using the dropdown menu.
                 </p>
             
-                <form>
                   <label for="txt">Enter text</label>
                   <input id="txt" type="text" class="txt" />
                   <div>
@@ -60,12 +81,12 @@
                   <div class="controls">
                     <button id="play" type="submit">Play</button>
                   </div>
-                </form>
             </div>
         </div>
 
     </div>
 </div>
+</form>
 {% endblock %}
 
 {% block js %}

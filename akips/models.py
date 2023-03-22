@@ -199,6 +199,7 @@ class HibernateRequest(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    alert_enabled = models.BooleanField(default=True)
     voice_enabled = models.BooleanField(default=True)
 
     def __str__(self):
