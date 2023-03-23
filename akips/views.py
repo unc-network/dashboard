@@ -689,7 +689,9 @@ class UserAlertView(LoginRequiredMixin, View):
 
         result = {
             'last_notified': now,
-            'messages': []
+            'messages': [],
+            'alert_enabled': self.request.user.profile.alert_enabled,
+            'voice_enabled': self.request.user.profile.voice_enabled,
         }
 
         if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:

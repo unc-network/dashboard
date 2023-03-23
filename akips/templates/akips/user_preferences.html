@@ -105,29 +105,10 @@
 
 {% block js %}
 <script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                })
-            } )
-        }
-    }
-</script>
-<script type="text/javascript">
-    function toggle_maintenance_mode() {
-        console.log("NYI")
-    }
-</script>
-<script type="text/javascript">
     $(document).ready(function () {
         var refresh_seconds = 30000;
 
-        voice_alert();
+        refresh_alerts();
 
         // Configure the user preference switch
         $(document).on('change', 'input.voice-alert-toggle', function () {
@@ -141,24 +122,6 @@
             }
         });
 
-        // Update the page content on a dynamic refresh interval
-        var intervalId = window.setInterval(function () {
-            voice_alert();
-        }, refresh_seconds);
-
-        $('#maintSwitch1').change(function () {
-            var url = $(this).data("url");
-            var name = $(this).data("name");
-            if (this.checked) {
-                //var returnVal = confirm("Are you sure?");
-                //$(this).prop("checked", returnVal);
-                console.log("maint checkbox on");
-                $.get(url, { "device_name": name, "maintenance_mode": 'True' })
-            } else {
-                console.log("maint checkbox off")
-                $.get(url, { "device_name": name, "maintenance_mode": 'False' })
-            }
-        });
     });
 </script>
 <script type="text/javascript">
