@@ -92,7 +92,7 @@
                         <i class="far fa-user fa-2x"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                        <a href="{% url 'user_preferences' %}" class="dropdown-item">
+                        <a href="#" class="dropdown-item">
                             <!-- Message Start -->
                             <div class="media">
                                 <!-- <img src="{%avatar_url size=128 %}" alt="User Avatar" class="img-size-50 mr-3 img-circle"> -->
@@ -107,6 +107,10 @@
                                 </div>
                             </div>
                             <!-- Message End -->
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'user_preferences' %}" class="dropdown-item">
+                            <i class="fas fa-sliders-h mr-2"></i> User Preferences
                         </a>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-footer">
