@@ -20,7 +20,8 @@
                     <th>Session Start</th>
                     <th>Session Expire</th>
                     <th>Superuser</th>
-                    <th>Voice Enabled</th>
+                    <th>Alert Enabled</th>
+                    <th>Use Voice</th>
                     <th></th>
                 </tr>
             </thead>
@@ -31,6 +32,7 @@
                     <td>{{ u.start|date:'m-d H:i:s' }}</td>
                     <td>{{ u.expire|date:'m-d H:i:s' }}</td>
                     <td>{{ u.user.is_superuser }}</td>
+                    <td>{{ u.user.profile.alert_enabled }}</td>
                     <td>{{ u.user.profile.voice_enabled }}</td>
                     <td>{{ u.session_keys }}</td>
                 </tr>

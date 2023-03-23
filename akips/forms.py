@@ -95,3 +95,26 @@ class HibernateForm(forms.Form):
         if cleaned_data.get('type','') == 'Time' and not cleaned_data.get('clear_time') :
             raise ValidationError(
                 {'clear_time': 'A time is required'})
+
+class PreferencesForm(forms.Form):
+    alert_enabled = forms.BooleanField(
+        label='Enabled',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'custom-control-input'})
+    )
+    voice_enabled = forms.BooleanField(
+        label='Use Voice',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'custom-control-input'})
+    )
+    # voice_default = forms.CharField()
+    # voice_rate = forms.FloatField(
+    #     min_value=0.5,
+    #     max_value=2,
+    #     widget=forms.NumberInput(attrs={'step': "0.1"})
+    # )
+    # voice_pitch = forms.FloatField(
+    #     min_value=0.5,
+    #     max_value=2,
+    #     widget=forms.NumberInput(attrs={'step': "0.1"})
+    # )

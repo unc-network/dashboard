@@ -5,9 +5,11 @@
 
 
 {% block content %}
-<form>
+<form action="" method="post">
+{% csrf_token %}
 <div class="card">
     <div class="card-body table-responsive">
+
         <div class="row">
             <div class="col-md-4">
                 <table class="table table-sm">
@@ -28,26 +30,16 @@
                         <td>
                             <div class="form-group">
                                 <div class="custom-control custom-switch">
-                                    {% if user.profile.alert_enabled %}
-                                    <input type="checkbox" class="custom-control-input" id="alertSwitch" data-name="{{ device.name }}"
-                                        data-url="{% url 'set_maintenance' %}" checked>
-                                    {% else %}
-                                    <input type="checkbox" class="custom-control-input" id="alertSwitch" data-name="{{ device.name }}"
-                                        data-url="{% url 'set_maintenance' %}">
-                                    {% endif %}
-                                    <label class="custom-control-label" for="maintSwitch1">Enabled</label>
+                                {{ form.alert_enabled.errors }}
+                                {{ form.alert_enabled }}
+                                <label class="custom-control-label" for="{{ form.alert_enabled.auto_id }}">{{ form.alert_enabled.label }}</label>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="custom-control custom-switch">
-                                    {% if user.profile.voice_enabled %}
-                                    <input type="checkbox" class="custom-control-input" id="voiceSwitch" data-name="{{ device.name }}"
-                                        data-url="{% url 'set_maintenance' %}" checked>
-                                    {% else %}
-                                    <input type="checkbox" class="custom-control-input" id="voiceSwitch" data-name="{{ device.name }}"
-                                        data-url="{% url 'set_maintenance' %}">
-                                    {% endif %}
-                                    <label class="custom-control-label" for="maintSwitch1">Use Voice</label>
+                                {{ form.voice_enabled.errors }}
+                                {{ form.voice_enabled }}
+                                <label class="custom-control-label" for="{{ form.voice_enabled.auto_id }}">{{ form.voice_enabled.label }}</label>
                                 </div>
                             </div>
                         </td>
@@ -81,6 +73,14 @@
                   <div class="controls">
                     <button id="play" type="submit">Play</button>
                   </div>
+            </div>
+        </div> <!-- end of row -->
+
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <button type="submit" class="btn btn-primary">Save Preferences</button>
+            </div>
+            <div class="col-md-4">
             </div>
         </div>
 
@@ -233,13 +233,13 @@
         }
     }
 
-    inputForm.onsubmit = function (event) {
-        event.preventDefault();
+    // inputForm.onsubmit = function (event) {
+    //     event.preventDefault();
 
-        speak();
+    //     speak();
 
-        inputTxt.blur();
-    };
+    //     inputTxt.blur();
+    // };
 
     pitch.onchange = function () {
         pitchValue.textContent = pitch.value;

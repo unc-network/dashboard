@@ -27,7 +27,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status
-from .forms import IncidentForm, HibernateForm
+from .forms import IncidentForm, HibernateForm, PreferencesForm
 from .task import example_task
 from .utils import AKIPS, ServiceNow, pretty_duration
 
@@ -146,6 +146,27 @@ class UserPreferences(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        initial = {
+            'alert_enabled': self.request.user.profile.alert_enabled,
+            'voice_enabled': self.request.user.profile.voice_enabled,
+        }
+        context['form'] = PreferencesForm(initial=initial)
+
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        context = {}
+        form = PreferencesForm(request.POST)
+        context['form'] = form
+
+        if form.is_valid():
+            user = request.user
+            user.profile.alert_enabled = form.cleaned_data.get('alert_enabled')
+            user.profile.voice_enabled = form.cleaned_data.get('voice_enabled')
+            user.save()
+            messages.success(request, "{}'s preferences were saved".format(user.username))
+        else:
+            pass
 
         return render(request, self.template_name, context=context)
 
