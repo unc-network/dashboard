@@ -61,20 +61,6 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                })
-            } )
-        }
-    }
-</script>
-<script type="text/javascript">
     $(document).ready(function () {
         var refresh_seconds = 30000;
 
@@ -85,7 +71,7 @@
           "ordering": false,
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-        voice_alert();
+        refresh_alerts();
 
         // Configure the user preference switch
         $(document).on('change', 'input.voice-alert-toggle', function () {
@@ -98,11 +84,6 @@
                 $.get(url, { "voice_enabled": 'False' })
             }
         });
-
-        // Update the page content on a dynamic refresh interval
-        var intervalId = window.setInterval(function () {
-            voice_alert();
-        }, refresh_seconds);
 
     })
 </script>

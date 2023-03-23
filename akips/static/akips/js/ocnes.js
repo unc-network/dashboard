@@ -18,16 +18,28 @@ function alert_user() {
     // console.log("Alerting user if necessary.");
 
     $.get( alert_url, function( data ) {
-        if ( data.alert_enabled ) {
-            data.messages.forEach(function (item) {
-                var msg = new SpeechSynthesisUtterance(item);
+        var long_msg = data.messages.join(' ');
+        if ( long_msg ) {
+            // Audible alert if enabled
+            if ( data.alert_enabled ) {
+                const utterThis = new SpeechSynthesisUtterance(long_msg);
                 if ( data.voice_enabled ) {
-                    speechSynthesis.speak(msg);
+                    // Use Voice Synth
+                    speechSynthesis.speak(utterThis);
                 } else {
+                    // Use HTML5 audio 
                     document.getElementById('audiotag1').play();
-                    // $('#audiotag1')[0].play();
                 }
-            })
+            }
+            // Display the popup alert even if alert is disabled
+            $(document).Toasts('create', {
+                class: 'bg-' + data.level,
+                title: 'OCNES Notification',
+                body: long_msg,
+                autohide: true,
+                delay: 30000
+            });
+
         }
     })
 }

@@ -81,7 +81,8 @@
         $.get( alert_url, function( data ) {
             var long_msg = data.messages.join(' ');
             if ( long_msg ) {
-                if (alert_toggle) {
+                // if (alert_toggle) {
+                if ( data.alert_enabled ) {
                     // If we have something to say, say it once
                     console.log("Attempting to speak " + long_msg);
                     const utterThis = new SpeechSynthesisUtterance(long_msg);
@@ -94,7 +95,12 @@
                         console.error(`An error has occured with the speech synthesis: ${event.error}`);
                     };
                     
-                    speechSynthesis.speak(utterThis);
+                    if ( data.voice_enabled ) {
+                        speechSynthesis.speak(utterThis);
+                    } else {
+                        document.getElementById('audiotag1').play();
+                    }
+                    // speechSynthesis.speak(utterThis);
                 }
 
                 // Display the popup alert even if voice is off
