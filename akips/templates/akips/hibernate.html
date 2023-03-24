@@ -103,26 +103,14 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
 
         //Date and time picker
         $('#reservationdatetime').datetimepicker({ 
             format: 'MM/DD/YYYY HH:mm',
             icons: { time: 'far fa-clock' } 
-        });
-
-        refresh_alerts();
-
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
         });
 
     })

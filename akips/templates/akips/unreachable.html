@@ -62,7 +62,9 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
 
         $("#myTable").DataTable({
           "responsive": true, "lengthChange": false, "autoWidth": false,
@@ -70,20 +72,6 @@
           "pageLength": 50,
           "ordering": false,
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-        refresh_alerts();
-
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
 
     })
 </script>

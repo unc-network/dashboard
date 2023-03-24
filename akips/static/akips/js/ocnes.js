@@ -43,3 +43,17 @@ function alert_user() {
         }
     })
 }
+
+function enable_alert_toggle() {
+    // Configure the user preference switch
+    $(document).on('change', 'input.voice-alert-toggle', function () {
+        var url = $(this).data("url");
+        if (this.checked) {
+            console.log("alert checkbox on");
+            $.get(url, { "voice_enabled": 'True' })
+        } else {
+            console.log("alert checkbox off")
+            $.get(url, { "voice_enabled": 'False' })
+        }
+    });
+}

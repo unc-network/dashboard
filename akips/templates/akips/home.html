@@ -307,20 +307,9 @@
             }
         });
 
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("voice checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("voice checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
-
         // Populate the page content for the first time
         refresh_cards();
+        enable_alert_toggle();
         var chart = setup_chart();
 
         // Update the refresh counter

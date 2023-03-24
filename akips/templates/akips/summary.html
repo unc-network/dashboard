@@ -214,21 +214,9 @@
 {% block js %}
 <script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
-
+        // Setup Alerting
         refresh_alerts();
-
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
+        enable_alert_toggle();
 
     })
 </script>
