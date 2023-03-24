@@ -12,8 +12,8 @@ function refresh_alerts() {
 
 function alert_user() {
     // Poll for alerts and notify the user if needed.
-    var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-    var alert_url = $('#voice-alert-toggle').data('alert-url')
+    var alert_toggle = $('#alert-toggle').prop('checked') // Boolean
+    var alert_url = $('#alert-toggle').data('alert-url')
 
     // console.log("Alerting user if necessary.");
 
@@ -46,14 +46,14 @@ function alert_user() {
 
 function enable_alert_toggle() {
     // Configure the user preference switch
-    $(document).on('change', 'input.voice-alert-toggle', function () {
+    $(document).on('change', 'input.alert-toggle', function () {
         var url = $(this).data("url");
         if (this.checked) {
             console.log("alert checkbox on");
-            $.get(url, { "voice_enabled": 'True' })
+            $.get(url, { "alert_enabled": 'True' })
         } else {
             console.log("alert checkbox off")
-            $.get(url, { "voice_enabled": 'False' })
+            $.get(url, { "alert_enabled": 'False' })
         }
     });
 }

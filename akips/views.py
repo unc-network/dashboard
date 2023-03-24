@@ -927,11 +927,16 @@ class SetUserProfileView(LoginRequiredMixin, View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        logger.debug("Preference update for {}")
+        alert_enabled = request.GET.get('alert_enabled', None)
         voice_enabled = request.GET.get('voice_enabled', None)
-        user = request.user
-        logger.debug("Preference update for {} with voice_enabled {}".format(user,voice_enabled))
 
         user = request.user
+        if alert_enabled is not None:
+            if alert_enabled == 'False':
+                user.profile.alert_enabled = False
+            else:
+                user.profile.alert_enabled = True
         if voice_enabled is not None:
             if voice_enabled == 'False':
                 user.profile.voice_enabled = False

@@ -79,9 +79,9 @@
             {% block header_dropdowns %}
             <li class="nav-item">
                 <div class="navbar-text custom-control custom-switch">
-                    <input type="checkbox" class="custom-control-input voice-alert-toggle" id="voice-alert-toggle" 
+                    <input type="checkbox" class="custom-control-input alert-toggle" id="alert-toggle" 
                         data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}" {% if request.user.profile.alert_enabled %}checked{% endif %}>
-                    <label class="custom-control-label" for="voice-alert-toggle"><i class="fas fa-volume-up"></i></label>
+                    <label class="custom-control-label" for="alert-toggle"><i class="fas fa-volume-up"></i></label>
                 </div>
             </li>
             <!-- Notifications Dropdown Menu -->
