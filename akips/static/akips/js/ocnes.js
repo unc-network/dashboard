@@ -26,8 +26,8 @@ function alert_user() {
                 if ( data.voice_enabled ) {
                     // Use Voice Synth
                     speechSynthesis.speak(utterThis);
-                } else {
-                    // Use HTML5 audio 
+                } else if ( data.level == 'danger' ) {
+                    // Use HTML5 audio for important alerts 
                     document.getElementById('audiotag1').play();
                 }
             }

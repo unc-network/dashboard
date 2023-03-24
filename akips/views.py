@@ -689,6 +689,7 @@ class UserAlertView(LoginRequiredMixin, View):
 
         result = {
             'last_notified': now,
+            'level': 'info',
             'messages': [],
             'alert_enabled': self.request.user.profile.alert_enabled,
             'voice_enabled': self.request.user.profile.voice_enabled,
