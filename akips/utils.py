@@ -486,7 +486,7 @@ class ServiceNow:
         
         # Call HTTP POST
         sn_url = "https://{}.service-now.com/api/now/table/incident".format(self.instance)
-        logger.debug("url: {}",format(self.url))
+        logger.debug("url: {}",format(sn_url))
         logger.debug("headers: {}".format(headers))
         logger.debug("data: {}".format(body))
         response = requests.post(sn_url, auth=(self.username,self.password), headers=headers, data=json.dumps(body))

@@ -1,7 +1,7 @@
 {% for summary in summaries %}
 {{ summary.type }} {{ summary.name }} 
-{% for u in summary.unreachables.all %}
-{{ u.device.sysName }} at {{ u.device.ip4addr }}{% endfor %}
+{% for u in summary.unreachables.all %}{% if u.status == 'Open' %}
+{{ u.device.sysName }}, {{ u.device.ip4addr }}, unreachable start {{ u.event_start|date:'m-d H:i:s' }}{% endif %}{% endfor %} 
 {% endfor %}
 {% for trap in traps %}
 {{ trap.device.sysName }} {{ trap.trap_oid }}{% endfor %}
