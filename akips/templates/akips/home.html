@@ -189,6 +189,9 @@
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
         var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
 
+        // Close any open popovers before refreshing the display
+        $(".popover").popover('hide');
+
         $('.event-card').each(function (index) {
             var id = this.id;
             $('#' + id ).show();
@@ -231,6 +234,7 @@
         var refresh_seconds = 30;
         var auto_refresh = true;
 
+        // Get the token to support AJAX POST
         function getCookie(name) {
             var cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -255,26 +259,24 @@
             var url = $(this).data("url");
             console.log("comment update");
 
-            $(this).html('');
-            $('<input></input>')
-                .attr({
-                    'type': 'text',
-                    'name': 'fname',
-                    // 'id': 'txt_fullname',
-                    'class': 'txt_comment',
-                    'size': '20',
-                    'value': name
-                })
-                .appendTo(this);
-            // $('#txt_fullname').focus();
-            $('.txt_comment').focus();
-            // $(this).popover({
-            //     title: 'Test',
-            //     html: true,
-            //     content: '<input></input>'
-            // });
+            // $(this).html('');
+            // $('<input></input>')
+            //     .attr({
+            //         'type': 'text',
+            //         'name': 'fname',
+            //         'class': 'txt_comment',
+            //         'size': '20',
+            //         'value': name
+            //     })
+            //     .appendTo(this);
+            // $('.txt_comment').focus();
+            $(this).popover({
+                title: 'Summary Comment',
+                // html: true,
+                // content: '<input></input>'
+                content: name 
+            });
         });
-        // $(document).on('blur','#txt_fullname', function(){
         $(document).on('blur','.txt_comment', function(){
             var name = $(this).val();
             var url = $(this).closest('.summary-comment').data("url");
