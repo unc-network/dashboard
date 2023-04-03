@@ -272,6 +272,29 @@
                 .appendTo(this);
             $('.txt_comment').focus();
         });
+        $(document).on('keypress','.txt_comment', function(e){
+            if (e.which === 13) {
+                e.preventDefault();
+                var comment = $(this).val();
+                var url = $(this).closest('.summary-comment').data("url");
+                console.log("Calling save comment: " + comment);
+                console.log("Calling save url: " + url);
+                $.ajax({
+                    type: 'post',
+                    url: url,
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    data: {
+                        'comment': comment
+                    },
+                    success: function(){
+                        console.log("Comment updated");
+                    }
+                });
+                $(this).closest('.summary-comment').text(comment);
+            }
+        });
         $(document).on('blur','.txt_comment', function(){
             var comment = $(this).val();
             var url = $(this).closest('.summary-comment').data("url");
@@ -288,7 +311,6 @@
                 },
                 success: function(){
                     console.log("Comment updated");
-                    // $(this).closest('.summary-comment').html("<i class='fas fa-comment-medical text-primary'></i>");
                 }
             });
             $(this).closest('.summary-comment').text(comment);
