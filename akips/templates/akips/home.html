@@ -231,6 +231,72 @@
         var refresh_seconds = 30;
         var auto_refresh = true;
 
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getCookie('csrftoken');
+
+        // Bind to the document so dynamicly added content will still work
+        // Configure the comment edit field
+        $(document).on('click', '.summary-comment', function () {
+            var name = $(this).text();
+            var url = $(this).data("url");
+            console.log("comment update");
+
+            $(this).html('');
+            $('<input></input>')
+                .attr({
+                    'type': 'text',
+                    'name': 'fname',
+                    // 'id': 'txt_fullname',
+                    'class': 'txt_comment',
+                    'size': '20',
+                    'value': name
+                })
+                .appendTo(this);
+            // $('#txt_fullname').focus();
+            $('.txt_comment').focus();
+            // $(this).popover({
+            //     title: 'Test',
+            //     html: true,
+            //     content: '<input></input>'
+            // });
+        });
+        // $(document).on('blur','#txt_fullname', function(){
+        $(document).on('blur','.txt_comment', function(){
+            var name = $(this).val();
+            var url = $(this).closest('.summary-comment').data("url");
+            console.log("Calling save comment: " + name);
+            console.log("Calling save url: " + url);
+            $.ajax({
+                type: 'post',
+                url: url,
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                data: {
+                    'comment': name
+                },
+                success: function(){
+                    // $('#fullname').text(name);
+                    $(this).closest('.summary-comment').text(name);
+                }
+            });
+            $(this).closest('.summary-comment').text(name);
+        });
+
         // Bind to the document so dynamicly added content will still work
         // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {

@@ -14,6 +14,7 @@
             <th>Last Event</th>
             <th class="d-none d-md-table-cell">Trend</th>
             <th class="d-none d-md-table-cell">Incident Request</th>
+            <th class="d-none d-md-table-cell">Comment</th>
         </tr>
     </thead>
     <tbody>
@@ -92,6 +93,8 @@
                 </div>
                 {% endif %}
             </td>
+            <td class="text-center text-primary d-none d-md-table-cell summary-comment text-truncate" style="max-width: 150px" id="comment-{{ summary.id}}" 
+                data-url="{% url 'set_comment' summary.id %}">{{ summary.comment }}</td>
         </tr>
         {% endfor %}
         {% if not summaries %}

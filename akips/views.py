@@ -572,6 +572,25 @@ class SetMaintenanceView(LoginRequiredMixin, View):
             return JsonResponse(result)
 
 
+# @csrf_exempt
+class SetCommentAPI(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def post(self, request, *args, **kwargs):
+        summary_id = self.kwargs.get('summary_id', None)
+        comment = request.POST.get('comment', '')
+        logger.debug("Summary {} set comment".format(summary_id))
+    
+        response_data = {
+            'success': True
+        }
+        summary = get_object_or_404(Summary, id=summary_id)
+        summary.comment = comment
+        summary.save()
+
+        return JsonResponse(response_data)
+
 class AckView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
