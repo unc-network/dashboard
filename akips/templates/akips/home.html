@@ -255,27 +255,22 @@
         // Bind to the document so dynamicly added content will still work
         // Configure the comment edit field
         $(document).on('click', '.summary-comment', function () {
-            var name = $(this).text();
+            var comment = $(this).text();
+            // var comment = $(this).data("content");
             var url = $(this).data("url");
-            console.log("comment update");
+            console.log("comment update " + comment);
 
-            // $(this).html('');
-            // $('<input></input>')
-            //     .attr({
-            //         'type': 'text',
-            //         'name': 'fname',
-            //         'class': 'txt_comment',
-            //         'size': '20',
-            //         'value': name
-            //     })
-            //     .appendTo(this);
-            // $('.txt_comment').focus();
-            $(this).popover({
-                title: 'Summary Comment',
-                // html: true,
-                // content: '<input></input>'
-                content: name 
-            });
+            $(this).html('');
+            $('<input></input>')
+                .attr({
+                    'type': 'text',
+                    'name': 'fname',
+                    'class': 'form-control input-sm txt_comment',
+                    'size': '20',
+                    'value': comment
+                })
+                .appendTo(this);
+            $('.txt_comment').focus();
         });
         $(document).on('blur','.txt_comment', function(){
             var name = $(this).val();
@@ -292,7 +287,6 @@
                     'comment': name
                 },
                 success: function(){
-                    // $('#fullname').text(name);
                     $(this).closest('.summary-comment').text(name);
                 }
             });
@@ -339,14 +333,12 @@
             });
         });
 
-        // Bind to the document so dynamicly added content will still work
-        // enable popoover
+        // Bind to the document so dynamically added content will still work
+        // enable popover
         $('body').popover({
-            // selector: '[rel="popover"]',
             selector: '[data-toggle="popover"]',
             trigger: 'hover',
             delay: { "hide": 10 }
-
         });
 
         // Configure the Clear All Traps button for traps
