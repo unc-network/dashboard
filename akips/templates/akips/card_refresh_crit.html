@@ -33,7 +33,10 @@
                 {% endif %}
             </td>
             <!-- <td><a href="{% url 'summary' summary.id %}">{{ summary.name }}</a></td> -->
-            <td><a href="{% url 'summary' summary.id %}">{% with summary.unreachables.all|first as u %}{{ u.device.sysName }}{% endwith %}</a></td>
+            <td>
+                <span class="font-weight-bold mr-2"><a href="{% url 'summary' summary.id %}">{% with summary.unreachables.all|first as u %}{{ u.device.sysName }}{% endwith %}</a></span>
+                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
+            </td>
             <td>{% with summary.unreachables.all|first as u %}{{ u.device.ip4addr }}{% endwith %}</td>
             <td><span class="d-inline-block text-truncate" style="max-width: 200px">{% with summary.unreachables.all|first as u %}{{ u.device.sysDescr }}{% endwith %}</span></td>
             <!-- <td>{{ summary.first_event|date:'Y-m-d H:i:s' }}</td> -->
