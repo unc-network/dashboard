@@ -273,9 +273,9 @@
             $('.txt_comment').focus();
         });
         $(document).on('blur','.txt_comment', function(){
-            var name = $(this).val();
+            var comment = $(this).val();
             var url = $(this).closest('.summary-comment').data("url");
-            console.log("Calling save comment: " + name);
+            console.log("Calling save comment: " + comment);
             console.log("Calling save url: " + url);
             $.ajax({
                 type: 'post',
@@ -284,13 +284,14 @@
                     'X-CSRFToken': csrftoken
                 },
                 data: {
-                    'comment': name
+                    'comment': comment
                 },
                 success: function(){
-                    $(this).closest('.summary-comment').text(name);
+                    console.log("Comment updated");
+                    // $(this).closest('.summary-comment').html("<i class='fas fa-comment-medical text-primary'></i>");
                 }
             });
-            $(this).closest('.summary-comment').text(name);
+            $(this).closest('.summary-comment').text(comment);
         });
 
         // Bind to the document so dynamicly added content will still work
