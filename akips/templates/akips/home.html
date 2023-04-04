@@ -146,16 +146,16 @@
             }
         }
 
-        var barchart = new Chart(barChartCanvas, {
+        var barChart = new Chart(barChartCanvas, {
             type: 'bar',
             data: barChartData,
             options: barChartOptions
         })
 
-        refresh_chart(barchart);
-        return barchart;
+        refresh_chart(barChart);
+        return barChart;
     }
-    function refresh_chart( barchart ) {
+    function refresh_chart( barChart ) {
         var url = $('#barChart').data("url")
         $.ajax({
             type: "GET",
@@ -163,18 +163,18 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
-                barchart.data.labels = result['chart_labels'];
-                barchart.data.datasets[0].data = result['chart_event_data'];
-                barchart.data.datasets[1].data = result['chart_trap_data'];
-                barchart.data.datasets[2].data = result['chart_battery_data'];
-                barchart.update();
+                barChart.data.labels = result['chart_labels'];
+                barChart.data.datasets[0].data = result['chart_event_data'];
+                barChart.data.datasets[1].data = result['chart_trap_data'];
+                barChart.data.datasets[2].data = result['chart_battery_data'];
+                barChart.update();
             },
             error: function (xhr, status, error) {
                 console.log("Unable to refresh chart");
             }
         });
     }
-    function refresh_dups() {
+    function refresh_duplicates() {
         $('.dup-data').each(function (index) {
             var now = new Date();
             var last = new Date( $(this).data("last") );
@@ -214,7 +214,7 @@
                         // body.append(water);
                     }
                     if (id == "trap_card") {
-                        refresh_dups();
+                        refresh_duplicates();
                     }
                 },
                 error: function (xhr, status, error) {
@@ -234,27 +234,11 @@
         var refresh_seconds = 30;
         var auto_refresh = true;
 
-        // Get the token to support AJAX POST
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        var csrftoken = getCookie('csrftoken');
+        var csrfToken = getCookie('csrftoken');
 
         // Bind to the document so dynamically added content will still work
         // Configure the comment edit field
-        $(document).on('click', '.summary-comment', function () {
+        $(document).on('click', '.summary-comment', function (e) {
             var comment = $(this).text();
             // var comment = $(this).data("content");
             var url = $(this).data("url");
@@ -283,7 +267,7 @@
                     type: 'post',
                     url: url,
                     headers: {
-                        'X-CSRFToken': csrftoken
+                        'X-CSRFToken': csrfToken
                     },
                     data: {
                         'comment': comment
@@ -304,7 +288,7 @@
                 type: 'post',
                 url: url,
                 headers: {
-                    'X-CSRFToken': csrftoken
+                    'X-CSRFToken': csrfToken
                 },
                 data: {
                     'comment': comment
@@ -316,7 +300,7 @@
             $(this).closest('.summary-comment').text(comment);
         });
 
-        // Bind to the document so dynamicly added content will still work
+        // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {
             var url = $(this).data("url");
@@ -329,7 +313,7 @@
             }
         });
 
-        // Bind to the document so dynamicly added content will still work
+        // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for traps
         $(document).on('change', 'input.ack-trap', function () {
             var url = $(this).data("url");
@@ -342,7 +326,7 @@
             }
         });
 
-        // Bind to the document so dynamicly added content will still work
+        // Bind to the document so dynamically added content will still work
         // Configure the Clear Trap button for traps
         $(document).on('click', 'button.trap-clear', function () {
             //$(this).prop('disabled', true);
