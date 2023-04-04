@@ -276,7 +276,11 @@
                         console.log("Comment updated");
                     }
                 });
-                $(this).closest('.summary-comment').text(comment);
+                if (comment) {
+                    $(this).closest('.summary-comment').text(comment);
+                } else {
+                    $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
+                }
             }
         });
         $(document).on('blur','.txt_comment', function(){
@@ -297,7 +301,11 @@
                     console.log("Comment updated");
                 }
             });
-            $(this).closest('.summary-comment').text(comment);
+            if (comment) {
+                $(this).closest('.summary-comment').text(comment);
+            } else {
+                $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
+            }
         });
 
         // Bind to the document so dynamically added content will still work
