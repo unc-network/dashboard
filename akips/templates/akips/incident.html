@@ -78,16 +78,18 @@
 </div>
 {% endif %}
 
-<p>Please enter any comments about this event below.</p>
+<div class="border-top my-3"></div>
+
 <div class="form-group">
-    <label>{{ form.description.label }}</label>
+    <label class="mr-2">{{ form.description.label }}</label>
+    {{ form.description.help_text }}
     {{ form.description }}
 </div>
 <p>{{ form.description.errors }}</p>
 
 <div class="row">
     <div class="col-2">
-        <p>Assignment Group</p>
+        <p><b>Assignment Group</b></p>
     </div>
     <div class="col-10">
         <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
@@ -104,7 +106,7 @@
 
 <div class="row">
     <div class="col-2">
-        <p>Criticality Level</p>
+        <p><b>Criticality Level</b></p>
     </div>
     <div class="col-10">
         <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
@@ -117,6 +119,18 @@
         </div>
     </div>
 </div>
+
+<div class="border-top my-3"></div>
+
+<div class="form-group">
+    <label class="mr-2">{{ form.number.label }}</label>
+    {{ form.number.help_text }}
+    {{ form.number }}
+</div>
+<p>{{ form.number.errors }}</p>
+
+<div class="border-top my-3"></div>
+
 <div class="text-right">
     <button type="submit" class="btn btn-primary">Create Incident</button>
 </div>

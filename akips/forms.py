@@ -33,6 +33,7 @@ class IncidentForm(forms.Form):
         widget=forms.HiddenInput()
     )
     description = forms.CharField(
+        help_text='Please enter any comments about this event below.',
         widget=forms.Textarea(
             attrs={
                 'class': 'form-control',
@@ -48,6 +49,13 @@ class IncidentForm(forms.Form):
     criticality = forms.ChoiceField(
         choices=CRITICAL_CHOICES,
         widget=forms.RadioSelect
+    )
+    number = forms.CharField(
+        label='Existing Incident Number',
+        help_text='Optionally, provide an existing incident to associate instead of creating a new record.',
+        max_length=16,
+        widget = forms.TextInput(attrs={'class':'form-control col-auto'}),
+        required=False
     )
 
     def clean(self):
