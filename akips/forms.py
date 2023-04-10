@@ -2,6 +2,8 @@ from django import forms
 from django.forms import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
+import re
+
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
     remember_me = forms.BooleanField(required=False)  # and add the remember_me field
@@ -40,15 +42,18 @@ class IncidentForm(forms.Form):
                 'rows': '3',
                 'placeholder': 'Enter....'
             }
-        )
+        ),
+        required=False
     )
     assignment_group = forms.ChoiceField(
         choices=DEPT_CHOICES,
-        widget=forms.RadioSelect
+        widget=forms.RadioSelect,
+        required=False
     )
     criticality = forms.ChoiceField(
         choices=CRITICAL_CHOICES,
-        widget=forms.RadioSelect
+        widget=forms.RadioSelect,
+        required=False
     )
     number = forms.CharField(
         label='Existing Incident Number',
@@ -58,11 +63,25 @@ class IncidentForm(forms.Form):
         required=False
     )
 
+    def clean_number(self):
+        number = self.cleaned_data['number']
+        if number and not re.match('^INC\d{7}', number, re.IGNORECASE):
+            raise ValidationError("Incident numbers start with INC and include 7 digits")            
+        return number
+
     def clean(self):
         cleaned_data = super().clean()
         if not cleaned_data.get('summary_events') and not cleaned_data.get('trap_events'):
             raise ValidationError(
                 {'summary_events': 'At least one summary or trap must be selected'})
+        if not cleaned_data.get('number'):
+            if not cleaned_data.get('description'):
+                raise ValidationError({'description': 'Description is required'})
+            if not cleaned_data.get('assignment_group'):
+                raise ValidationError({'assignment_group': 'Assignment group is required'})
+            if not cleaned_data.get('criticality'):
+                raise ValidationError({'criticality': 'Criticality is required'})
+
 
 class HibernateForm(forms.Form):
     TYPE_CHOICES = (
