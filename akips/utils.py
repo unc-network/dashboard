@@ -565,7 +565,6 @@ class ServiceNow:
 
         # Decode the JSON response and update the database
         if len( result_data['result'] ) == 1:
-            logger.debug('Found one entry in list {}'.format(entry))
             # result will be a list and should have just one entry
             sn_incident, created = ServiceNowIncident.objects.get_or_create(
                 number=result_data['result'][0]['number'],
