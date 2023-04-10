@@ -218,7 +218,8 @@ class TrapCard(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-tt')[:50]
+            status='Open').order_by('-tt')
+            # status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
 
 
