@@ -498,20 +498,32 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 traps = Trap.objects.filter(id__in=trap_ids)
                 ctx['traps'] = traps
 
-            # Create the ServiceNow Incident
+            # Work with ServiceNow Incident
             servicenow = ServiceNow()
-            incident = servicenow.create_incident(
-                form.cleaned_data.get('assignment_group'),
-                form.cleaned_data.get('description'),
-                severity=form.cleaned_data.get('criticality'),
-                work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                caller_id=request.user.username
-            )
+            if form.cleaned_data.get('number'):
+                # Get an existing Incident
+                incident = servicenow.associate_incident(
+                    form.cleaned_data.get('number'),
+                    # work_notes=render_to_string('akips/incident_worknote.txt',ctx),
+                )
+                if incident:
+                    context['create_message'] = "Incident {} was found.".format(incident.number)
+            else:
+                # Get a new Incident
+                incident = servicenow.create_incident(
+                    form.cleaned_data.get('assignment_group'),
+                    form.cleaned_data.get('description'),
+                    severity=form.cleaned_data.get('criticality'),
+                    work_notes=render_to_string('akips/incident_worknote.txt',ctx),
+                    caller_id=request.user.username
+                )
+                if incident:
+                    context['create_message'] = "Incident {} was created.".format(incident.number)
+
             if incident:
-                #context['create_message'] = "Incident {} was created.".format(incident['number'])
-                context['create_message'] = "Incident {} was created.".format(incident.number)
-                #logger.debug("created {}".format(incident['number']))
-                logger.debug("created {}".format(incident.number))
+                # Map selected summaries to this incident
+                # context['create_message'] = "Incident {} was created.".format(incident.number)
+                logger.debug("mapping summaries to incident {}".format(incident.number))
                 for id in summary_ids:
                     summary = Summary.objects.get(id=id)
                     #summary.incident = incident['number']
@@ -523,8 +535,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
                     trap.sn_incident = incident
                     trap.save()
                 messages.success(
-                    #request, "ServiceNow Incident {} was created.".format(incident['number']))
-                    request, "ServiceNow Incident {} was created.".format(incident.number))
+                    request, "ServiceNow Incident {} was associated.".format(incident.number))
                 return HttpResponseRedirect(reverse('home'))
             else:
                 messages.error(request, "ServiceNow Incident creation failed.")
@@ -590,44 +601,44 @@ class SetComment(LoginRequiredMixin, View):
 
         return JsonResponse(response_data)
 
-class SetIncident(LoginRequiredMixin, View):
-    ''' API call to set the Incident for a summary '''
-    pretty_print = True
+# class SetIncident(LoginRequiredMixin, View):
+#     ''' API call to set the Incident for a summary '''
+#     pretty_print = True
 
-    def post(self, request, *args, **kwargs):
-        summary_id = self.kwargs.get('summary_id', None)
-        incident_number = request.POST.get('incident', '')
-        logger.debug("Summary {} set incident".format(summary_id))
+#     def post(self, request, *args, **kwargs):
+#         summary_id = self.kwargs.get('summary_id', None)
+#         incident_number = request.POST.get('incident', '')
+#         logger.debug("Summary {} set incident".format(summary_id))
     
-        # validate summary id first
-        summary = get_object_or_404(Summary, id=summary_id)
+#         # validate summary id first
+#         summary = get_object_or_404(Summary, id=summary_id)
 
-        response_data = {
-            'success': False
-        }
+#         response_data = {
+#             'success': False
+#         }
 
-        if incident_number:
-            # Check ServiceNow data
-            servicenow = ServiceNow()
-            incident_list = servicenow.get_incident_by_number(incident_number)
-            if len(incident_list) == 1:
-                incident = incident_list[0]
-            else:
-                incident = None
+#         if incident_number:
+#             # Check ServiceNow data
+#             servicenow = ServiceNow()
+#             incident_list = servicenow.get_incident_by_number(incident_number)
+#             if len(incident_list) == 1:
+#                 incident = incident_list[0]
+#             else:
+#                 incident = None
 
-        if incident:
-            # add incident to database if necessary
-            sn_incident = ServiceNowIncident.objects.get_or_create(
-                number=incident['number'],
-                sys_id=incident['sys_id'],
-                instance=self.instance
-            )
-            # associate with summary
-            summary.incident = sn_incident
-            summary.save()
-            response_data['success'] = True
+#         if incident:
+#             # add incident to database if necessary
+#             sn_incident = ServiceNowIncident.objects.get_or_create(
+#                 number=incident['number'],
+#                 sys_id=incident['sys_id'],
+#                 instance=self.instance
+#             )
+#             # associate with summary
+#             summary.incident = sn_incident
+#             summary.save()
+#             response_data['success'] = True
 
-        return JsonResponse(response_data)
+#         return JsonResponse(response_data)
 
 class AckView(LoginRequiredMixin, View):
     ''' API view '''

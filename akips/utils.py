@@ -494,7 +494,7 @@ class ServiceNow:
         # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
         if response.status_code != 201:
             logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
-            return
+            return None
 
         # Decode the JSON response and update the database
         result_data = response.json()
@@ -532,7 +532,7 @@ class ServiceNow:
 
         return result_data['result']
 
-    def get_incident_by_number(self, number ):
+    def associate_incident(self, number, work_notes=None):
         ''' Search for SN incident by number '''
 
         # Set proper headers
@@ -543,12 +543,12 @@ class ServiceNow:
 
         # Set parameters
         params = {
-            'sysparm_exclude_reference_link': True,
+            #'sysparm_exclude_reference_link': True,
             'sysparm_query': 'number={}'.format(number),
         }
 
         # Call HTTP GET
-        sn_url = "https://{}.service-now.com/api/now/table/incident/".format(self.instance)
+        sn_url = "https://{}.service-now.com/api/now/table/incident".format(self.instance)
         logger.debug("url: {}".format(sn_url))
         logger.debug("headers: {}".format(headers))
         logger.debug("params: {}".format(params))
@@ -557,13 +557,28 @@ class ServiceNow:
         # All requests return a 200 HTTP status code even if there is an error.
         if response.status_code != 200:
             logger.warn('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
-            return
+            return None
 
         # Decode the JSON response into a dictionary and use the data
         result_data = response.json()
         logger.debug("Result: {}".format(result_data))
 
-        return result_data['result']
+        # Decode the JSON response and update the database
+        if len( result_data['result'] ) == 1:
+            logger.debug('Found one entry in list {}'.format(entry))
+            # result will be a list and should have just one entry
+            sn_incident, created = ServiceNowIncident.objects.get_or_create(
+                number=result_data['result'][0]['number'],
+                sys_id=result_data['result'][0]['sys_id'],
+                instance=self.instance
+            )
+            if created:
+                logger.debug("New database entry recorded for incident")
+        else:
+            logger.warn("Unable to map number to a single instance")
+            sn_incident = None
+
+        return sn_incident
 
 
     def update_incident(self, number, work_notes):
