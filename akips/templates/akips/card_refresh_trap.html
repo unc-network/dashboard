@@ -58,5 +58,5 @@
         {% endfor %}
     </tbody>
 </table>
-{% if traps|length > 30 %}<p class="text-center">Only 30 of the last {{ traps|length }} open traps are displayed. <a href="{% url 'recent_traps' %}">View all traps.</a></p>{% endif %}
+{% if traps|length > 30 %}<p class="text-center">Only displaying 30 of the most recent {{ traps|length }} open traps. <a href="{% url 'recent_traps' %}">View all traps.</a></p>{% endif %}
 {% endblock %}
