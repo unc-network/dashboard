@@ -535,12 +535,13 @@ class CreateIncidentView(LoginRequiredMixin, View):
                     #trap.incident = incident['number']
                     trap.sn_incident = incident
                     trap.save()
-                messages.success(
-                    request, "ServiceNow Incident {} was associated.".format(incident.number))
+                messages.success(request, "ServiceNow Incident {} was associated.".format(incident.number))
                 return HttpResponseRedirect(reverse('home'))
             else:
-                messages.error(request, "ServiceNow Incident creation failed.")
+                messages.error(request, "ServiceNow Incident association failed.")
 
+            # Failed to associate incident
+            context['form'] = form
             return render(request, self.template_name, context=context)
 
         else:
