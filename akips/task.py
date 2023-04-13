@@ -499,7 +499,7 @@ def refresh_unreachable(mode='poll'):
                 )
             except Summary.MultipleObjectsReturned:
                 # if we get more than one, just use the first
-                t_summary = Summary.objects.first(type='Distribution',name=tier_name,status='Open').first()
+                t_summary = Summary.objects.filter(type='Distribution',name=tier_name,status='Open').first()
                 t_created = False
             if t_created:
                 logger.debug("Tier summary created {}".format(tier_name))
