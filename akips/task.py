@@ -484,18 +484,23 @@ def refresh_unreachable(mode='poll'):
                 bldg_name = 'Other'
 
             # Find the tier summary to update
-            t_summary, t_created = Summary.objects.get_or_create(
-                type='Distribution',
-                name=tier_name,
-                status='Open',
-                defaults={
-                    'tier': tier_name,
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
-                    #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
+            try:
+                t_summary, t_created = Summary.objects.get_or_create(
+                    type='Distribution',
+                    name=tier_name,
+                    status='Open',
+                    defaults={
+                        'tier': tier_name,
+                        'first_event': unreachable.event_start,
+                        'last_event': unreachable.event_start,
+                        'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
+                        #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    }
+                )
+            except Summary.MultipleObjectsReturned:
+                # if we get more than one, just use the first
+                t_summary = Summary.objects.first(type='Distribution',name=tier_name,status='Open').first()
+                t_created = False
             if t_created:
                 logger.debug("Tier summary created {}".format(tier_name))
             else:
