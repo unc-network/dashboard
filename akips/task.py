@@ -447,17 +447,22 @@ def refresh_unreachable(mode='poll'):
                 d_name = unreachable.device.sysName
             else:
                 d_name = unreachable.device.name
-            c_summary, c_created = Summary.objects.get_or_create(
-                type='Critical',
-                #name=unreachable.device.name,
-                name=d_name,
-                status='Open',
-                defaults={
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': 1
-                }
-            )
+            try:
+                c_summary, c_created = Summary.objects.get_or_create(
+                    type='Critical',
+                    #name=unreachable.device.name,
+                    name=d_name,
+                    status='Open',
+                    defaults={
+                        'first_event': unreachable.event_start,
+                        'last_event': unreachable.event_start,
+                        'max_count': 1
+                    }
+                )
+            except Summary.MultipleObjectsReturned:
+                # if we get more than one, just use the first
+                c_summary = Summary.objects.filter(type='Critical',name=d_name,status='Open').first()
+                c_created = False
             if c_created:
                 logger.debug("Crit summary created {}".format(
                     unreachable.device.name))
@@ -514,18 +519,23 @@ def refresh_unreachable(mode='poll'):
             t_summary.unreachables.add(unreachable)
 
             # Find the building summary to update
-            b_summary, b_created = Summary.objects.get_or_create(
-                type='Building',
-                name=bldg_name,
-                status='Open',
-                defaults={
-                    'tier': tier_name,
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
+            try:
+                b_summary, b_created = Summary.objects.get_or_create(
+                    type='Building',
+                    name=bldg_name,
+                    status='Open',
+                    defaults={
+                        'tier': tier_name,
+                        'first_event': unreachable.event_start,
+                        'last_event': unreachable.event_start,
+                        'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
+                        #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    }
+                )
+            except Summary.MultipleObjectsReturned:
+                # if we get more than one, just use the first
+                b_summary = Summary.objects.filter(type='Building',name=bldg_name,status='Open').first()
+                b_created = False
             if b_created:
                 logger.debug("Building summary created {}".format(bldg_name))
             else:
@@ -549,17 +559,22 @@ def refresh_unreachable(mode='poll'):
             logger.debug("Processing special group {}".format( unreachable.device.group ))
 
             # Find the specialty summary to update
-            s_summary, s_created = Summary.objects.get_or_create(
-                type='Speciality',
-                name= unreachable.device.group,
-                status='Open',
-                defaults={
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(group=unreachable.device.group).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
+            try:
+                s_summary, s_created = Summary.objects.get_or_create(
+                    type='Speciality',
+                    name= unreachable.device.group,
+                    status='Open',
+                    defaults={
+                        'first_event': unreachable.event_start,
+                        'last_event': unreachable.event_start,
+                        'max_count': Device.objects.filter(group=unreachable.device.group).count(),
+                        #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    }
+                )
+            except Summary.MultipleObjectsReturned:
+                # if we get more than one, just use the first
+                s_summary = Summary.objects.filter(type='Speciality',name=unreachable.device.group,status='Open').first()
+                s_created = False
             if s_created:
                 logger.debug("Specialty summary created {}".format( unreachable.device.group ))
             else:
@@ -580,18 +595,23 @@ def refresh_unreachable(mode='poll'):
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
         # Find the tier summary to update
-        t_summary, t_created = Summary.objects.get_or_create(
-            type='Distribution',
-            name=ups.device.tier,
-            status='Open',
-            defaults={
-                'tier': ups.device.tier,
-                'first_event': ups.last_change,
-                'last_event': ups.last_change,
-                'max_count': Device.objects.filter(tier=ups.device.tier).count(),
-                'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            }
-        )
+        try:
+            t_summary, t_created = Summary.objects.get_or_create(
+                type='Distribution',
+                name=ups.device.tier,
+                status='Open',
+                defaults={
+                    'tier': ups.device.tier,
+                    'first_event': ups.last_change,
+                    'last_event': ups.last_change,
+                    'max_count': Device.objects.filter(tier=ups.device.tier).count(),
+                    'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+                }
+            )
+        except Summary.MultipleObjectsReturned:
+            # if we get more than one, just use the first
+            t_summary = Summary.objects.filter(type='Distribution',name=ups.device.tier,status='Open').first()
+            t_created = False
         if t_created:
             logger.debug("Tier summary created {}".format(ups.device.tier))
         else:
@@ -605,18 +625,23 @@ def refresh_unreachable(mode='poll'):
         t_summary.batteries.add(ups)
 
         # Find the building summary to update
-        b_summary, b_created = Summary.objects.get_or_create(
-            type='Building',
-            name=ups.device.building_name,
-            status='Open',
-            defaults={
-                'tier': ups.device.tier,
-                'first_event': ups.last_change,
-                'last_event': ups.last_change,
-                'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            }
-        )
+        try:
+            b_summary, b_created = Summary.objects.get_or_create(
+                type='Building',
+                name=ups.device.building_name,
+                status='Open',
+                defaults={
+                    'tier': ups.device.tier,
+                    'first_event': ups.last_change,
+                    'last_event': ups.last_change,
+                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
+                    'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+                }
+            )
+        except Summary.MultipleObjectsReturned:
+            # if we get more than one, just use the first
+            b_summary = Summary.objects.filter(type='Building',name=ups.device.building_name,status='Open').first()
+            b_created = False
         if b_created:
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
