@@ -590,8 +590,14 @@ class SummariesAPI(View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        type = request.GET.get('type', None)
+        status = request.GET.get('status', 'Open')
+        logger.debug("Type is {}".format(type))
         result = {}
-        summary_list = Summary.objects.filter(status='Open').values('id','type','name','ack','first_event','last_event','trend','status','sn_incident__number')
+        if type:
+            summary_list = Summary.objects.filter(type=type,status=status).values('id','type','name','ack','first_event','last_event','trend','status','sn_incident__number')
+        else:
+            summary_list = Summary.objects.filter(status=status).values('id','type','name','ack','first_event','last_event','trend','status','sn_incident__number')
         
         result = {"result": list(summary_list)}
         if self.pretty_print:
