@@ -596,22 +596,19 @@ class SummariesAPI(LoginRequiredMixin, View):
         result = {}
         result_list = []
         if type:
-            # summary_list = Summary.objects.filter(type=type,status=status).values('id','type','name','ack','comment','first_event','last_event','trend','status','sn_incident__number')
             summary_list = Summary.objects.filter(type=type,status=status)
         else:
-            # summary_list = Summary.objects.filter(status=status).values('id','type','name','ack','comment','first_event','last_event','trend','status','sn_incident__number')
             summary_list = Summary.objects.filter(status=status)
         
         for summary in summary_list:
-            # unreachables = summary.unreachables.all()
             unreachables = summary.unreachables.values('device__name','device__sysName','device__ip4addr').order_by('device__name').distinct()
-            logger.debug("unreachables {}".format(unreachables))
             data = {
                 'id': summary.id,
                 'type': summary.type,
                 'name': summary.name,
                 'ack': summary.ack,
                 'ack_by': summary.ack_by,
+                'ack_at': summary.ack_at,
                 'comment': summary.comment,
                 'first_event': summary.first_event,
                 'last_event': summary.last_event,
@@ -625,8 +622,7 @@ class SummariesAPI(LoginRequiredMixin, View):
                 data['sn_incident__number'] = None
             result_list.append(data)
 
-        # result = {"result": list(summary_list)}
-        logger.debug("result {}".format(result_list))
+        # logger.debug("result {}".format(result_list))
         result = {"result": result_list}
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
