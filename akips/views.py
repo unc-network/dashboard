@@ -585,6 +585,20 @@ class SetMaintenanceView(LoginRequiredMixin, View):
             return JsonResponse(result)
 
 
+class SummariesAPI(View):
+    ''' API view to export all current summary data'''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {}
+        summary_list = Summary.objects.filter(status='Open').values('id','type','name','ack','first_event','last_event','trend','status','sn_incident__number')
+        
+        result = {"result": list(summary_list)}
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
 class SetComment(LoginRequiredMixin, View):
     ''' API call to set the comment for a summary '''
     pretty_print = True

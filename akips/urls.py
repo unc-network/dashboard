@@ -30,18 +30,26 @@ urlpatterns = [
     path('ajax/trapcard/', views.TrapCard.as_view(), name='trap_card'),
     path('ajax/speccard/', views.SpecialityCard.as_view(), name='spec_card'),
 
-    # API Update Views
+    # Device API
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/status', views.StatusExportView.as_view(), name='status_export'),
+
+    # Summary API
+    path('api/summaries/', views.SummariesAPI.as_view(), name='summary_all'),
+    #path('api/summary/<summary_id>/', views.SummaryAPI.as_view(), name='summary'),
     path('api/summary/<summary_id>/ack', views.AckView.as_view(), name='ack'),
     path('api/summary/<summary_id>/comment', views.SetComment.as_view(), name='set_comment'),
     # path('api/summary/<summary_id>/incident', views.SetIncident.as_view(), name='set_incident'),
+
+    # Trap API
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
     path('api/trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),
     # path('api/trap/clear-all', views.ClearTrapView.as_view(), name='clear_trap_all'),
+
+    # UX API
     path('api/chart/', views.ChartDataView.as_view(), name='chart_data'),
-    path('api/profile/', views.SetUserProfileView.as_view(), name='profile_api'),
     path('api/notifications/', views.UserAlertView.as_view(), name='api_notifications'),
+    path('api/profile/', views.SetUserProfileView.as_view(), name='profile_api'),
 
     # Hibernation Request
     #path('hibernation/', views.HibernationView.as_view(), name='hibernation'),
