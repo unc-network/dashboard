@@ -602,6 +602,7 @@ class SummariesAPI(LoginRequiredMixin, View):
         
         for summary in summary_list:
             unreachables = summary.unreachables.values('device__name','device__sysName','device__ip4addr').order_by('device__name').distinct()
+            batteries = summary.batteries.values('device__name','device__sysName','device__ip4addr').order_by('device__name').distinct()
             data = {
                 'id': summary.id,
                 'type': summary.type,
@@ -614,7 +615,8 @@ class SummariesAPI(LoginRequiredMixin, View):
                 'last_event': summary.last_event,
                 'trend': summary.trend,
                 'status': summary.status,
-                'unreachables': list(unreachables)
+                'unreachables': list(unreachables),
+                'batteries': list(batteries)
             }
             if summary.sn_incident:
                 data['sn_incident__number'] = summary.sn_incident.number
