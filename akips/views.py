@@ -585,7 +585,7 @@ class SetMaintenanceView(LoginRequiredMixin, View):
             return JsonResponse(result)
 
 
-class SummariesAPI(View):
+class SummariesAPI(LoginRequiredMixin, View):
     ''' API view to export all current summary data'''
     pretty_print = True
 
