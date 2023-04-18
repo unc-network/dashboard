@@ -551,15 +551,15 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
 class DevicesAPI(View):
     ''' API view to export device definitions'''
-    pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
         result = {}
         devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate')
         
         result = {"result": list(devices)}
         # Return the results
-        if self.pretty_print:
+        if pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
@@ -600,24 +600,24 @@ class SetMaintenanceView(LoginRequiredMixin, View):
 
 class UnreachablesAPI(View):
     ''' API view to export unreachable definitions'''
-    pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
         result = {}
         unreachables = Unreachable.objects.filter(status='Open').values('id','ping_state','snmp_state','event_start','device__name','device__ip4addr','device__sysName','device__maintenance','device__hibernate')
         
         result = {"result": list(unreachables)}
         # Return the results
-        if self.pretty_print:
+        if pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
 
 class SummariesAPI(LoginRequiredMixin, View):
     ''' API view to export all current summary data'''
-    pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
         type = request.GET.get('type', None)
         status = request.GET.get('status', 'Open')
         logger.debug("Type is {}".format(type))
@@ -654,7 +654,7 @@ class SummariesAPI(LoginRequiredMixin, View):
 
         # logger.debug("result {}".format(result_list))
         result = {"result": result_list}
-        if self.pretty_print:
+        if pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
