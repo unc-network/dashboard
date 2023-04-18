@@ -248,7 +248,7 @@
             $('<input></input>')
                 .attr({
                     'type': 'text',
-                    'name': 'fname',
+                    'name': 'comment_text',
                     'class': 'form-control input-sm txt_comment',
                     'size': '20',
                     'value': comment
@@ -402,7 +402,7 @@
         // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
             remaining = max_remaining;
-            if ( $('#refresh-toggle').is(':checked') ) {
+            if ( $('#refresh-toggle').is(':checked') && $("input[name=comment_text]:focus").length == 0 ) {
                 refresh_cards();
                 refresh_chart(chart);
             }
