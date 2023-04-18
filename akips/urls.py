@@ -35,6 +35,9 @@ urlpatterns = [
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/status', views.StatusExportView.as_view(), name='status_export'),
 
+    # Unreachables API
+    path('api/unreachables/', views.UnreachablesAPI.as_view(), name='unreachables_all'),
+
     # Summary API
     path('api/summaries/', views.SummariesAPI.as_view(), name='summary_all'),
     #path('api/summary/<summary_id>/', views.SummaryAPI.as_view(), name='summary'),
