@@ -31,6 +31,7 @@ urlpatterns = [
     path('ajax/speccard/', views.SpecialityCard.as_view(), name='spec_card'),
 
     # Device API
+    path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/status', views.StatusExportView.as_view(), name='status_export'),
 

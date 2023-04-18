@@ -549,6 +549,20 @@ class CreateIncidentView(LoginRequiredMixin, View):
             context['form'] = form
         return render(request, self.template_name, context=context)
 
+class DevicesAPI(View):
+    ''' API view to export device definitions'''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {}
+        devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate')
+        
+        result = {"result": list(devices)}
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
 
 class SetMaintenanceView(LoginRequiredMixin, View):
     ''' API view '''
