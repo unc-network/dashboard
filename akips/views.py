@@ -1165,7 +1165,7 @@ def process_webhook_payload(payload):
         logger.warn("Webhook call from {} could not be mapped to a device record".format(payload['device']))
         return False
 
-    if payload['type'] == 'Trap':
+    if payload['type'] == 'Trap' and not device.maintenance:
         # Check for Open duplicates
         duplicates = Trap.objects.filter( 
             device=device, 
