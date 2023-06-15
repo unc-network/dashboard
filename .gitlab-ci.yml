@@ -14,7 +14,7 @@ workflow:
 # Define variables needed by the various jobs
 variables:
   # Tell Docker CLI how to talk to Docker daemon
-  DOCKER_HOST: tcp://dockerdaemon:2375
+  DOCKER_HOST: tcp://dockerdaemon:2376
   # Use the overlayfs driver for improved performance
   DOCKER_DRIVER: overlay2
   # Disable TLS since we're running inside local network
@@ -80,6 +80,7 @@ deploy-ocnes:
   services:
     - name: docker:dind
       alias: dockerdaemon
+      command: ["--tls=false"]
   variables:
     # Next line needed so client and server can communicate with same certs
     # DOCKER_TLS_CERTDIR: "/certs"
@@ -88,12 +89,6 @@ deploy-ocnes:
     #
     # The following hack is needed to make sure the Docker daemon is fully up
     # before attempting to build an image. Without this, expect an error.
-    - echo "Sleeping 15s..."
-    - sleep 15
-    #command to check docker port running
-    - apt-get install -y nmap
-    - nmap -sT -p- docker
-    - sleep 15
     - echo "Waiting for Docker daemon to start..."
     - until docker info; do sleep 1; done
     - ps -ef
