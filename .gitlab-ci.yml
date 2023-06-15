@@ -88,7 +88,9 @@ deploy-ocnes:
     #
     # The following hack is needed to make sure the Docker daemon is fully up
     # before attempting to build an image. Without this, expect an error.
+    - echo "Waiting for Docker daemon to start..."
     - until docker info; do sleep 1; done
+    - ps -ef
   script:
     - echo "Building OCNES container..."
     - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
