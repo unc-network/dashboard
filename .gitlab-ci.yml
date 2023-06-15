@@ -68,7 +68,7 @@ django-tests:
 
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
-# Stage 3:  Deploy the ONES app
+# Stage 3:  Deploy the OCNES app
 deploy-ocnes:
   stage: deploy
   environment: production
@@ -78,11 +78,11 @@ deploy-ocnes:
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
   services:
-    - docker:dind
+    - name: docker:dind
       alias: dockerdaemon
   variables:
     # Next line needed so client and server can communicate with same certs
-    DOCKER_TLS_CERTDIR: "/certs"
+    # DOCKER_TLS_CERTDIR: "/certs"
   before_script:
     # Override default to prevent trying to install updates here which will fail.
     #
