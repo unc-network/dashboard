@@ -73,7 +73,7 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: docker:latest
+  image: docker:stable
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
