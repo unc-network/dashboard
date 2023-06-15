@@ -79,6 +79,7 @@ deploy-ocnes:
   # service provides Docker daemon
   services:
     - docker:dind
+      alias: dockerdaemon
   variables:
     # Next line needed so client and server can communicate with same certs
     DOCKER_TLS_CERTDIR: "/certs"
