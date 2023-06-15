@@ -90,9 +90,6 @@ deploy-ocnes:
     # before attempting to build an image. Without this, expect an error.
     - until docker info; do sleep 1; done
   script:
-    #command to check docker port running
-    - apt-get install -y nmap
-    - nmap -sT -p- docker
     - echo "Building OCNES container..."
     - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
     - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
