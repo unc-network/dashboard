@@ -14,7 +14,7 @@ workflow:
 # Define variables needed by the various jobs
 variables:
   # Tell Docker CLI how to talk to Docker daemon
-  DOCKER_HOST: tcp://dockerdaemon:2376
+  DOCKER_HOST: tcp://dockerdaemon:2375
   # Use the overlayfs driver for improved performance
   DOCKER_DRIVER: overlay2
   # Disable TLS since we're running inside local network
@@ -73,7 +73,7 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: docker:stable
+  image: docker:cli
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
