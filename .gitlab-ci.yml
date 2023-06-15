@@ -61,8 +61,8 @@ django-tests:
 
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
-# Stage 3:  Deploy the app
-deploy:
+# Stage 3:  Deploy the ONES app
+deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
@@ -75,9 +75,49 @@ deploy:
   variables:
     # Next line needed so client and server can communicate with same certs
     DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    # Override default to prevent trying to install updates here which will fail.
+    #
+    # The following hack is needed to make sure the Docker daemon is fully up
+    # before attempting to build an image. Without this, expect an error.
+    - until docker info; do sleep 1; done
   script:
-    - echo "Building containers..."
+    - echo "Building OCNES container..."
+    - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+    - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
+    - echo "Push OCNES container to registry..."
+    - docker push registry.sc.its.unc.edu/network/dashboard/ocnes:latest
 
+# Stage 3:  Deploy Celery container if Dockerfile.Celery changes
+deploy-celery:
+  stage: deploy
+  environment: production
+  only:
+    changes:
+      - Dockerfile.Celery
+  # image provides Docker client
+  image: docker:stable
+  # [job container] ===> [service container]
+  # e.g., [python container] ===> [mysql db container]
+  # service provides Docker daemon
+  services:
+    - name: docker:dind
+      alias: dockerdaemon
+  # variables:
+    # Next line needed so client and server can communicate with same certs
+    # DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    # Override default to prevent trying to install updates here which will fail.
+    #
+    # The following hack is needed to make sure the Docker daemon is fully up
+    # before attempting to build an image. Without this, expect an error.
+    - until docker info; do sleep 1; done
+  script:
+    - echo "Building Celery container..."
+    - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+    - docker build -t registry.sc.its.unc.edu/network/dashboard/celery:latest -f ./Dockerfile.Celery .
+    - echo "Push Celery container to registry..."
+    - docker push registry.sc.its.unc.edu/network/dashboard/celery:latest
 
 
 # References:
