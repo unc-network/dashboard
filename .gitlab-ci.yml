@@ -88,6 +88,12 @@ deploy-ocnes:
     #
     # The following hack is needed to make sure the Docker daemon is fully up
     # before attempting to build an image. Without this, expect an error.
+    - echo "Sleeping 15s..."
+    - sleep 15
+    #command to check docker port running
+    - apt-get install -y nmap
+    - nmap -sT -p- docker
+    - sleep 15
     - echo "Waiting for Docker daemon to start..."
     - until docker info; do sleep 1; done
     - ps -ef
