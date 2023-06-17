@@ -1,8 +1,8 @@
 # List of stages for jobs, and their order of execution
 # All jobs within a stage run in parallel
 stages:
-  - build
-  - test
+  # - build
+  # - test
   - deploy
 
 workflow:
