@@ -73,7 +73,7 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: alpine
+  image: docker
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
@@ -108,7 +108,7 @@ deploy-celery:
     changes:
       - Dockerfile.Celery
   # image provides Docker client
-  image: docker:stable
+  image: docker
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
