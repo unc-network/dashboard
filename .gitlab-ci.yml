@@ -85,6 +85,7 @@ deploy-ocnes:
     # Next line needed so client and server can communicate with same certs
     # DOCKER_TLS_CERTDIR: "/certs"
   before_script:
+    - echo "This is here to prevent default apt-get calls"
     # Override default to prevent trying to install updates here which will fail.
     #
     # The following hack is needed to make sure the Docker daemon is fully up
