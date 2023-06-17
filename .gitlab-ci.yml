@@ -73,7 +73,7 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: docker
+  image: alpine
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
@@ -95,8 +95,10 @@ deploy-ocnes:
     # - apk add nmap
     # - nmap -sT -p- docker
   script:
-    - docker --version
-    - docker pull alpine
+    # - docker --version
+    # - docker pull alpine
+    - apk add nmap
+    - nmap -sT -p- docker
     # - echo "Building OCNES container..."
     # - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
     # - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
