@@ -73,7 +73,7 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: docker:cli
+  image: alpine
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
@@ -91,7 +91,8 @@ deploy-ocnes:
     # before attempting to build an image. Without this, expect an error.
     - echo "Waiting for Docker daemon to start..."
     - until docker info; do sleep 1; done
-    - ps -ef
+    - apk add nmap
+    - nmap -sT -p- docker
   script:
     - echo "Building OCNES container..."
     - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
