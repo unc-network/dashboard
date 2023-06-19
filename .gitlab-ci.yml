@@ -99,7 +99,7 @@ deploy-ocnes:
     # - docker pull alpine
     # - apk add nmap
     # - nmap -sT -p- 127.0.0.1
-    - ps -ef
+    - ps -aux
     # - echo "Building OCNES container..."
     # - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
     # - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
