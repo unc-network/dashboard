@@ -14,11 +14,11 @@ workflow:
 # Define variables needed by the various jobs
 variables:
   # Tell Docker CLI how to talk to Docker daemon
-  DOCKER_HOST: tcp://dockerdaemon:2375
+  # DOCKER_HOST: tcp://dockerdaemon:2375
   # # Use the overlayfs driver for improved performance
   # DOCKER_DRIVER: overlay2
   # # Disable TLS since we're running inside local network
-  DOCKER_TLS_CERTDIR: ""
+  # DOCKER_TLS_CERTDIR: ""
   # POSTGRES_DB: $POSTGRES_DB
   # POSTGRES_USER: $POSTGRES_USER
   # POSTGRES_PASSWORD: $POSTGRES_PASSWORD
