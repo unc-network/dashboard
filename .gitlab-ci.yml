@@ -15,7 +15,7 @@ workflow:
 variables:
   # Tell Docker CLI how to talk to Docker daemon
   # DOCKER_HOST: tcp://dockerdaemon:2375
-  DOCKER_HOST: tcp://localhost:2375
+  # DOCKER_HOST: tcp://localhost:2375
   # # Use the overlayfs driver for improved performance
   # DOCKER_DRIVER: overlay2
   # # Disable TLS since we're running inside local network
@@ -73,8 +73,22 @@ default:
 deploy-ocnes:
   stage: deploy
   environment: production
+  # From https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+  rules:
+    - if: $CI_COMMIT_TAG
+
+
+
   # image provides Docker client
-  image: docker:dind
+  # image: docker:dind
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
@@ -82,7 +96,7 @@ deploy-ocnes:
   #   - name: docker:dind
   #     alias: dockerdaemon
       # command: ["--tls=false"]
-  variables:
+  # variables:
     # Next line needed so client and server can communicate with same certs
     # DOCKER_TLS_CERTDIR: "/certs"
   before_script:
@@ -91,13 +105,13 @@ deploy-ocnes:
     #
     # The following hack is needed to make sure the Docker daemon is fully up
     # before attempting to build an image. Without this, expect an error.
-    - echo "Waiting for Docker daemon to start..."
-    - until docker info; do sleep 1; done
-  script:
-    - docker --version
-    # - docker pull alpine
-    - apk add nmap
-    - nmap -sT -p- docker
+    # - echo "Waiting for Docker daemon to start..."
+    # - until docker info; do sleep 1; done
+  # script:
+  #   - docker --version
+  #   # - docker pull alpine
+  #   - apk add nmap
+  #   - nmap -sT -p- docker
     # - echo "Building OCNES container..."
     # - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
     # - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
