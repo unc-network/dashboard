@@ -73,13 +73,13 @@ deploy-ocnes:
   stage: deploy
   environment: production
   # image provides Docker client
-  image: docker:stable
+  image: docker:dind
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
-  services:
-    - name: docker:dind
-      alias: dockerdaemon
+  # services:
+  #   - name: docker:dind
+  #     alias: dockerdaemon
       # command: ["--tls=false"]
   variables:
     # Next line needed so client and server can communicate with same certs
@@ -90,12 +90,10 @@ deploy-ocnes:
     #
     # The following hack is needed to make sure the Docker daemon is fully up
     # before attempting to build an image. Without this, expect an error.
-    # - echo "Waiting for Docker daemon to start..."
-    # - until docker info; do sleep 1; done
-    # - apk add nmap
-    # - nmap -sT -p- docker
+    - echo "Waiting for Docker daemon to start..."
+    - until docker info; do sleep 1; done
   script:
-    # - docker --version
+    - docker --version
     # - docker pull alpine
     - apk add nmap
     - nmap -sT -p- docker
