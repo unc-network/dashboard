@@ -15,6 +15,7 @@ workflow:
 variables:
   # Tell Docker CLI how to talk to Docker daemon
   # DOCKER_HOST: tcp://dockerdaemon:2375
+  DOCKER_HOST: tcp://localhost:2375
   # # Use the overlayfs driver for improved performance
   # DOCKER_DRIVER: overlay2
   # # Disable TLS since we're running inside local network
@@ -74,13 +75,6 @@ deploy-ocnes:
   environment: production
   # image provides Docker client
   image: docker:dind
-  securityContext:
-    privileged: true
-  env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2376
-    - name: DOCKER_TLS_CERTDIR
-      value: /certs
   # [job container] ===> [service container]
   # e.g., [python container] ===> [mysql db container]
   # service provides Docker daemon
