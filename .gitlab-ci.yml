@@ -82,8 +82,8 @@ deploy-ocnes:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES"
       --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
-  rules:
-    - if: $CI_COMMIT_TAG
+  # rules:
+  #   - if: $CI_COMMIT_TAG
 
 
 
