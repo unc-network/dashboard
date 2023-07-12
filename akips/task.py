@@ -603,6 +603,7 @@ def refresh_unreachable(mode='poll'):
             bldg_name = ups.device.building_name
         else:
             bldg_name = 'Other'
+        logger.debug("Using tier name {} and building name {}".format(tier_name,bldg_name))
 
         # Find the tier summary to update
         try:
@@ -624,6 +625,7 @@ def refresh_unreachable(mode='poll'):
             # t_summary = Summary.objects.filter(type='Distribution',name=ups.device.tier,status='Open').first()
             t_summary = Summary.objects.filter(type='Distribution',name=tier_name,status='Open').first()
             t_created = False
+            logger.debug("Hit duplicate summary for tier {}".format(tier_name))
         if t_created:
             logger.debug("Tier summary created {}".format(ups.device.tier))
         else:
@@ -656,6 +658,7 @@ def refresh_unreachable(mode='poll'):
             # b_summary = Summary.objects.filter(type='Building',name=ups.device.building_name,status='Open').first()
             b_summary = Summary.objects.filter(type='Building',name=bldg_name,status='Open').first()
             b_created = False
+            logger.debug("Hit duplicate summary for building {}".format(bldg_name))
         if b_created:
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
