@@ -77,6 +77,8 @@ deploy-ocnes:
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
     entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
   script:
     - echo "List all variables available to script"
     - export
