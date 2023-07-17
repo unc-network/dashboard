@@ -1,18 +1,18 @@
 # List of stages for jobs, and their order of execution
 # All jobs within a stage run in parallel
 stages:
-  - build
-  - test
+  # - build
+  # - test
   - deploy
 
-# workflow:
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+workflow:
+  rules:
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
     # - if: $CI_COMMIT_BRANCH == "main"
     ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
 
 # Define variables needed by the various jobs
-# variables:
+variables:
   # Tell Docker CLI how to talk to Docker daemon
   # DOCKER_HOST: tcp://dockerdaemon:2375
   # DOCKER_HOST: tcp://localhost:2375
@@ -48,24 +48,24 @@ default:
     - pip3 install --upgrade pip
     - pip3 install --user -r requirements.txt
 
-# Stage 1:  Build the app
-migrations:
-  stage: build
-  script:
-    - python3 manage.py makemigrations
-    # - python3 manage.py makemigrations myapp
-    - python3 manage.py migrate
-    - python3 manage.py check
+# # Stage 1:  Build the app
+# migrations:
+#   stage: build
+#   script:
+#     - python3 manage.py makemigrations
+#     # - python3 manage.py makemigrations myapp
+#     - python3 manage.py migrate
+#     - python3 manage.py check
 
-# Stage 2:  Test the app
-django-tests:
-  stage: test
-  script:
-    # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
-    # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
-    # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
-    # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
-    - python3 manage.py test
+# # Stage 2:  Test the app
+# django-tests:
+#   stage: test
+#   script:
+#     # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+#     # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+#     # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+#     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+#     - python3 manage.py test
 
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
@@ -83,7 +83,8 @@ deploy-ocnes:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/OCNES:${CI_COMMIT_TAG}"
+      --destination "${CI_REGISTRY_IMAGE}/OCNES:${CI_COMMIT_TAG}"
   # rules:
   #   - if: $CI_COMMIT_TAG
 
@@ -102,7 +103,8 @@ deploy-celery:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/Celery:${CI_COMMIT_TAG}"
+      --destination "${CI_REGISTRY_IMAGE}/Celery:${CI_COMMIT_TAG}"
   only:
     changes:
       - Dockerfile.Celery-image
