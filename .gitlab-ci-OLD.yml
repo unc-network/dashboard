@@ -1,3 +1,6 @@
+# OLD CI/CD pipeline file
+# Keeping around for notes so I can prune production file
+
 # List of stages for jobs, and their order of execution
 # All jobs within a stage run in parallel
 stages:
@@ -69,10 +72,11 @@ default:
 
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
-# Stage 3:  Create OCNES image
+# Stage 3:  Deploy the OCNES app
 deploy-ocnes:
   stage: deploy
   environment: production
+  # From https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
     entrypoint: [""]
@@ -88,10 +92,46 @@ deploy-ocnes:
   #   - if: $CI_COMMIT_TAG
 
 
-# Stage 3:  Create Celery image if Dockerfile.Celery changes
+  # image provides Docker client
+  # image: docker:dind
+  # [job container] ===> [service container]
+  # e.g., [python container] ===> [mysql db container]
+  # service provides Docker daemon
+  # services:
+  #   - name: docker:dind
+  #     alias: dockerdaemon
+      # command: ["--tls=false"]
+  # variables:
+    # Next line needed so client and server can communicate with same certs
+    # DOCKER_TLS_CERTDIR: "/certs"
+  # before_script:
+  #   - echo "This is here to prevent default apt-get calls."
+    # Override default to prevent trying to install updates here which will fail.
+    #
+    # The following hack is needed to make sure the Docker daemon is fully up
+    # before attempting to build an image. Without this, expect an error.
+    # - echo "Waiting for Docker daemon to start..."
+    # - until docker info; do sleep 1; done
+  # script:
+  #   - docker --version
+  #   # - docker pull alpine
+  #   - apk add nmap
+  #   - nmap -sT -p- docker
+    # - echo "Building OCNES container..."
+    # - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+    # - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
+    # - echo "Push OCNES container to registry..."
+    # - docker push registry.sc.its.unc.edu/network/dashboard/ocnes:latest
+
+
+# Stage 3:  Deploy Celery container if Dockerfile.Celery changes
 deploy-celery:
   stage: deploy
   environment: production
+  only:
+    changes:
+      - Dockerfile.Celery-image
+  # From https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
     entrypoint: [""]
@@ -103,13 +143,34 @@ deploy-celery:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
-  only:
-    changes:
-      - Dockerfile.Celery-image
+
+
+#   # image provides Docker client
+#   image: docker
+#   # [job container] ===> [service container]
+#   # e.g., [python container] ===> [mysql db container]
+#   # service provides Docker daemon
+#   services:
+#     - name: docker:dind
+#       alias: dockerdaemon
+#   # variables:
+#     # Next line needed so client and server can communicate with same certs
+#     # DOCKER_TLS_CERTDIR: "/certs"
+#   before_script:
+#     # Override default to prevent trying to install updates here which will fail.
+#     #
+#     # The following hack is needed to make sure the Docker daemon is fully up
+#     # before attempting to build an image. Without this, expect an error.
+#     - until docker info; do sleep 1; done
+#   script:
+#     - echo "Building Celery container..."
+#     - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+#     - docker build -t registry.sc.its.unc.edu/network/dashboard/celery:latest -f ./Dockerfile.Celery .
+#     - echo "Push Celery container to registry..."
+#     - docker push registry.sc.its.unc.edu/network/dashboard/celery:latest
 
 
 # References:
 # From GitLab example templates: https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates
 # - Testing Django with MySQL: https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Django.gitlab-ci.yml
 # - https://docs.gitlab.com/ee/ci/services/postgres.html
-# - For container image creation: https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
