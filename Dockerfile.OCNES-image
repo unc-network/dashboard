@@ -1,7 +1,5 @@
 # Use official Python image from hub.docker.com
-# If you have M1 Mac, use
-# FROM: arm64v8/python
-FROM ${DOCKER_ARCH}python
+FROM python
 
 # NOTE:  To fully mimic production, we can set tags to match specific versions
 #        of things like Python.
@@ -14,11 +12,13 @@ RUN apt-get -y install libsasl2-dev python3-dev libldap2-dev libssl-dev
 
 RUN cd /
 
-# Mount host directory where docker-compose.yml is located, which should be
-# root of dashboard project source code so it appears as /dashboard in the container.
-# This exposes things like the requirements.txt file so we can install all the relevant
-# Python modules for this project
-RUN --mount=type=bind,source=./,target=/dashboard pip install -r /dashboard/requirements.txt
+# Since this Dockerfile is used specifically by GitLab CI/CD and Kaniko to
+# create an image to run in our K3s environ, we cannot mount a local file
+# system. So we need to copy the project files into the container's file
+# system to exposes things like the requirements.txt file so we can install
+# all the relevant Python modules for this project
+COPY . /dashboard/
+RUN pip install -r /dashboard/requirements.txt
 RUN pip install gunicorn
 
 RUN cd /dashboard

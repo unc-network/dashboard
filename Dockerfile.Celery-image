@@ -1,0 +1,44 @@
+# Use official Python image from hub.docker.com
+FROM python
+
+# NOTE:  To fully mimic production, we can set tags to match specific versions
+#        of things like Python.
+#        Also be aware that trying to use python:3-alpine will fail due to the
+#        need for additional packages for LDAP/etc. Hence using stock image.
+
+# Install needed modules so LDAP bits in pip modules will install properly
+RUN apt-get update
+RUN apt-get -y install libsasl2-dev python3-dev libldap2-dev libssl-dev
+
+# Prep a non-root user to run Celery under
+ARG USERNAME=celery
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+    #
+    # [Optional] Add sudo support. Omit if you don't need to install software after connecting.
+    # && apt-get update \
+    # && apt-get install -y sudo \
+    # && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    # && chmod 0440 /etc/sudoers.d/$USERNAME
+
+RUN cd /
+
+# Since this Dockerfile is used specifically by GitLab CI/CD and Kaniko to
+# create an image to run in our K3s environ, we cannot mount a local file
+# system. So we need to copy the project files into the container's file
+# system to exposes things like the requirements.txt file so we can install
+# all the relevant Python modules for this project
+COPY . /dashboard/
+RUN pip install -r /dashboard/requirements.txt
+#RUN pip install celery "django<4" django_celery_results django_celery_beat python-dotenv redis
+
+RUN cd /dashboard
+
+# [Optional] Set the default user. Omit if you want to keep the default as root.
+USER $USERNAME
+
+CMD [ "echo", "Celery workers running..."]
