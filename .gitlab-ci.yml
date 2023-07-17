@@ -12,7 +12,7 @@ workflow:
     ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
 
 # Define variables needed by the various jobs
-variables:
+# variables:
   # Tell Docker CLI how to talk to Docker daemon
   # DOCKER_HOST: tcp://dockerdaemon:2375
   # DOCKER_HOST: tcp://localhost:2375
