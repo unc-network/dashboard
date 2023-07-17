@@ -33,6 +33,7 @@ RUN cd /
 # system to exposes things like the requirements.txt file so we can install
 # all the relevant Python modules for this project
 COPY . /dashboard/
+RUN pip install --upgrade pip
 RUN pip install -r /dashboard/requirements.txt
 #RUN pip install celery "django<4" django_celery_results django_celery_beat python-dotenv redis
 
