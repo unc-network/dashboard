@@ -83,8 +83,8 @@ deploy-ocnes:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/OCNES:${CI_COMMIT_TAG}"
       --destination "${CI_REGISTRY_IMAGE}/OCNES:${CI_COMMIT_TAG}"
+      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/OCNES:${CI_COMMIT_TAG}"
   # rules:
   #   - if: $CI_COMMIT_TAG
 
@@ -103,8 +103,8 @@ deploy-celery:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/Celery:${CI_COMMIT_TAG}"
       --destination "${CI_REGISTRY_IMAGE}/Celery:${CI_COMMIT_TAG}"
+      # --destination "${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/Celery:${CI_COMMIT_TAG}"
   only:
     changes:
       - Dockerfile.Celery-image
