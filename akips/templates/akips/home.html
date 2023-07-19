@@ -277,7 +277,8 @@
                     }
                 });
                 if (comment) {
-                    $(this).closest('.summary-comment').text(comment);
+                    //$(this).closest('.summary-comment').text(comment);
+                    $(this).closest('.summary-comment').html('<br>' + comment);
                 } else {
                     $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
                 }
@@ -302,7 +303,8 @@
                 }
             });
             if (comment) {
-                $(this).closest('.summary-comment').text(comment);
+                //$(this).closest('.summary-comment').text(comment);
+                $(this).closest('.summary-comment').html('<br>' + comment);
             } else {
                 $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
             }

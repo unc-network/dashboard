@@ -47,12 +47,12 @@
             <!-- <td class="font-weight-bold text-center"> -->
             <td>
                 <span class="font-weight-bold mr-2"><a href="{% url 'summary' summary.id %}"><i class="fas fa-caret-down"></i> {{ summary.name }}</a></span>
-                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
+                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}<br>{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
             </td>
             {% else %}
             <td>
                 <span class="mr-2"><a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a></span>
-                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
+                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}<br>{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
             </td>
             {% endif %}
             <td class="d-none d-md-table-cell">{{ summary.switch_count }}</td>
