@@ -28,7 +28,7 @@ from django.views.decorators.http import require_POST
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
 from .forms import IncidentForm, HibernateForm, PreferencesForm
-from .task import example_task
+from .task import refresh_ping_status, refresh_snmp_status
 from .utils import AKIPS, ServiceNow, pretty_duration
 
 # Get a instance of logger
@@ -810,6 +810,24 @@ class StatusExportView(View):
         status = Status.objects.filter(attribute='PING.icmpState').values('device__name','device__sysName','device__ip4addr','attribute','value','last_change')
         
         result = {"status": list(status)}
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+class RequestSync(LoginRequiredMixin,View):
+    ''' API view to trigger backend refresh job '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {
+            "status": 'submitted'
+        }
+        
+        refresh_ping_status.delay()
+        refresh_snmp_status.delay()
+
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})

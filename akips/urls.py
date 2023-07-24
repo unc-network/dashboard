@@ -36,6 +36,7 @@ urlpatterns = [
 
     # Status API
     path('api/status', views.StatusExportView.as_view(), name='status_export'),
+    path('api/sync', views.RequestSync.as_view(), name='request_sync'),
 
     # Unreachables API
     path('api/unreachables/', views.UnreachablesAPI.as_view(), name='unreachables_all'),
