@@ -9,14 +9,18 @@
 
 {% block no_heading %}
 <div class="row">
-    <!-- <div class="col text-left">
-        <button type="button" class="btn btn-primary" data-url="{% url 'request_sync' %}">Request Sync</button>
-    </div> -->
-    <div class="col text-right text-sm">
+    <div class="col-sm-6 my-auto text-left text-sm">
         <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
             <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
         </div>
+    </div>
+    <div class="col-sm-6 text-right">
+        <button type="submit" id="incident_button" class="btn btn-primary">Manage Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
+        {% if request.user|has_group:"refresh" %}
+        <button type="button" id="sync_button" class="btn btn-primary" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
+        {% endif %}
     </div>
 </div> 
 {% endblock %}
@@ -63,13 +67,13 @@
         </div>
     </div>
 
-    <div class="text-right p-3">
+    <!-- <div class="text-right p-3">
         {% if request.user|has_group:"refresh" %}
         <button type="button" id="sync_button" class="btn btn-primary" data-url="{% url 'request_sync' %}">Request AKiPS Sync</button>
         {% endif %}
         <button type="submit" id="incident_button" class="btn btn-primary">Associate Incident</button>
         <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
-    </div>
+    </div> -->
 
 </form>
 {% endblock %}
