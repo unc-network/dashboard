@@ -16,10 +16,10 @@
         </div>
     </div>
     <div class="col-sm-6 text-right">
-        <button type="submit" id="incident_button" class="btn btn-primary">Manage Incident</button>
-        <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
+        <button type="submit" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
         {% if request.user|has_group:"refresh" %}
-        <button type="button" id="sync_button" class="btn btn-primary" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
+        <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
         {% endif %}
     </div>
 </div> 
