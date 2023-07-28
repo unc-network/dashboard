@@ -395,6 +395,13 @@
             var url = $(this).data("url");
             console.log("requesting data sync " + url)
             $.get(url, {})
+            $(document).Toasts('create', {
+                class: 'bg-info',
+                title: 'AKiPS Status Refresh',
+                body: 'Ping and SNMP status is being updated from AKiPS.',
+                autohide: true,
+                delay: 30000
+            });
         });
 
         // Populate the page content for the first time
