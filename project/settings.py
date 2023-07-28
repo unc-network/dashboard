@@ -301,14 +301,20 @@ GROUPER_PREFIX='unc:app:its:net:routerproxy'
 
 # CELERY related settings
 BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0') 
-CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_SEND_TASK_ERROR_EMAILS = True
+
+# django-celery-results
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_RESULT_EXTENDED = True
+
+# django-celery-beat
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
