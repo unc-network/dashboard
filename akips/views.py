@@ -1168,7 +1168,7 @@ def process_webhook_payload(payload):
         # logger.warn("Trap {} received from unknown device {} with address {}".format(
         #     payload['trap_oid'], payload['device'], payload['ipaddr']))
 
-    # Check the api for alternte addresses if we don't have a device match
+    # Check the api for alternate addresses if we don't have a device match
     if not device and 'ipaddr' in payload:
         akips = AKIPS()
         device_name = akips.get_device_by_ip(payload['ipaddr'])
