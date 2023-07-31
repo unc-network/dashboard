@@ -1005,7 +1005,7 @@ class ChartDataView(LoginRequiredMixin, View):
         keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         #logger.debug("time stamps {}".format(keyList))
 
-        # Initalize the graph time periods
+        # Initialize the graph time periods
         event_data = {}
         trap_data = {}
         battery_data = {}
