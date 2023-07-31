@@ -561,7 +561,7 @@ def refresh_unreachable(mode='poll'):
             # Find the specialty summary to update
             try:
                 s_summary, s_created = Summary.objects.get_or_create(
-                    type='Speciality',
+                    type='Specialty',
                     name= unreachable.device.group,
                     status='Open',
                     defaults={
@@ -573,7 +573,7 @@ def refresh_unreachable(mode='poll'):
                 )
             except Summary.MultipleObjectsReturned:
                 # if we get more than one, just use the first
-                s_summary = Summary.objects.filter(type='Speciality',name=unreachable.device.group,status='Open').first()
+                s_summary = Summary.objects.filter(type='Specialty',name=unreachable.device.group,status='Open').first()
                 s_created = False
             if s_created:
                 logger.debug("Specialty summary created {}".format( unreachable.device.group ))

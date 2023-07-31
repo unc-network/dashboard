@@ -201,13 +201,13 @@ class BuildingCard(LoginRequiredMixin, View):
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
         return render(request, self.template_name, context=context)
 
-class SpecialityCard(LoginRequiredMixin, View):
+class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_special.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
-        types = ['Speciality']
+        types = ['Specialty']
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 

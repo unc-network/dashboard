@@ -128,7 +128,7 @@ class Summary(models.Model):
         ('Distribution', 'Distribution'),
         ('Building', 'Building'),
         ('Critical', 'Critical'),
-        ('Speciality', 'Speciality'),
+        ('Specialty', 'Specialty'),
     )
     STATUS_CHOICES = (
         ('Open', 'Open'),

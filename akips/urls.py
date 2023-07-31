@@ -28,7 +28,7 @@ urlpatterns = [
     path('ajax/tiercard/', views.TierCard.as_view(), name='tier_card'),
     path('ajax/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
     path('ajax/trapcard/', views.TrapCard.as_view(), name='trap_card'),
-    path('ajax/speccard/', views.SpecialityCard.as_view(), name='spec_card'),
+    path('ajax/speccard/', views.SpecialtyCard.as_view(), name='spec_card'),
 
     # Device API
     path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
