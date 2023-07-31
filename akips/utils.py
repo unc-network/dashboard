@@ -107,7 +107,7 @@ class AKIPS:
         return None
 
     def set_maintenance_mode(self, device_name, mode='True'):
-        ''' Set mantenance mode on or off for a device '''
+        ''' Set maintenance mode on or off for a device '''
         params = {
             'function': 'web_manual_grouping',
             'type': 'device',
@@ -155,7 +155,7 @@ class AKIPS:
         return None
 
     def get_device_by_ip(self, ipaddr, use_cache=True):
-        # Search for a device by an alterate IP address
+        # Search for a device by an alternate IP address
         # This makes use of a special site script and not the normal api
         cache_key = 'device_name_' + ipaddr
         cache_timeout = 3600

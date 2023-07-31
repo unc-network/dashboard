@@ -311,7 +311,7 @@ def refresh_battery_test_status():
 
 @shared_task
 def refresh_nit():
-    logger.info("Refeshing nit device data")
+    logger.info("Refreshing nit device data")
     now = timezone.now()
     sleep_delay = 0
 
@@ -868,7 +868,7 @@ def cleanup_dashboard_data():
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
 
-    # delete clsoed unreachables based on age
+    # delete closed unreachables based on age
     Unreachable.objects.filter(status='Closed',event_start__lt=seven_days_ago,last_refresh__lt=seven_days_ago).delete()
 
     # Status objects
