@@ -50,5 +50,5 @@ class ServiceNowIncidentAdmin(admin.ModelAdmin):
     list_display = ['number', 'active', 'instance', 'sys_id']
 
 @admin.register(models.Profile)
-class ProfieleAdmin(admin.ModelAdmin):
+class ProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'voice_enabled']

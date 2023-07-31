@@ -12,7 +12,7 @@ from django.db.models import Count
 from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
 from akips.utils import AKIPS, NIT, ServiceNow
 
-# Get an isntace of a logger
+# Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 
