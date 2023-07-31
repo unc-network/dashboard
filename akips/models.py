@@ -18,7 +18,7 @@ class Device(models.Model):
     critical = models.BooleanField(default=False)
     tier = models.CharField(max_length=255, blank=True)
     building_name = models.CharField(max_length=255, blank=True)
-    hierarcy = models.CharField(max_length=255, blank=True)
+    hierarchy = models.CharField(max_length=255, blank=True)
     type = models.CharField(max_length=255, blank=True)
     maintenance = models.BooleanField(default=False)
     hibernate = models.BooleanField(default=False)

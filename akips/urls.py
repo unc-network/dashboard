@@ -18,7 +18,7 @@ urlpatterns = [
 
     # Event Focus Views
     #path('tier/<tier>/', views.TierView.as_view(), name='tier'),
-    #path('builiding/<bldg>/', views.BuildingView.as_view(), name='building'),
+    #path('building/<bldg>/', views.BuildingView.as_view(), name='building'),
     path('recent/', views.RecentSummaryView.as_view(), name='recent'),
     path('recent/unreachable', views.RecentUnreachablesView.as_view(), name='recent_unreachables'),
     path('recent/traps', views.RecentTrapsView.as_view(), name='recent_traps'),

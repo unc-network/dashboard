@@ -129,7 +129,7 @@
                             <td><a href="{% url 'device' unreachable.device.name %}">{% if unreachable.device.sysName %}{{ unreachable.device.sysName }}{% else %}{{unreachable.device.name}}{% endif %}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
+                            <!-- <td>{{ unreachable.device.hierarchy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
                             <!-- <td>{{ unreachable.last_refresh }}</td> -->
@@ -173,7 +173,7 @@
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
+                            <!-- <td>{{ unreachable.device.hierarchy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
                             <td>{{ unreachable.last_refresh|date:'m-d H:i:s' }}</td>

@@ -328,16 +328,16 @@ def refresh_nit():
         for device in device_data['nodes']:
             logger.debug("Updating device {}".format(device))
             if 'hierarchy' in device and device['hierarchy']:
-                hierarcy = device['hierarchy']
+                hierarchy = device['hierarchy']
                 if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD']:
                     type = 'SWITCH'
                 else:
                     type = device['hierarchy']
             elif 'type' in device and device['type']:
-                hierarcy = ''
+                hierarchy = ''
                 type = device['type'].upper()
             else:
-                hierarcy = ''
+                hierarchy = ''
                 type = ''
             if device['building_name'] is None:
                 device['building_name'] = ''
@@ -354,7 +354,7 @@ def refresh_nit():
                 # tier=device['tier1'],
                 # building_name=device['building_name'],
                 type=type.upper(),
-                hierarcy=hierarcy.upper(),
+                hierarchy=hierarchy.upper(),
                 # type=device['type'].upper()
                 # type=device['hierarchy'].upper()
                 inventory_url=inventory_url
