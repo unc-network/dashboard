@@ -26,9 +26,11 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from django_celery_results.models import TaskResult
+
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
 from .forms import IncidentForm, HibernateForm, PreferencesForm
-from .task import refresh_ping_status, refresh_snmp_status
+from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status
 from .utils import AKIPS, ServiceNow, pretty_duration
 
 # Get a instance of logger
@@ -822,11 +824,35 @@ class RequestSync(LoginRequiredMixin,View):
 
     def get(self, request, *args, **kwargs):
         result = {
-            "status": 'submitted'
+            "status": 'submitted',
+            "ping_sync_started": True,
+            "snmp_sync_started": True,
+            "ups_sync_started": True,
         }
         
-        refresh_ping_status.delay()
-        refresh_snmp_status.delay()
+        ping_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='PENDING').count()
+        ping_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='STARTED').count()
+        if (ping_tasks_pending == 0 and ping_tasks_started == 0):
+            refresh_ping_status.delay()
+        else:
+            result['ping_sync_started'] = False
+            logger.debug("Ping status sync is already in progress")
+
+        snmp_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='PENDING').count()
+        snmp_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='STARTED').count()
+        if (snmp_tasks_pending == 0 and snmp_tasks_started == 0):
+            refresh_snmp_status.delay()
+        else:
+            result['snmp_sync_started'] = False
+            logger.debug("SNMP status sync is already in progress")
+
+        ups_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='PENDING').count()
+        ups_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='STARTED').count()
+        if (ups_tasks_pending == 0 and ups_tasks_started == 0):
+            refresh_ups_status.delay()
+        else:
+            result['ups_sync_started'] = False
+            logger.debug("UPS status sync is already in progress")
 
         # Return the results
         if self.pretty_print:
