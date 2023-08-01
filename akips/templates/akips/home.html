@@ -8,26 +8,25 @@
 {% endblock %}
 
 {% block no_heading %}
-<form method="get" action="{% url 'create_incident' %}">
-    <div class="row">
-        <div class="col-sm-6 my-auto text-left text-sm">
-            <div class="custom-control custom-switch">
-                <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
-                <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
-            </div>
+<div class="row">
+    <div class="col-sm-6 my-auto text-left text-sm">
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
+            <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
         </div>
-        <div class="col-sm-6 text-right">
-            <button type="submit" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
-            <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
-            {% if request.user|has_group:"refresh" %}
-            <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
-            {% endif %}
-        </div>
-    </div> 
+    </div>
+    <div class="col-sm-6 text-right">
+        <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
+        {% if request.user|has_group:"refresh" %}
+        <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
+        {% endif %}
+    </div>
+</div> 
 {% endblock %}
 
 {% block content %}
-<!-- <form method="get" action="{% url 'create_incident' %}"> -->
+<form method="get" id="myForm" action="{% url 'create_incident' %}">
     <div id="chart" class="card">
         <div class="card-header">
             <h3 class="card-title">New Event Trends</h3>
@@ -394,6 +393,8 @@
                 });
                 // alert("Please select one summary to create an incident.");
                 return false;
+            } else {
+                $("#myForm").submit();
             }
         });
 
