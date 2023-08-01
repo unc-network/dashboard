@@ -101,6 +101,9 @@ class Devices(LoginRequiredMixin, View):
         devices = Device.objects.all()
         context['devices'] = devices
 
+        last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
+        context['last_device_sync'] = last_device_sync
+
         return render(request, self.template_name, context=context)
 
 class UPSProblems(LoginRequiredMixin, View):

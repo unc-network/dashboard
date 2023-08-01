@@ -37,6 +37,10 @@
         </table>
 
         </div>
+
+        {% if last_device_sync %}
+            <p>AKiPS device sync last ran at {{ last_device_sync.date_created }}</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
