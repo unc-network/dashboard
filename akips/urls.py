@@ -6,6 +6,7 @@ urlpatterns = [
 
     # Main Views
     path('', views.Home.as_view(), name='home'),
+    path('about/', views.About.as_view(), name='about'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),

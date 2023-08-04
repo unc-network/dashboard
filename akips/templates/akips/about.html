@@ -1,0 +1,43 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+{% block page_name %}About OCNES{% endblock %}
+
+{% block style_sheets %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
+{% endblock %}
+
+{% block content %}
+ <div class="card">
+    <div class="card-body table-responsive">
+        <p>The OCNES tool is a customized dashboard view on top of <a href="https://akips.net.unc.edu">AKiPS</a></p>
+
+        <table class="table table-hover table-responsive table-sm">
+            <tr>
+                <th>Current Status</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td>Last AKiPS device sync</td>
+                <td>{% if last_akips_sync %}{{ last_akips_sync.date_created }}{% else %}none{% endif %}</td>
+            </tr>
+            <tr>
+                <td>Last Inventory device sync</td>
+                <td>{% if last_inventory_sync %}{{ last_inventory_sync.date_created }}{% else %}none{% endif %}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
+    })
+</script>
+{% endblock js %}

@@ -73,6 +73,20 @@ class Home(LoginRequiredMixin, View):
         context = {}
         return render(request, post_template, context=context)
 
+class About(LoginRequiredMixin, View):
+    ''' basic about page '''
+    template_name = 'akips/about.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_nit',status='SUCCESS').latest('date_done')
+        context['last_inventory_sync'] = last_inventory_sync
+
+        last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
+        context['last_akips_sync'] = last_device_sync
+
+        return render(request, self.template_name, context=context)
 
 class Devices(LoginRequiredMixin, View):
     ''' Generic first view '''
