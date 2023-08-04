@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}OCNES{% endblock %}
-{% block page_name %}Hibernate Requests{% endblock %}
+{% block page_name %}Hibernated Devices{% endblock %}
 
 {% block style_sheets %}
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
@@ -11,6 +11,11 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
+        <p>OCNES uses "hibernation mode" to overcome some limitations of AKiPS "maintenance mode".
+            Hibernated devices are still polled like normal in AKiPS but do not trigger alerts in OCNES.
+            Hibernation mode can clear in different ways such as by a specific time or when a device 
+            has recovered.  Hibernation is only tracked and managed inside of OCNES.
+        </p>
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">

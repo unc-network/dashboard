@@ -11,6 +11,11 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
+        <p>AKiPS uses "maintenance mode" to disable polling for a device.  While in maintenance,
+            the device state will not change.  If the "device" went down then was put into maintenance mode,
+            the status will stay "down" until it leaves maintenance, polling resumes, and the "up" state is 
+            measured.  Human interaction is needed to move devices in/out of AKiPS maintenance mode.
+        </p>
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
