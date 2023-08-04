@@ -1,20 +1,22 @@
 {% load adminlte_helpers i18n %}
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    {% block title_outer %}
-        <title>{% block title %}{{ site.name }}{% endblock %}</title>
-    {% endblock %}
-
     {% block meta %}
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-COMPATIBLE" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <!-- <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"> -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="description" content="OCNES dashboard for AKiPS" />
+    <meta name="author" content="devops@office.unc.edu" />
     {% endblock %}
 
-    <link rel="shortcut icon" href="{% static 'akips/img/loch-ness-monster.ico' %}">
+    {% block title_outer %}
+    <title>{% block title %}{{ site.name }}{% endblock %}</title>
+    {% endblock %}
+
+    <link rel="icon" href="{% static 'akips/img/favicon.ico' %}" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="{% static 'akips/img/apple-touch-icon.png' %}" />
 
     {% block stylesheets %}
         {% include 'akips/_styles.html' %}
