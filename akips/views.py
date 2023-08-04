@@ -80,10 +80,16 @@ class About(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_nit',status='SUCCESS').latest('date_done')
+        try:
+            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_nit').latest('date_done')
+        except TaskResult.DoesNotExist:
+            last_inventory_sync = None
         context['last_inventory_sync'] = last_inventory_sync
 
-        last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
+        try:
+            last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices').latest('date_done')
+        except TaskResult.DoesNotExist:
+            last_device_sync = None
         context['last_akips_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)

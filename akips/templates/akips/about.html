@@ -16,15 +16,33 @@
         <table class="table table-hover table-responsive table-sm">
             <tr>
                 <th>Current Status</th>
-                <th></th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
             </tr>
             <tr>
                 <td>Last AKiPS device sync</td>
-                <td>{% if last_akips_sync %}{{ last_akips_sync.date_created }}{% else %}none{% endif %}</td>
+                {% if last_akips_sync %}
+                <td>{{ last_akips_sync.date_created }}</td>
+                <td>{{ last_akips_sync.date_done }}</td>
+                <td>{{ last_akips_sync.status }}</td>
+                {% else %}
+                <td></td>
+                <td></td>
+                <td>None</td>
+                {% endif %}
             </tr>
             <tr>
                 <td>Last Inventory device sync</td>
-                <td>{% if last_inventory_sync %}{{ last_inventory_sync.date_created }}{% else %}none{% endif %}</td>
+                {% if last_inventory_sync %}
+                <td>{{ last_inventory_sync.date_created }}</td>
+                <td>{{ last_inventory_sync.date_done }}</td>
+                <td>{{ last_inventory_sync.status }}</td>
+                {% else %}
+                <td></td>
+                <td></td>
+                <td>None</td>
+                {% endif %}
             </tr>
         </table>
     </div>
