@@ -38,21 +38,6 @@ logger = logging.getLogger(__name__)
 
 # Create your views here.
 
-# def handler403(request, exception):
-#     response = render(request, "akips/403.html")
-#     response.status_code = 403
-#     return response
-
-def custom_404(request, exception):
-    response = render(request, "akips/error_404.html")
-    response.status_code = 404
-    return response
-
-# def handler500(request):
-#     response = render(request, "akips/500.html")
-#     response.status_code = 500
-#     return response
-
 # def login(request, *args, **kwargs):
 #     if request.method == 'POST':
 #         if not request.POST.get('remember_me', None):
