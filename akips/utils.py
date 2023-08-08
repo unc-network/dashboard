@@ -543,7 +543,7 @@ class ServiceNow:
         # Set parameters
         params = {
             #'sysparm_query': "active=True^category={}^ORDERBYsys_created_on".format(category),
-            'sysparm_query': "category={}^ORDERBYsys_created_on".format(category),
+            'sysparm_query': "active=True^category={}^ORDERBYDESCsys_created_on".format(category),
             'sysparm_limit': 10
         }
 
