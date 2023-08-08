@@ -142,6 +142,30 @@
     <button type="submit" class="btn btn-primary">Associate Incident</button>
 </div>
 
+<div class="card my-3">
+    <div class="card-header"><strong>Recent Incidents</strong> click a number to use</div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th class="col-2">Number</th>
+                    <th class="col-2">Created</th>
+                    <th class="col-8">Short Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in recent %}
+                <tr>
+                    <td class="text-primary quick-incident">{{ entry.number }}</td>
+                    <td>{{ entry.sys_created_on }}</td>
+                    <td>{{ entry.short_description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 </form>
 {% endblock %}
 
@@ -152,6 +176,12 @@
         refresh_alerts();
         enable_alert_toggle();
 
+        $(document).on('click', '.quick-incident', function (e) {
+            var number = $(this).text();
+            // var comment = $(this).data("content");
+            console.log("quick incident " + number);
+            $('input[name="number"]').val(number);
+        });
     })
 </script>
 {% endblock js %}

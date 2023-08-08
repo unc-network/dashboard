@@ -484,6 +484,9 @@ class CreateIncidentView(LoginRequiredMixin, View):
         }
         context['form'] = IncidentForm(initial=initial)
 
+        servicenow = ServiceNow()
+        context['recent'] = servicenow.get_recent_incidents()
+
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):

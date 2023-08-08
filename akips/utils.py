@@ -532,6 +532,39 @@ class ServiceNow:
 
         return result_data['result']
 
+    def get_recent_incidents(self, category='Network', group=None):
+        ''' Find recently created incidents from a group '''
+
+        # Set proper headers
+        headers = {
+            "Content-Type":"application/json", 
+            "Accept":"application/json"
+        }
+        # Set parameters
+        params = {
+            #'sysparm_query': "active=True^category={}^ORDERBYsys_created_on".format(category),
+            'sysparm_query': "category={}^ORDERBYsys_created_on".format(category),
+            'sysparm_limit': 10
+        }
+
+        # Call HTTP GET
+        sn_url = "https://{}.service-now.com/api/now/table/incident".format(self.instance)
+        logger.debug("url: {}".format(sn_url))
+        logger.debug("headers: {}".format(headers))
+        logger.debug("params: {}".format(params))
+        response = requests.get(sn_url, auth=(self.username, self.password), headers=headers, params=params)
+
+        # All requests return a 200 HTTP status code even if there is an error.
+        if response.status_code != 200:
+            logger.warn('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
+            return
+
+        # Decode the JSON response into a dictionary and use the data
+        result_data = response.json()
+        logger.debug("Result: {}".format(result_data))
+
+        return result_data['result']
+
     def associate_incident(self, number, work_notes=None):
         ''' Search for SN incident by number '''
 
