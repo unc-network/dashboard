@@ -532,7 +532,7 @@ class ServiceNow:
 
         return result_data['result']
 
-    def get_recent_incidents(self, category='Network', group=None):
+    def get_recent_incidents(self, category='Network', limit=10):
         ''' Find recently created incidents from a group '''
 
         # Set proper headers
@@ -542,9 +542,9 @@ class ServiceNow:
         }
         # Set parameters
         params = {
-            #'sysparm_query': "active=True^category={}^ORDERBYsys_created_on".format(category),
+            #'sysparm_query': "category={}^ORDERBYDESCsys_created_on".format(category),
             'sysparm_query': "active=True^category={}^ORDERBYDESCsys_created_on".format(category),
-            'sysparm_limit': 10
+            'sysparm_limit': limit
         }
 
         # Call HTTP GET
