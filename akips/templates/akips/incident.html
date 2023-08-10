@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block title %}OCNES Dashboard{% endblock %}
+{% block page_name %}ServiceNow Incident{% endblock %}
 
 {% block content %}
 <form action="" method="post">
@@ -18,15 +19,15 @@
 <p>{{ create_message }}</p>
 {% endif %}
 
-<p>You are about to submit a ServiceNow Incident.  The Incident will be populated with the information below.
-    Please select a criticality level and the group you wish to submit the request to.
+<p>The incident you use will be assigned to the following events and/or traps.
+    You can either create a new incident or associate an existing incident.
 </p>
 
 {% if summaries %}
 <div class="card card-primary">
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-sm">
-            <thead>
+            <thead class="table-primary">
                 <tr>
                     <th>Name</th>
                     <th>Switch Count</th>
@@ -57,7 +58,7 @@
 <div class="card card-primary">
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-sm">
-            <thead>
+            <thead class="thead-dark">
                 <tr>
                     <th>Device</th>
                     <th>Trap</th>
@@ -80,89 +81,106 @@
 
 <div class="border-top my-3"></div>
 
-<h3 class="text-primary">Create Incident</h3>
-
-<div class="form-group">
-    <label class="mr-2">{{ form.description.label }}</label>
-    {{ form.description.help_text }}
-    {{ form.description }}
-</div>
-<p>{{ form.description.errors }}</p>
-
-<div class="row">
-    <div class="col-2">
-        <p><b>Assignment Group</b></p>
+<div class="card card-primary">
+    <div class="card-header">
+        <h5 class="card-title">Create Incident</h5>
     </div>
-    <div class="col-10">
-        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
-            {% for radio in form.assignment_group %}
-            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
-                {{ radio.choice_label }}
-                {{ radio.tag }}
-            </label>
-            {% endfor %}
+    <div class="card-body">
+        <p>Complete this form to create a new ServiceNow incident.
+            Select a criticality level and the assignment group.
+        </p>
+
+        <div class="form-group">
+            <label class="mr-2">{{ form.description.label }}</label>
+            {{ form.description.help_text }}
+            {{ form.description }}
         </div>
-        <p>{{ form.assignment_group.errors }}</p>
-    </div>
-</div>
+        <p>{{ form.description.errors }}</p>
 
-<div class="row">
-    <div class="col-2">
-        <p><b>Criticality Level</b></p>
-    </div>
-    <div class="col-10">
-        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
-            {% for radio in form.criticality %}
-            <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
-                {{ radio.choice_label }}
-                {{ radio.tag }}
-            </label>
-            {% endfor %}
+        <div class="row">
+            <div class="col-2">
+                <p><b>Assignment Group</b></p>
+            </div>
+            <div class="col-10">
+                <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+                    {% for radio in form.assignment_group %}
+                    <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                        {{ radio.choice_label }}
+                        {{ radio.tag }}
+                    </label>
+                    {% endfor %}
+                </div>
+                <p>{{ form.assignment_group.errors }}</p>
+            </div>
         </div>
-        <p>{{ form.criticality.errors }}</p>
+
+        <div class="row">
+            <div class="col-2">
+                <p><b>Criticality Level</b></p>
+            </div>
+            <div class="col-10">
+                <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+                    {% for radio in form.criticality %}
+                    <label for="{{ radio.id_for_label }}" class="btn btn-outline-primary">
+                        {{ radio.choice_label }}
+                        {{ radio.tag }}
+                    </label>
+                    {% endfor %}
+                </div>
+                <p>{{ form.criticality.errors }}</p>
+            </div>
+        </div>
+
+        <div class="text-right">
+            <button type="submit" class="btn btn-primary">Create Incident</button>
+        </div>
+
     </div>
 </div>
-
-<div class="text-right">
-    <button type="submit" class="btn btn-primary">Create Incident</button>
-</div>
-
 <div class="border-top my-3"></div>
 
-<h3 class="text-primary">Associate Incident</h3>
+<div class="card card-primary">
+    <div class="card-header">
+        <h5 class="card-title">Associate Incident</h5>
+    </div>
+    <div class="card-body">
+        <p>If a ServiceNow incident already exists, provide the number to make the association.
+            For convenience, recently created incidents are shown below.
+        </p>
+        <div class="form-group">
+            <label class="mr-2">{{ form.number.label }}</label>
+            {{ form.number.help_text }}
+            {{ form.number }}
+        </div>
+        <p>{{ form.number.errors }}</p>
 
-<div class="form-group">
-    <label class="mr-2">{{ form.number.label }}</label>
-    {{ form.number.help_text }}
-    {{ form.number }}
-</div>
-<p>{{ form.number.errors }}</p>
+        <div class="text-right">
+            <button type="submit" class="btn btn-primary">Associate Incident</button>
+        </div>
 
-<div class="text-right">
-    <button type="submit" class="btn btn-primary">Associate Incident</button>
-</div>
-
-<div class="card my-3">
-    <div class="card-header"><strong>Recent Incidents</strong> click a number to use</div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover table-sm">
-            <thead>
-                <tr>
-                    <th class="col-2">Number</th>
-                    <th class="col-2">Created</th>
-                    <th class="col-8">Short Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in recent %}
-                <tr>
-                    <td class="text-primary quick-incident">{{ entry.number }}</td>
-                    <td>{{ entry.sys_created_on }}</td>
-                    <td>{{ entry.short_description }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="card my-3">
+            <div class="card-header"><strong>Recent Incidents</strong> click a number to use</div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th class="col-2">Number</th>
+                            <th class="col-2">Created</th>
+                            <th class="col-8">Short Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in recent %}
+                        <tr>
+                            <td class="text-primary quick-incident">{{ entry.number }}</td>
+                            <td>{{ entry.sys_created_on }}</td>
+                            <td>{{ entry.short_description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 

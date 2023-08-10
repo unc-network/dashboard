@@ -57,7 +57,7 @@ class IncidentForm(forms.Form):
     )
     number = forms.CharField(
         label='Existing Incident Number',
-        help_text='Optionally, provide an existing incident to associate instead of creating a new record.',
+        help_text='for example INC000001',
         max_length=16,
         widget = forms.TextInput(attrs={'class':'form-control col-auto'}),
         required=False
