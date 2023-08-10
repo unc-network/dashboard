@@ -532,7 +532,7 @@ class ServiceNow:
 
         return result_data['result']
 
-    def get_recent_incidents(self, category='Network', limit=10):
+    def get_recent_incidents(self, id='svc-CHG-605000-oc', category='Network', limit=10):
         ''' Find recently created incidents from a group '''
 
         # Set proper headers
@@ -543,7 +543,8 @@ class ServiceNow:
         # Set parameters
         params = {
             #'sysparm_query': "category={}^ORDERBYDESCsys_created_on".format(category),
-            'sysparm_query': "active=True^category={}^ORDERBYDESCsys_created_on".format(category),
+            # 'sysparm_query': "active=True^category={}^ORDERBYDESCsys_created_on".format(category),
+            'sysparm_query': "active=True^sys_created_by={}^ORDERBYDESCsys_created_on".format(id),
             'sysparm_limit': limit
         }
 
