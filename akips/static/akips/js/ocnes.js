@@ -67,15 +67,17 @@ function alert_user() {
                 if ( data.voice_enabled ) {
                     // Get user preferences
                     var speech_json = getCookie('ocnes_voice');
-                    var speech = JSON.parse(speech_json);
-                    utterThis.rate = speech.rate;
-                    utterThis.pitch = speech.pitch;
-                    var voices = speechSynthesis.getVoices();
-                    for (let i = 0; i < voices.length; i++) {
-                        console.log("voice name " + voices[i].name + " and " + speech.voice)
-                        if (voices[i].name === speech.voice) {
-                            utterThis.voice = voices[i];
-                            break;
+                    if (speech_json) {
+                        var speech = JSON.parse(speech_json);
+                        utterThis.rate = speech.rate;
+                        utterThis.pitch = speech.pitch;
+                        var voices = speechSynthesis.getVoices();
+                        for (let i = 0; i < voices.length; i++) {
+                            console.log("voice name " + voices[i].name + " and " + speech.voice)
+                            if (voices[i].name === speech.voice) {
+                                utterThis.voice = voices[i];
+                                break;
+                            }
                         }
                     }
                     // Use Voice Synth
