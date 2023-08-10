@@ -56,8 +56,8 @@ class IncidentForm(forms.Form):
         required=False
     )
     number = forms.CharField(
-        label='Existing Incident Number',
-        help_text='for example INC000001',
+        label='Incident Number',
+        help_text='i.e. INC000001',
         max_length=16,
         widget = forms.TextInput(attrs={'class':'form-control col-auto'}),
         required=False
