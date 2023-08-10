@@ -26,7 +26,7 @@
                 <td>Last AKiPS device sync</td>
                 {% if last_akips_sync %}
                 <td>{{ last_akips_sync.date_created }}</td>
-                <td>{{ last_akips_sync.date_done }}</td>
+                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_akips_sync.date_done }}{% endif %}</td>
                 <td>{{ last_akips_sync.status }}</td>
                 {% else %}
                 <td></td>
@@ -38,7 +38,7 @@
                 <td>Last Inventory device sync</td>
                 {% if last_inventory_sync %}
                 <td>{{ last_inventory_sync.date_created }}</td>
-                <td>{{ last_inventory_sync.date_done }}</td>
+                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_inventory_sync.date_done }}{% endif %}</td>
                 <td>{{ last_inventory_sync.status }}</td>
                 {% else %}
                 <td></td>
