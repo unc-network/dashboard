@@ -402,14 +402,48 @@
         $('#sync_button').click(function () {
             var url = $(this).data("url");
             console.log("requesting data sync " + url)
-            $.get(url, {})
-            $(document).Toasts('create', {
-                class: 'bg-info',
-                title: 'AKiPS Status Refresh',
-                body: 'Ping and SNMP status is being updated from AKiPS.',
-                autohide: true,
-                delay: 30000
+            $.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json",
+                data: {},
+                success: function (result, status, xhr) {
+                    var message = '';
+                    if (result['ping_sync_started']) {
+                        message += "Ping sync started<br>"
+                    } else {
+                        message += "Ping sync already running<br>"
+                    }
+                    if (result['snmp_sync_started']) {
+                        message += "SNMP sync started<br>"
+                    } else {
+                        message += "SNMP sync already running<br>"
+                    }
+                    if (result['ups_sync_started']) {
+                        message += "UPS sync started<br>"
+                    } else {
+                        message += "UPS sync already running<br>"
+                    }
+                    $(document).Toasts('create', {
+                        class: 'bg-info',
+                        title: 'AKiPS Status Refresh',
+                        body: message,
+                        autohide: true,
+                        delay: 30000
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.log("Unable to refresh status");
+                }
             });
+            // $.get(url, {})
+            // $(document).Toasts('create', {
+            //     class: 'bg-info',
+            //     title: 'AKiPS Status Refresh',
+            //     body: 'Ping and SNMP status is being updated from AKiPS.',
+            //     autohide: true,
+            //     delay: 30000
+            // });
         });
 
         // Populate the page content for the first time
