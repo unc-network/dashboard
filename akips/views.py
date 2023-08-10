@@ -30,7 +30,7 @@ from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
 from .forms import IncidentForm, HibernateForm, PreferencesForm
-from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status
+from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
 from .utils import AKIPS, ServiceNow, pretty_duration
 
 # Get a instance of logger
@@ -106,8 +106,8 @@ class Devices(LoginRequiredMixin, View):
         devices = Device.objects.all()
         context['devices'] = devices
 
-        last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
-        context['last_device_sync'] = last_device_sync
+        # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
+        # context['last_device_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)
 
@@ -839,6 +839,7 @@ class RequestSync(LoginRequiredMixin,View):
             "ping_sync_started": True,
             "snmp_sync_started": True,
             "ups_sync_started": True,
+            "device_sync_started": True,
         }
         
         ping_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='PENDING').count()
@@ -864,6 +865,14 @@ class RequestSync(LoginRequiredMixin,View):
         else:
             result['ups_sync_started'] = False
             logger.debug("UPS status sync is already in progress")
+
+        device_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='PENDING').count()
+        device_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='STARTED').count()
+        if (device_tasks_pending == 0 and device_tasks_started == 0):
+            refresh_akips_devices.delay()
+        else:
+            result['device_sync_started'] = False
+            logger.debug("Device sync is already in progress")
 
         # Return the results
         if self.pretty_print:

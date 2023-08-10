@@ -410,19 +410,24 @@
                 success: function (result, status, xhr) {
                     var message = '';
                     if (result['ping_sync_started']) {
-                        message += "Ping sync started<br>"
+                        message += "Ping status sync started<br>"
                     } else {
-                        message += "Ping sync already running<br>"
+                        message += "Ping status sync already running<br>"
                     }
                     if (result['snmp_sync_started']) {
-                        message += "SNMP sync started<br>"
+                        message += "SNMP status sync started<br>"
                     } else {
-                        message += "SNMP sync already running<br>"
+                        message += "SNMP status sync already running<br>"
                     }
                     if (result['ups_sync_started']) {
-                        message += "UPS sync started<br>"
+                        message += "UPS battery sync started<br>"
                     } else {
-                        message += "UPS sync already running<br>"
+                        message += "UPS battery sync already running<br>"
+                    }
+                    if (result['device_sync_started']) {
+                        message += "Device sync started<br>"
+                    } else {
+                        message += "Device sync already running<br>"
                     }
                     $(document).Toasts('create', {
                         class: 'bg-info',
