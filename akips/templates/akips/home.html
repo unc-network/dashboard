@@ -18,9 +18,7 @@
     <div class="col-sm-6 text-right">
         <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
         <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
-        {% if request.user|has_group:"refresh" %}
-        <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Sync AKiPS Status</button>
-        {% endif %}
+        <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
     </div>
 </div> 
 {% endblock %}
