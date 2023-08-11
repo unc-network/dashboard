@@ -114,11 +114,13 @@
 
         // Load voice options
         var speech_json = getCookie('ocnes_voice');
-        var speech = JSON.parse(speech_json);
-        $("#rate").val(speech.rate);
-        $("#pitch").val(speech.pitch);
-        $("#voice").val(speech.voice);
-        console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        if (speech_json) {
+            var speech = JSON.parse(speech_json);
+            $("#rate").val(speech.rate);
+            $("#pitch").val(speech.pitch);
+            // $("#voice").val(speech.voice);
+            console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        }
 
         // Update voice settings
         $('#save_cookie').click(function () {
@@ -131,6 +133,12 @@
             setCookie('ocnes_voice', jsonString);
 
             console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+        });
+
+        // Reset voice settings
+        $('#reset_cookie').click(function () {
+            console.log("Deleting cookie");
+            deleteCookie('ocnes_voice');
         });
     });
 </script>

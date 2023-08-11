@@ -17,14 +17,6 @@
 //     return cookieValue;
 // }
 
-// Set a cookie value
-function setCookie(cname, cvalue, exdays) {
-    const d = new Date();
-    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
-    let expires = "expires="+d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-}
-
 // Get a cookie value
 function getCookie(cname) {
     let name = cname + "=";
@@ -39,6 +31,22 @@ function getCookie(cname) {
         }
     }
     return "";
+}
+
+// Set a cookie value
+function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    let expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+// Delete a cookie value
+function deleteCookie(cname) {
+    const d = new Date();
+    d.setTime(d.getTime() - (1 * 24 * 60 * 60 * 1000));
+    let expires = "expires="+d.toUTCString();
+    document.cookie = cname + "= ;" + expires + ";path=/";
 }
 
 function refresh_alerts() {
@@ -73,7 +81,7 @@ function alert_user() {
                         utterThis.pitch = speech.pitch;
                         var voices = speechSynthesis.getVoices();
                         for (let i = 0; i < voices.length; i++) {
-                            console.log("voice name " + voices[i].name + " and " + speech.voice)
+                            // console.log("voice name " + voices[i].name + " and " + speech.voice)
                             if (voices[i].name === speech.voice) {
                                 utterThis.voice = voices[i];
                                 break;
