@@ -5,7 +5,7 @@
 
 
 {% block content %}
-<form action="" method="post">
+<form action="" method="post" id="options">
 {% csrf_token %}
 <div class="card">
     <div class="card-body table-responsive">
@@ -55,7 +55,7 @@
                 <div class="form-group row">
                   <label for="txt" class="col-sm-2 col-form-label">Message</label>
                   <div class="col-sm-10">
-                    <input id="txt" type="text" class="txt form-control" value="New: 1 building alert for CVSPlaza"/>
+                    <input id="txt" type="text" class="txt form-control" value="New: 1 building alert for Just A Test Building"/>
                   </div>
                 </div>
                 <div class="form-group row">
@@ -118,8 +118,17 @@
             var speech = JSON.parse(speech_json);
             $("#rate").val(speech.rate);
             $("#pitch").val(speech.pitch);
-            // $("#voice").val(speech.voice);
+            $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
             console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        } else {
+            // find the default voice and set it selected
+            var voices = speechSynthesis.getVoices();
+            for (let i = 0; i < voices.length; i++) {
+                if (voices[i].default) {
+                    $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
+                    break;
+                }
+            }
         }
 
         // Update voice settings
@@ -127,18 +136,19 @@
             var speech = {}
             speech.rate = $("#rate").val();
             speech.pitch = $("#pitch").val();
-            // speech.voice = $("#voice").find(":selected").val();   // selected value
             speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
             var jsonString = JSON.stringify(speech);
             setCookie('ocnes_voice', jsonString);
 
             console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+            $('#options').submit()
         });
 
         // Reset voice settings
         $('#reset_cookie').click(function () {
             console.log("Deleting cookie");
             deleteCookie('ocnes_voice');
+            $('#options').submit()
         });
     });
 </script>

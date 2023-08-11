@@ -84,6 +84,7 @@ function alert_user() {
                             // console.log("voice name " + voices[i].name + " and " + speech.voice)
                             if (voices[i].name === speech.voice) {
                                 utterThis.voice = voices[i];
+                                console.log("Setting voice to " + voices[i].name);
                                 break;
                             }
                         }
