@@ -66,31 +66,38 @@ function alert_user() {
 
     // console.log("Alerting user if necessary.");
 
+    // Handle rate, pitch, voice inputs
+    const synth = window.speechSynthesis;
+
+    // Voice options are async so some extra work is needed to set correctly
+    let voices = [];
+    function populateVoiceOptions() {
+        voices = synth.getVoices();
+    }
+    populateVoiceOptions();
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = populateVoiceOptions;
+    }
+
     $.get( alert_url, function( data ) {
         var long_msg = data.messages.join(' ');
         if ( long_msg ) {
             // Audible alert if enabled
             if ( data.alert_enabled ) {
-                const utterThis = new SpeechSynthesisUtterance(long_msg);
                 if ( data.voice_enabled ) {
-                    // Get user preferences
+                    var msg = new SpeechSynthesisUtterance(long_msg);
+                    // console.log("total voices " + voices.length);
                     var speech_json = getCookie('ocnes_voice');
                     if (speech_json) {
+                        // Get user preferences from cookie
                         var speech = JSON.parse(speech_json);
-                        utterThis.rate = speech.rate;
-                        utterThis.pitch = speech.pitch;
-                        var voices = speechSynthesis.getVoices();
-                        for (let i = 0; i < voices.length; i++) {
-                            // console.log("voice name " + voices[i].name + " and " + speech.voice)
-                            if (voices[i].name === speech.voice) {
-                                utterThis.voice = voices[i];
-                                console.log("Setting voice to " + voices[i].name);
-                                break;
-                            }
-                        }
+                        console.log("Using cookie setting for voice " + speech.voice + " with rate " + speech.rate + " and pitch " + speech.pitch);
+                        msg.rate = speech.rate;
+                        msg.pitch = speech.pitch;
+                        msg.voice = voices.filter(function(voice) { return voice.name == speech.voice; })[0];
                     }
                     // Use Voice Synth
-                    speechSynthesis.speak(utterThis);
+                    synth.speak(msg);
                 } else if ( data.level == 'danger' ) {
                     // Use HTML5 audio for important alerts 
                     document.getElementById('audiotag1').play();

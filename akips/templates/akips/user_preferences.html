@@ -112,24 +112,26 @@
         refresh_alerts();
         enable_alert_toggle();
 
+        // loadSpeechOptions();
+
         // Load voice options
-        var speech_json = getCookie('ocnes_voice');
-        if (speech_json) {
-            var speech = JSON.parse(speech_json);
-            $("#rate").val(speech.rate);
-            $("#pitch").val(speech.pitch);
-            $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
-            console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
-        } else {
-            // find the default voice and set it selected
-            var voices = speechSynthesis.getVoices();
-            for (let i = 0; i < voices.length; i++) {
-                if (voices[i].default) {
-                    $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
-                    break;
-                }
-            }
-        }
+        // var speech_json = getCookie('ocnes_voice');
+        // if (speech_json) {
+        //     var speech = JSON.parse(speech_json);
+        //     $("#rate").val(speech.rate);
+        //     $("#pitch").val(speech.pitch);
+        //     $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
+        //     console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        // } else {
+        //     // find the default voice and set it selected
+        //     var voices = speechSynthesis.getVoices();
+        //     for (let i = 0; i < voices.length; i++) {
+        //         if (voices[i].default) {
+        //             $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
+        //             break;
+        //         }
+        //     }
+        // }
 
         // Update voice settings
         $('#save_cookie').click(function () {
@@ -153,6 +155,7 @@
     });
 </script>
 <script type="text/javascript">
+    // Handle rate, pitch, voice inputs
     const synth = window.speechSynthesis;
 
     const inputForm = document.querySelector("form");
@@ -179,10 +182,12 @@
                 return +1;
             }
         });
+        console.log("total voices " + voices.length);
         const selectedIndex = voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
         voiceSelect.innerHTML = "";
 
         for (let i = 0; i < voices.length; i++) {
+            // console.log("voice name " + voices[i].name);
             const option = document.createElement("option");
             option.textContent = `${voices[i].name} (${voices[i].lang})`;
 
@@ -197,6 +202,25 @@
             }
         }
         voiceSelect.selectedIndex = selectedIndex;
+
+        // Load voice options from cookie
+        // var speech_json = getCookie('ocnes_voice');
+        // if (speech_json) {
+        //     var speech = JSON.parse(speech_json);
+        //     $("#rate").val(speech.rate);
+        //     $("#pitch").val(speech.pitch);
+        //     $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
+        //     console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        // } else {
+        //     // find the default voice and set it selected
+        //     var voices = speechSynthesis.getVoices();
+        //     for (let i = 0; i < voices.length; i++) {
+        //         if (voices[i].default) {
+        //             $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
+        //             break;
+        //         }
+        //     }
+        // }
     }
 
     populateVoiceList();
