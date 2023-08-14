@@ -117,14 +117,15 @@
 
         // Update voice settings
         $('#save_cookie').click(function () {
-            var speech = {}
-            speech.rate = $("#rate").val();
-            speech.pitch = $("#pitch").val();
-            speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
-            var jsonString = JSON.stringify(speech);
-            setCookie('ocnes_voice', jsonString, 365);
+            // var speech = {}
+            // speech.rate = $("#rate").val();
+            // speech.pitch = $("#pitch").val();
+            // speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
+            // var jsonString = JSON.stringify(speech);
+            // setCookie('ocnes_voice', jsonString, 365);
 
-            console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+            // console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+            save_options();
             $('#options').submit()
         });
 
@@ -137,137 +138,151 @@
     });
 </script>
 <script type="text/javascript">
+    function save_options() {
+        var speech = {}
+        speech.rate = $("#rate").val();
+        speech.pitch = $("#pitch").val();
+        speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
+        var jsonString = JSON.stringify(speech);
+        setCookie('ocnes_voice', jsonString, 365);
+        console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+    }
+
     function speech_setup() {
-    console.log("In speech section");
-    // Handle rate, pitch, voice inputs
-    const synth = window.speechSynthesis;
+        console.log("In speech section");
+        // Handle rate, pitch, voice inputs
+        const synth = window.speechSynthesis;
 
-    const inputForm = document.querySelector("form");
-    const inputTxt = document.querySelector(".txt");
-    const voiceSelect = document.querySelector("select");
+        const inputForm = document.querySelector("form");
+        const inputTxt = document.querySelector(".txt");
+        const voiceSelect = document.querySelector("select");
 
-    const pitch = document.querySelector("#pitch");
-    const pitchValue = document.querySelector(".pitch-value");
-    const rate = document.querySelector("#rate");
-    const rateValue = document.querySelector(".rate-value");
+        const pitch = document.querySelector("#pitch");
+        const pitchValue = document.querySelector(".pitch-value");
+        const rate = document.querySelector("#rate");
+        const rateValue = document.querySelector(".rate-value");
 
-    let voices = [];
+        let voices = [];
 
-    function populateVoiceList() {
-        voices = synth.getVoices().sort(function (a, b) {
-            const aname = a.name.toUpperCase();
-            const bname = b.name.toUpperCase();
+        function populateVoiceList() {
+            voices = synth.getVoices().sort(function (a, b) {
+                const aname = a.name.toUpperCase();
+                const bname = b.name.toUpperCase();
 
-            if (aname < bname) {
-                return -1;
-            } else if (aname == bname) {
-                return 0;
-            } else {
-                return +1;
-            }
-        });
-        // console.log("total voices " + voices.length);
-        const selectedIndex = voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
-        voiceSelect.innerHTML = "";
-
-        for (let i = 0; i < voices.length; i++) {
-            // console.log("voice name " + voices[i].name);
-            const option = document.createElement("option");
-            option.textContent = `${voices[i].name} (${voices[i].lang})`;
-
-            if (voices[i].default) {
-                option.textContent += " -- DEFAULT";
-            }
-
-            if ( voices[i].lang == 'en-US') {
-                option.setAttribute("data-lang", voices[i].lang);
-                option.setAttribute("data-name", voices[i].name);
-                voiceSelect.appendChild(option);
-            }
-        }
-        voiceSelect.selectedIndex = selectedIndex;
-
-        // Load voice options from cookie
-        // var speech_json = getCookie('ocnes_voice');
-        // if (speech_json) {
-        //     var speech = JSON.parse(speech_json);
-        //     $("#rate").val(speech.rate);
-        //     $("#pitch").val(speech.pitch);
-        //     $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
-        //     console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
-        // } else {
-        //     // find the default voice and set it selected
-        //     var voices = speechSynthesis.getVoices();
-        //     for (let i = 0; i < voices.length; i++) {
-        //         if (voices[i].default) {
-        //             $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
-        //             break;
-        //         }
-        //     }
-        // }
-    }
-
-    populateVoiceList();
-
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = populateVoiceList;
-    }
-
-    function speak() {
-        if (synth.speaking) {
-            console.error("speechSynthesis.speaking");
-            return;
-        }
-
-        if (inputTxt.value !== "") {
-            const utterThis = new SpeechSynthesisUtterance(inputTxt.value);
-
-            utterThis.onend = function (event) {
-                console.log("SpeechSynthesisUtterance.onend");
-            };
-
-            utterThis.onerror = function (event) {
-                console.error("SpeechSynthesisUtterance.onerror");
-            };
-
-            const selectedOption =
-            voiceSelect.selectedOptions[0].getAttribute("data-name");
+                if (aname < bname) {
+                    return -1;
+                } else if (aname == bname) {
+                    return 0;
+                } else {
+                    return +1;
+                }
+            });
+            // console.log("total voices " + voices.length);
+            const selectedIndex = voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
+            let defaultIndex = 0;
+            voiceSelect.innerHTML = "";
 
             for (let i = 0; i < voices.length; i++) {
-                if (voices[i].name === selectedOption) {
-                    utterThis.voice = voices[i];
-                    break;
+                // console.log("voice name " + voices[i].name);
+                const option = document.createElement("option");
+                option.textContent = `${voices[i].name} (${voices[i].lang})`;
+
+                if (voices[i].default) {
+                    option.textContent += " -- DEFAULT";
+                }
+
+                if ( voices[i].lang == 'en-US') {
+                    option.setAttribute("data-lang", voices[i].lang);
+                    option.setAttribute("data-name", voices[i].name);
+
+                    voiceSelect.appendChild(option);
                 }
             }
-            utterThis.pitch = pitch.value;
-            utterThis.rate = rate.value;
-            synth.speak(utterThis);
+            voiceSelect.selectedIndex = selectedIndex;
+
+            // Load voice options from cookie
+            var speech_json = getCookie('ocnes_voice');
+            if (speech_json) {
+                var speech = JSON.parse(speech_json);
+                $("#rate").val(speech.rate);
+                $("#pitch").val(speech.pitch);
+                $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
+                console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+            } else {
+                // find the default voice and set it selected
+                for (let i = 0; i < voices.length; i++) {
+                    if (voices[i].default) {
+                        $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
+                        break;
+                    }
+                }
+            }
         }
+
+        populateVoiceList();
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        function speak() {
+            if (synth.speaking) {
+                console.error("speechSynthesis.speaking");
+                return;
+            }
+
+            if (inputTxt.value !== "") {
+                const utterThis = new SpeechSynthesisUtterance(inputTxt.value);
+
+                utterThis.onend = function (event) {
+                    console.log("SpeechSynthesisUtterance.onend");
+                };
+
+                utterThis.onerror = function (event) {
+                    console.error("SpeechSynthesisUtterance.onerror");
+                };
+
+                const selectedOption =
+                voiceSelect.selectedOptions[0].getAttribute("data-name");
+
+                for (let i = 0; i < voices.length; i++) {
+                    if (voices[i].name === selectedOption) {
+                        utterThis.voice = voices[i];
+                        break;
+                    }
+                }
+                utterThis.pitch = pitch.value;
+                utterThis.rate = rate.value;
+                synth.speak(utterThis);
+            }
+        }
+
+        $('#play').click(function(){
+            speak();
+            inputTxt.blur();
+        })
+        // inputForm.onsubmit = function (event) {
+        //     event.preventDefault();
+
+        //     speak();
+
+        //     inputTxt.blur();
+        // };
+
+        pitch.onchange = function () {
+            pitchValue.textContent = pitch.value;
+            save_options();
+        };
+
+        rate.onchange = function () {
+            rateValue.textContent = rate.value;
+            save_options();
+        };
+
+        voiceSelect.onchange = function () {
+            save_options();
+            speak();
+        };
     }
-
-    $('#play').click(function(){
-        speak();
-        inputTxt.blur();
-    })
-    // inputForm.onsubmit = function (event) {
-    //     event.preventDefault();
-
-    //     speak();
-
-    //     inputTxt.blur();
-    // };
-
-    pitch.onchange = function () {
-        pitchValue.textContent = pitch.value;
-    };
-
-    rate.onchange = function () {
-        rateValue.textContent = rate.value;
-    };
-
-    voiceSelect.onchange = function () {
-        speak();
-    };
-}
 </script>
 {% endblock %}
