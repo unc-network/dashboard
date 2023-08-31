@@ -79,6 +79,7 @@ deploy-ocnes:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
+    - export
     - echo "Building OCNES image..."
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
@@ -98,6 +99,7 @@ deploy-celery:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
+    - export
     - echo "Building Celery image..."
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
