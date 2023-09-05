@@ -108,7 +108,6 @@
 {% block js %}
 <script type="text/javascript">
     $(document).ready(function () {
-        console.log("In ready function");
         speech_setup();
 
         // Setup Alerting
@@ -131,7 +130,7 @@
 
         // Reset voice settings
         $('#reset_cookie').click(function () {
-            console.log("Deleting cookie");
+            //console.log("Deleting cookie");
             deleteCookie('ocnes_voice');
             $('#options').submit()
         });
@@ -145,11 +144,10 @@
         speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
         var jsonString = JSON.stringify(speech);
         setCookie('ocnes_voice', jsonString, 365);
-        console.log("Saving rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+        // console.log("Saving rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
     }
 
     function speech_setup() {
-        console.log("In speech section");
         // Handle rate, pitch, voice inputs
         const synth = window.speechSynthesis;
 
@@ -207,7 +205,7 @@
                 $("#rate").val(speech.rate);
                 $("#pitch").val(speech.pitch);
                 $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
-                console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+                // console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
             } else {
                 // find the default voice and set it selected
                 for (let i = 0; i < voices.length; i++) {
