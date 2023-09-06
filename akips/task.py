@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
+from django.template.loader import render_to_string
 
 from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
 from akips.utils import AKIPS, NIT, ServiceNow
@@ -378,6 +379,9 @@ def refresh_unreachable(mode='poll'):
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
+    # Combine all needed SN updates
+    sn_update_cleared = {}
+
     akips = AKIPS()
     if mode == 'status':
         unreachables = akips.get_unreachable_status()
@@ -417,8 +421,30 @@ def refresh_unreachable(mode='poll'):
 
             time.sleep(sleep_delay)
 
+        # Handle unreachables that have cleared and need notifications
+        cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
+        for cleared in cleared_unreachables:
+            # for summary in cleared.summary_set.all():
+            for summary in cleared.summary_set.filter(sn_incident__isnull=False):
+                logger.debug("unreachable {} has cleared and was port of summary {}".format(cleared,summary))
+                if summary.sn_incident.number in sn_update_cleared:
+                    sn_update_cleared[ summary.sn_incident.number ].append( cleared )
+                else:
+                    sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
+
         # Remove stale entries
         Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
+
+    # logger.info("servicenow cleared {}".format(sn_update_cleared))
+    for number, u_list in sn_update_cleared.items():
+        logger.info("servicenow {} update for cleared {}".format(number,u_list))
+        # message = "unreachables have cleared: {}".format(u_list)
+        ctx = {
+            'type': 'clear',
+            'u_list': u_list
+        }
+        message = render_to_string('akips/incident_status_update.txt',ctx)
+        update_incident.delay(number, message)
 
     finish_time = timezone.now()
     logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
@@ -435,6 +461,9 @@ def refresh_unreachable(mode='poll'):
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
+
+    # ServiceNow updates
+    sn_update_add = {}
 
     # Process all current unreachable records
     unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True)
@@ -473,7 +502,16 @@ def refresh_unreachable(mode='poll'):
                     c_summary.last_event = unreachable.event_start
                 c_summary.last_refresh = now
                 c_summary.save()
-            c_summary.unreachables.add(unreachable)
+            if c_summary.unreachables.filter(id=unreachable.id).exists():
+                logger.debug("Unreachable {} already associated to summary {}".format(unreachable,c_summary))
+            else:
+                logger.debug("Unreachable {} is new to summary {}".format(unreachable,c_summary))
+                c_summary.unreachables.add(unreachable)
+                if c_summary.sn_incident:
+                    if c_summary.sn_incident.number in sn_update_add:
+                        sn_update_add[ c_summary.sn_incident.number ].append( unreachable )
+                    else:
+                        sn_update_add[ c_summary.sn_incident.number ] = [ unreachable ]
 
         elif unreachable.device.group == 'default':
             # Handle Non-Critical switch, ap, and ups devices
@@ -516,7 +554,16 @@ def refresh_unreachable(mode='poll'):
                     t_summary.last_event = unreachable.event_start
                 t_summary.last_refresh = now
                 t_summary.save()
-            t_summary.unreachables.add(unreachable)
+            if t_summary.unreachables.filter(id=unreachable.id).exists():
+                logger.debug("Unreachable {} already associated to summary {}".format(unreachable,t_summary))
+            else:
+                logger.debug("Unreachable {} is new to summary {}".format(unreachable,t_summary))
+                t_summary.unreachables.add(unreachable)
+                if t_summary.sn_incident:
+                    if t_summary.sn_incident.number in sn_update_add:
+                        sn_update_add[ t_summary.sn_incident.number ].append( unreachable )
+                    else:
+                        sn_update_add[ t_summary.sn_incident.number ] = [ unreachable ]
 
             # Find the building summary to update
             try:
@@ -546,13 +593,16 @@ def refresh_unreachable(mode='poll'):
                     b_summary.last_event = unreachable.event_start
                 b_summary.last_refresh = now
                 b_summary.save()
-            # if not b_summary.unreachables.filter(id=unreachable.id).exists():
-            #     b_summary.unreachables.add(unreachable)
-            #     if b_summary.sn_incident:
-            #         update_incident.delay( b_summary.sn_incident.number, "This is a celery update")
-            b_summary.unreachables.add(unreachable)
-            # if b_summary.sn_incident:
-            #     update_incident.delay( b_summary.sn_incident.number, "This is a celery update")
+            if b_summary.unreachables.filter(id=unreachable.id).exists():
+                logger.debug("Unreachable {} already associated to summary {}".format(unreachable,b_summary))
+            else:
+                logger.debug("Unreachable {} is new to summary {}".format(unreachable,b_summary))
+                b_summary.unreachables.add(unreachable)
+                if b_summary.sn_incident:
+                    if b_summary.sn_incident.number in sn_update_add:
+                        sn_update_add[ b_summary.sn_incident.number ].append( unreachable )
+                    else:
+                        sn_update_add[ b_summary.sn_incident.number ] = [ unreachable ]
 
         else:
             # non critical and non default devices
@@ -585,7 +635,16 @@ def refresh_unreachable(mode='poll'):
                     s_summary.last_event = unreachable.event_start
                 s_summary.last_refresh = now
                 s_summary.save()
-            s_summary.unreachables.add(unreachable)
+            if s_summary.unreachables.filter(id=unreachable.id).exists():
+                logger.debug("Unreachable {} already associated to summary {}".format(unreachable,s_summary))
+            else:
+                logger.debug("Unreachable {} is new to summary {}".format(unreachable,s_summary))
+                s_summary.unreachables.add(unreachable)
+                if s_summary.sn_incident:
+                    if s_summary.sn_incident.number in sn_update_add:
+                        sn_update_add[ s_summary.sn_incident.number ].append( unreachable )
+                    else:
+                        sn_update_add[ s_summary.sn_incident.number ] = [ unreachable ]
 
         time.sleep(sleep_delay)
 
@@ -745,6 +804,17 @@ def refresh_unreachable(mode='poll'):
     five_minutes_ago = now - timedelta(minutes=5)
     Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
 
+    # logger.info("servicenow new {}".format(sn_update_add))
+    for number, u_list in sn_update_add.items():
+        logger.info("servicenow {} update for new unreachables{}".format(number,u_list))
+        # message = "new unreachables: {}".format(u_list)
+        context = {
+            'type': 'new',
+            'u_list': u_list
+        }
+        message = render_to_string('akips/incident_status_update.txt',context)
+        update_incident.delay(number, message)
+
     finish_time = timezone.now()
     logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
 
@@ -780,9 +850,9 @@ def refresh_incidents():
 
 @shared_task
 def update_incident(number, message):
-    logger.debug("Updating incident {}".format( number ))
+    logger.debug("Updating incident {} with text {}".format( number, message ))
     servicenow = ServiceNow()
-    servicenow.update_incident( number, "This in an unreachable update")
+    servicenow.update_incident(number,message)
 
 @shared_task
 def refresh_hibernate():
