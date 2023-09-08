@@ -2,10 +2,12 @@ AKIPS Setup
 ===
 
 AKIPS is the engine that drives OCNES, so setup is required for them to interoperate.
+To create effective alert summaries, logical groupings are applied to stratify both 
+a device's place in the network hierarchy but also its role by device type.
 
-## Device Grouping
+## Network Hierarchy Grouping
 
-Use **Auto Grouping** rules to organize the network hierarchy.  This gives AKiPS and 
+Use **Auto Grouping** device rules to organize the network hierarchy.  This gives AKiPS and 
 OCNES some topographical knowledge to facilitate grouping of alerts.
 
 Menu: Admin -> Grouping -> Auto Grouping
@@ -59,7 +61,7 @@ add device group 5-Servers
 assign * * sys SNMPv2-MIB.sysDescr value "/VMware ESXi/" = 5-Servers
 ```
 
-## Device Types
+## Device Type Grouping
 
 ### SysName Naming Convention
 OCNES organizes devices around three main device types.  This is primarily accomplished by
@@ -116,6 +118,16 @@ based on the **type** field.
     ]
 }
 ```
+
+#### Inventory Device Links
+
+Each device tracked in OCNES supports an "inventory url" for use on the 
+dashboards.  They provide a quick way for users to access other tools.
+
+* "SWITCH" https://nit.net.unc.edu/search_switches.pl?ip={}&submit=submit
+* "AP" https://nit.net.unc.edu/search_aps.pl?ip={}&submit=submit
+* "UPS" https://nit.net.unc.edu/search_upses.pl?ip={}&submit=submit
+
 ## AKIPS API Accounts
 
 API access to AKIPS works through either a read-only user account and a read-write user account.
