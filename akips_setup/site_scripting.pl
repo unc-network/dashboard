@@ -6,15 +6,6 @@ my $OCNES_TOKEN = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 sub custom_post_status_to_dashboard
 {  
     my ($arg_ref) = @_;
-    # Parameters from alert
-    my $kind = $arg_ref->{kind};
-    my $tt       = $arg_ref->{tt};
-    my $device   = $arg_ref->{device};
-    my $child   = $arg_ref->{child};
-    my $descr   = $arg_ref->{descr};
-    my $attr   = $arg_ref->{attr};
-    my $alias   = $arg_ref->{alias};
-    my $state   = $arg_ref->{state};
 
     my %dashboard;
     $dashboard{url}          = $OCNES_URL;
@@ -22,19 +13,16 @@ sub custom_post_status_to_dashboard
     $dashboard{method}       = "post";
     $dashboard{content_type} = "application/json";
 
-    # Uncomment the following line to use proxy
-    # $dashboard{proxy}      = "http://xxxx:3128";
-
     my $data = {
         "type"   => "Status",
-        "kind"   => $kind,
-        "tt"     => $tt,
-        "device" => $device,
-        "child"  => $child,
-        "descr"  => $descr,
-        "attr"   => $attr,
-        "alias"  => $alias,
-        "state"  => $state
+        "kind"   => $arg_ref->{kind},
+        "tt"     => $arg_ref->{tt},
+        "device" => $arg_ref->{device},
+        "child"  => $arg_ref->{child},
+        "descr"  => $arg_ref->{descr},
+        "attr"   => $arg_ref->{attr},
+        "alias"  => $arg_ref->{alias},
+        "state"  => $arg_ref->{state}
     };
     $dashboard{data} = encode_json $data;
 
@@ -44,13 +32,6 @@ sub custom_post_status_to_dashboard
 sub custom_post_trap_to_dashboard
 {
     my ($arg_ref) = @_;
-    # Parameters from alert
-    my $tt       = $arg_ref->{tt};
-    my $device   = $arg_ref->{device};
-    my $ipaddr   = $arg_ref->{ipaddr};
-    my $trap_oid = $arg_ref->{trap_oid};
-    my $uptime = $arg_ref->{uptime};
-    my $oids      = $arg_ref->{oids};
         
     my %dashboard;
     $dashboard{url}          = $OCNES_URL;
@@ -58,17 +39,15 @@ sub custom_post_trap_to_dashboard
     $dashboard{method}       = "post";
     $dashboard{content_type} = "application/json";
 
-    # Uncomment the following line to use proxy
-    # $dashboard{proxy}      = "http://xxxx:3128";
-
     my $data = {
         "type"     => "Trap",
-        "tt"       => $tt,
-        "device"   => $device,
-        "ipaddr"   => $ipaddr,
-        "trap_oid" => $trap_oid,
-        "uptime"   => $uptime,
-        "oids"     => $oids 
+        "kind"     => $arg_ref->{kind},
+        "tt"       => $arg_ref->{tt},
+        "device"   => $arg_ref->{device},
+        "ipaddr"   => $arg_ref->{ipaddr},
+        "trap_oid" => $arg_ref->{trap_oid},
+        "uptime"   => $arg_ref->{uptime},
+        "oids"     => $arg_ref->{oids}
     };
     $dashboard{data} = encode_json $data;
 

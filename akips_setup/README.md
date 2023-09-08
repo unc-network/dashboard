@@ -3,6 +3,61 @@ AKIPS Setup
 
 AKIPS is the engine that drives OCNES, so setup is required for them to interoperate.
 
+## Device Grouping
+
+The grouping of devices.
+
+Use **Auto Grouping** rules to organize the network hierarchy.
+
+### Critical Devices
+
+Critical devices are organized into groups with the "1-" name prefix.
+
+```
+add device group 1-DC-Franklin 
+add device group 1-DC-Manning
+
+assign * * sys SNMPv2-MIB.sysLocation value /^DCF-|^Datacenter-/ = 1-DC-Franklin
+assign * * sys SNMPv2-MIB.sysLocation value /^DCM-|^Datacenter-/ = 1-DC-Manning
+```
+
+### Distribution Tiers
+
+High level distribution tiers are organized into groups with the "2-" name prefix.
+
+An additional level is organized under the "3-" name prefix for building entrance switches
+but OCNES does not consume that data since the are bundled in the building groups.
+
+```
+add device group 2-Campus-Services 
+add device group 2-Business-School 
+
+assign * * sys SNMPv2-MIB.sysLocation value /^CSvc-/ = 2-Campus-Services 
+assign * * sys SNMPv2-MIB.sysLocation value /^SoB-/ = 2-Business-School 
+```
+
+### Building
+
+Buildings level access are organized into groups with the "4-" name prefix.
+
+```
+add device group 4-Abernethy-Hall
+add device group 4-Ackland-Art-Museum
+
+assign * * sys SNMPv2-MIB.sysName value /-002-/ = 4-Abernethy-Hall
+assign * * sys SNMPv2-MIB.sysName value /-003-/ = 4-Ackland-Art-Museum
+```
+
+### Special Grouping
+
+Allow for things like servers or standalone devices with the "5-" name prefix.
+
+```
+add device group 5-Servers
+
+assign * * sys SNMPv2-MIB.sysDescr value "/VMware ESXi/" = 5-Servers
+```
+
 ## AKIPS API Accounts
 
 API access to AKIPS works through either a read-only user account and a read-write user account.
