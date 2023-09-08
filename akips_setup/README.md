@@ -82,6 +82,13 @@ You will need to set two values based on your enviornment.
 
 ## Status Alert
 
+OCNES primarily looks at the **ping** and **SNMP** up/down status from AKiPS.  When at least one
+of those attributes shows "down" OCNES will update its dashboard accordingly.
+
+OCNES also looks at two UPS attributes. The output source status gives insight when power issues
+exists and also when battery tests fail. The wait time is needed on the output source to cut down
+on false positives from temporary work or the periodic battery test.
+
 Menu: Admin -> Alerting -> Status Alerts
 
 ```
@@ -94,9 +101,16 @@ wait 5m * * ups UPS-MIB.upsOutputSource = call custom_post_status_to_dashboard
 
 ## Trap Alert
 
+OCNES will take in SNMP trap data for display on the dashboard.  With the variety of possible traps, 
+we have found it most effective to filter out the traps we do not want to see while sending everything
+else to OCNES.
+
 Menu: Admin -> Alerting -> Trap Alerts
 
 ```
+# Example mute to exclude from dashboard feed
+/NET-SNMP-AGENT-MIB.nsNotifyRestart/ = mute
+
 # Send all alerts to dashboard
 /.*/ = call custom_post_trap_to_dashboard
 ```
