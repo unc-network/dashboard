@@ -78,6 +78,9 @@ classifications.  The environment variable NIT_SERVER defines the location.
 
 > NIT_SERVER=nit.net.unc.edu
 
+current url 
+> https://nit.net.unc.edu/json/full_dump_with_aps.json
+
 The JSON data below is obtained from a GET call.  The device type is applied 
 based on the **type** field.
 
