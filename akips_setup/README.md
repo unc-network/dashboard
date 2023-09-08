@@ -59,6 +59,63 @@ add device group 5-Servers
 assign * * sys SNMPv2-MIB.sysDescr value "/VMware ESXi/" = 5-Servers
 ```
 
+## Device Types
+
+### SysName Naming Convention
+OCNES organizes devices around three main device types.  This is primarily accomplished by
+the device naming convention.
+
+* "-tier1", "-bes", "-sw", "-spine", "-pod" are all associated with switches
+* "-ap" will flag 
+* "-ups" will flag 
+
+### Auxiliary Inventory Feed
+
+OCNES can pull inventory data from an external feed to supplement device 
+classifications.  The environment variable NIT_SERVER defines the location.
+
+> NIT_SERVER=nit.net.unc.edu
+
+The JSON data below is obtained from a GET call.  The device type is applied 
+based on the **type** field.
+
+```
+{
+    "errors": [],
+    "links": [],
+    "nodes": [
+        {
+            "type": "switch",
+            "sysdescr": "ExtremeXOS (X460G2-24p-24hp) version 30.7.3.12 30.7.3.12 by release-manager on Fri Feb 11 07:21:30 EST 2022",
+            "sysobjectid": ".1.3.6.1.4.1.1916.2.258",
+            "ip": "172.29.168.113",
+            "hierarchy": "EDGE",
+            "building_name": "Sheps Bldg",
+            "syslocation": "DavH-514-725MLK-Sw2-Rm1244",
+            "id": "172.29.168.113",
+            "building_id": "514"
+        },
+        {
+            "building_id": "670",
+            "id": "172.29.94.14",
+            "building_name": "BotGrEducation",
+            "syslocation": "BotGrEducation",
+            "ip": "172.29.94.14",
+            "sysdescr": "CrN-670-BotGrEducation-AP_A115",
+            "type": "ap"
+        },
+        {
+            "building_id": "670",
+            "syslocation": "BotGrEducation",
+            "building_name": "BotGrEducation",
+            "id": "172.29.147.15",
+            "ip": "172.29.147.15",
+            "sysdescr": null,
+            "type": "ups"
+        }
+    ]
+}
+```
 ## AKIPS API Accounts
 
 API access to AKIPS works through either a read-only user account and a read-write user account.
