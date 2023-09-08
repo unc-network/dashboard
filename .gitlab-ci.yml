@@ -79,10 +79,9 @@ build-ocnes-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - export
     - echo "Building OCNES image..."
     - echo "CI_COMMIT_BRANCH = ${CI_COMMIT_BRANCH}"
-    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_BRANCH_SHORT_SHA}"
+    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_SHORT_SHA}"
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
@@ -101,10 +100,9 @@ build-celery-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - export
     - echo "Building Celery image..."
     - echo "CI_COMMIT_BRANCH = ${CI_COMMIT_BRANCH}"
-    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_BRANCH_SHORT_SHA}"
+    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_SHORT_SHA}"
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
