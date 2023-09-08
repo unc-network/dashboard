@@ -5,9 +5,10 @@ AKIPS is the engine that drives OCNES, so setup is required for them to interope
 
 ## Device Grouping
 
-The grouping of devices.
+Use **Auto Grouping** rules to organize the network hierarchy.  This gives AKiPS and 
+OCNES some topographical knowledge to facilitate grouping of alerts.
 
-Use **Auto Grouping** rules to organize the network hierarchy.
+Menu: Admin -> Grouping -> Auto Grouping
 
 ### Critical Devices
 
@@ -36,7 +37,7 @@ assign * * sys SNMPv2-MIB.sysLocation value /^CSvc-/ = 2-Campus-Services
 assign * * sys SNMPv2-MIB.sysLocation value /^SoB-/ = 2-Business-School 
 ```
 
-### Building
+### Building Networks
 
 Buildings level access are organized into groups with the "4-" name prefix.
 
