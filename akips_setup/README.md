@@ -149,7 +149,7 @@ You will need to set two values based on your enviornment.
 1. hostname of your OCNES instance
 2. token value to use with POST.
 
-## Status Alert
+### Status Alert
 
 OCNES primarily looks at the **ping** and **SNMP** up/down status from AKiPS.  When at least one
 of those attributes shows "down" OCNES will update its dashboard accordingly.
@@ -168,7 +168,7 @@ wait 5m * * ups UPS-MIB.upsOutputSource = call custom_post_status_to_dashboard
 * * battery LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult = call custom_post_status_to_dashboard
 ```
 
-## Trap Alert
+### Trap Alert
 
 OCNES will take in SNMP trap data for display on the dashboard.  With the variety of possible traps, 
 we have found it most effective to filter out the traps we do not want to see while sending everything
