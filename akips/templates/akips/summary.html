@@ -41,10 +41,10 @@
                         <td>{{ summary.comment }}</td>
                     </tr>
                     {% if request.user.is_superuser %}
-                    <tr>
+                    <!-- <tr>
                         <th>Moving Average</th>
                         <td>Now: {{ summary.moving_average }} / Low: {{ avg_low }} / High: {{ avg_high }}</td>
-                    </tr>
+                    </tr> -->
                     {% endif %}
                 </table>
             </div>
@@ -77,6 +77,10 @@
                     <tr>
                         <th>UPS On Battery</th>
                         <td>{{ summary.ups_battery }}</td>
+                    </tr>
+                    <tr>
+                        <th>Incident</th>
+                        <td><a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a></td>
                     </tr>
                 </table>
             </div>
