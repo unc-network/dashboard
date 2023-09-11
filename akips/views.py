@@ -1229,7 +1229,27 @@ def process_webhook_payload(payload):
         logger.warn("Webhook call from {} could not be mapped to a device record".format(payload['device']))
         return False
 
-    if payload['type'] == 'Trap' and not device.maintenance:
+    if payload['kind'] == 'status':
+        Status.objects.update_or_create(
+            device=device,
+            child=payload['child'],
+            attribute=payload['attr'],
+            defaults={
+                'value': payload['state'],
+                'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+            }
+        )
+        return True
+
+    elif payload['kind'] == 'threshold':
+        # no current processing
+        return False
+
+    elif payload['kind'] == 'syslog':
+        # no current processing
+        return False
+
+    elif payload['kind'] == 'trap' and not device.maintenance:
         # Check for Open duplicates
         duplicates = Trap.objects.filter( 
             device=device, 
@@ -1254,18 +1274,6 @@ def process_webhook_payload(payload):
                 uptime=payload['uptime'],
                 oids=json.dumps(payload['oids'])
             )
-        return True
-
-    elif payload['type'] == 'Status':
-        Status.objects.update_or_create(
-            device=device,
-            child=payload['child'],
-            attribute=payload['attr'],
-            defaults={
-                'value': payload['state'],
-                'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
-            }
-        )
         return True
 
     else:
