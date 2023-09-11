@@ -3,7 +3,9 @@ AKIPS Setup
 
 AKIPS is the engine that drives OCNES, so setup is required for them to interoperate.
 To create effective alert summaries, logical groupings are applied to stratify both 
-a device's place in the network hierarchy but also its role by device type.
+a device's place in the network hierarchy but also its device type.
+
+![OCNES device grouping](ocnes_device_grouping.png)
 
 ## Network Hierarchy Grouping
 
@@ -68,7 +70,6 @@ OCNES also groups devices by the type.  This is used in the device counts of the
 * SWITCH
 * AP
 * UPS
-* other
 
 Two methods are used to determine device type.  The first is based on parsing the SysName 
 field from AKiPS and the second is a supplement inventory json feed.
@@ -88,8 +89,8 @@ OCNES can pull inventory data from an external feed to supplement device
 classifications.  The environment variables define the feed location and
 an authorization token.
 
-> INVENTORY_URL=https://device_inventory.unc.edu/json/full_dump.json
-> INVENTORY_TOKEN=ijq@HahZ3iT%^$IneZnuI&3aq@5KI6$!
+    INVENTORY_URL=https://device_inventory.unc.edu/json/full_dump.json
+    INVENTORY_TOKEN=ijq@HahZ3iT%^-IneZnuI&3aq@5KI6$!
 
 The JSON data below is obtained from a GET call.  The device type is applied 
 based on the **type** field.
