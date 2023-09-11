@@ -70,7 +70,7 @@ django-tests:
 # If the previous stages all succeeded, then it is time to build the containers to run in production
 
 # Stage 3:  Create OCNES image
-deploy-ocnes:
+build-ocnes-image:
   stage: deploy
   environment: production
   image:
@@ -79,18 +79,19 @@ deploy-ocnes:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - export
     - echo "Building OCNES image..."
+    - echo "CI_COMMIT_BRANCH = ${CI_COMMIT_BRANCH}"
+    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_SHORT_SHA}"
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_TAG}"
+      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}"
   # rules:
   #   - if: $CI_COMMIT_TAG
 
 
 # Stage 3:  Create Celery image if Dockerfile.Celery changes
-deploy-celery:
+build-celery-image:
   stage: deploy
   environment: production
   image:
@@ -99,12 +100,13 @@ deploy-celery:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - export
     - echo "Building Celery image..."
+    - echo "CI_COMMIT_BRANCH = ${CI_COMMIT_BRANCH}"
+    - echo "CI_COMMIT_SHORT_SHA = ${CI_COMMIT_SHORT_SHA}"
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_TAG}"
+      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}"
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
