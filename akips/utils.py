@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings()
 
 class AKIPS:
-    # Class to handle interactions with the NIT database
+    # Class to handle interactions with AKiPS instance
     akips_server = os.getenv('AKIPS_SERVER', '')
     akips_username = os.getenv('AKIPS_USERNAME', '')
     akips_password = os.getenv('AKIPS_PASSWORD', '')
@@ -403,17 +403,21 @@ class AKIPS:
             else:
                 return r.text
 
-class NIT:
+class Inventory:
     # Class to handle interactions with the NIT
     inventory_url = os.getenv('INVENTORY_URL', '')
+    inventory_token = os.getenv('INVENTORY_TOKEN', '')
     session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
+        headers = {
+            'Authorization': self.inventory_token
+        }
         logger.debug("WAPI GET %s" % (self.inventory_url))
         logger.debug("WAPI GET params: " + pprint.pformat(params))
         # GET requests have 2 args: URL, HEADERS
-        r = self.session.get(self.inventory_url, params=params, verify=False)
+        r = self.session.get(self.inventory_url, headers=headers, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.

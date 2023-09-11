@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.template.loader import render_to_string
 
 from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
-from akips.utils import AKIPS, NIT, ServiceNow
+from akips.utils import AKIPS, Inventory, ServiceNow
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -311,8 +311,8 @@ def refresh_battery_test_status():
     logger.info("refresh battery test status runtime {}".format(finish_time - now))
 
 @shared_task
-def refresh_nit():
-    logger.info("Refreshing nit device data")
+def refresh_inventory():
+    logger.info("Refreshing inventory device data")
     now = timezone.now()
     sleep_delay = 0
 
@@ -322,9 +322,9 @@ def refresh_nit():
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
-    nit = NIT()
-    device_data = nit.get_device_data()
-    #logger.debug("nit data {}".format(device_data))
+    inventory = Inventory()
+    device_data = inventory.get_device_data()
+    #logger.debug("inventory data {}".format(device_data))
     if device_data:
         for device in device_data['nodes']:
             logger.debug("Updating device {}".format(device))
@@ -364,7 +364,7 @@ def refresh_nit():
             time.sleep(sleep_delay)
 
     finish_time = timezone.now()
-    logger.info("NIT refresh runtime {}".format(finish_time - now))
+    logger.info("Inventory refresh runtime {}".format(finish_time - now))
 
 
 @shared_task
