@@ -54,6 +54,8 @@ sub custom_post_trap_to_dashboard
 
 sub web_manual_grouping
 {
+  # Usage: curl -s "https://{akips-server}/api-script?password={api-rw-pwd};function=web_manual_grouping;type=device;group=maintenance_mode;device={device_name};mode={assign|clear}"
+
   my $type   = cgi_param ('type')   || "";
   my $group  = cgi_param ('group')  || "";
   my $mode   = cgi_param ('mode')   || "";
