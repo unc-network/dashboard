@@ -154,7 +154,7 @@ For purposes of OCNES, the api-rw account is needed since some functions require
 
 ## Site Scripts
 
-AKiPS supports custom api scripts that can be saved through the Site Scripting web page. OCNES
+AKiPS supports custom api scripts that can be saved through the **Site Scripting** web page. OCNES
 uses methods to push data from AKiPS and other methods to interface with AKiPS data.
 
 Menu: Admin -> API -> Site Scripting
