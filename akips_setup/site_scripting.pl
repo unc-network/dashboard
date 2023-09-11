@@ -1,4 +1,4 @@
-use MIME::Base64 qw(encode_base64);
+use JSON;
 
 my $OCNES_URL = "https://ocnes.example.com/webhook/";
 my $OCNES_TOKEN = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
