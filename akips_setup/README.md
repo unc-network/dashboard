@@ -161,9 +161,11 @@ Menu: Admin -> API -> Site Scripting
 
 Copy paste the contents of the [akips_site_scripting.pl](site_scripting.pl) file into the site script.
 
-You will need to set two values based on your environment.
-1. hostname of your OCNES instance
-2. token value to use with POST.
+Inside the contents, you will need to set two values based on your OCNES deployment. Find these
+two lines and set appropriately.
+
+* my $OCNES_URL = "https://ocnes.example.com/webhook/";
+* my $OCNES_TOKEN = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 The token defined in the site script should be defined as environment variable in OCNES.
 
