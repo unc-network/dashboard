@@ -154,15 +154,20 @@ For purposes of OCNES, the api-rw account is needed since some functions require
 
 ## Site Scripts
 
-Menu: Admin -> API -> Site Scripting
+AKiPS supports custom api scripts that can be saved through the Site Scripting web page. OCNES
+uses methods to push data from AKiPS and other methods to interface with AKiPS data.
 
-![AKIPS Site Scripting configuration page](akips_site_scripting.png)
+Menu: Admin -> API -> Site Scripting
 
 Copy paste the contents of the [akips_site_scripting.pl](site_scripting.pl) file into the site script.
 
 You will need to set two values based on your environment.
 1. hostname of your OCNES instance
 2. token value to use with POST.
+
+The token defined in the site script should be defined as environment variable in OCNES.
+
+    AKIPS_WEBHOOK_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ### Status Alert
 
