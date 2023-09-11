@@ -405,20 +405,15 @@ class AKIPS:
 
 class NIT:
     # Class to handle interactions with the NIT
-    nit_server = os.getenv('NIT_SERVER', '')
-    nit_username = os.getenv('NIT_USERNAME', '')
-    nit_password = os.getenv('NIT_PASSWORD', '')
+    inventory_url = os.getenv('INVENTORY_URL', '')
     session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
-        url = 'https://' + self.nit_server + '/json/full_dump_with_aps.json'
-        logger.debug("WAPI GET %s" % (url))
+        logger.debug("WAPI GET %s" % (self.inventory_url))
         logger.debug("WAPI GET params: " + pprint.pformat(params))
-        #params['username'] = self.nit_username
-        #params['password'] = self.nit_password
         # GET requests have 2 args: URL, HEADERS
-        r = self.session.get(url, params=params, verify=False)
+        r = self.session.get(self.inventory_url, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.

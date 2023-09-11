@@ -63,6 +63,13 @@ assign * * sys SNMPv2-MIB.sysDescr value "/VMware ESXi/" = 5-Servers
 
 ## Device Type Grouping
 
+OCNES also groups devices by the type.  This is used in the device counts of the dashboards.
+
+* SWITCH
+* AP
+* UPS
+* other
+
 ### SysName Naming Convention
 OCNES organizes devices around three main device types.  This is primarily accomplished by
 the device naming convention.
@@ -74,12 +81,9 @@ the device naming convention.
 ### Auxiliary Inventory Feed
 
 OCNES can pull inventory data from an external feed to supplement device 
-classifications.  The environment variable NIT_SERVER defines the location.
+classifications.  The environment variable INVENTORY_URL defines the location.
 
-> NIT_SERVER=nit.net.unc.edu
-
-current url 
-> https://nit.net.unc.edu/json/full_dump_with_aps.json
+> INVENTORY_URL=https://nit.net.unc.edu/json/full_dump_with_aps.json
 
 The JSON data below is obtained from a GET call.  The device type is applied 
 based on the **type** field.
