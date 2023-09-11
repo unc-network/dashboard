@@ -145,11 +145,12 @@ dashboards.  They provide a quick way for users to access other tools.
 ## AKIPS API Accounts
 
 API access to AKIPS works through either a read-only user account and a read-write user account.
-You will need to follow the documenation and enabled the local accounts via **User Settings**.
+You will need to follow the documentation and enabled the local accounts via **User Settings**.
 For purposes of OCNES, the api-rw account is needed since some functions require extra access.
 
-1. api-ro
-2. api-rw
+    AKIPS_SERVER=akips_server.example.com
+    AKIPS_USERNAME=api-rw
+    AKIPS_PASSWORD={api-rw-pwd}
 
 ## Site Scripts
 
@@ -159,7 +160,7 @@ Menu: Admin -> API -> Site Scripting
 
 Copy paste the contents of the [akips_site_scripting.pl](site_scripting.pl) file into the site script.
 
-You will need to set two values based on your enviornment.
+You will need to set two values based on your environment.
 1. hostname of your OCNES instance
 2. token value to use with POST.
 
