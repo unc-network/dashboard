@@ -1195,8 +1195,8 @@ def process_webhook_payload(payload):
     if 'device' not in payload:
         logger.warn("Webhook is missing device field")
         return False
-    elif 'type' not in payload:
-        logger.warn("Webhook is missing type field")
+    elif 'kind' not in payload:
+        logger.warn("Webhook is missing kind field")
         return False
 
     device = None
@@ -1277,5 +1277,5 @@ def process_webhook_payload(payload):
         return True
 
     else:
-        logger.warn("Unknown type value {}".format( str(payload) ))
+        logger.warn("Unknown kind value {}".format( str(payload) ))
         return False
