@@ -85,7 +85,7 @@ build-ocnes-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_COMMIT_TIMESTAMP:0:13}${CI_COMMIT_TIMESTAMP:14:2}-${CI_COMMIT_SHORT_SHA}"
+      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_COMMIT_TIMESTAMP:0:13}${CI_COMMIT_TIMESTAMP:14:2}${CI_COMMIT_TIMESTAMP:17:2}"
   # rules:
   #   - if: $CI_COMMIT_TAG
 
@@ -106,7 +106,7 @@ build-celery-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_COMMIT_TIMESTAMP:0:13}${CI_COMMIT_TIMESTAMP:14:2}-${CI_COMMIT_SHORT_SHA}"
+      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_COMMIT_TIMESTAMP:0:13}${CI_COMMIT_TIMESTAMP:14:2}${CI_COMMIT_TIMESTAMP:17:2}"
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
