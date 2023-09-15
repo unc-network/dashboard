@@ -16,10 +16,16 @@ stages:
     ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
 
 # Define variables needed by the various jobs
-variables:
-  IMAGEVERSION: "${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-  OCNES_IMAGE: "${CI_REGISTRY_IMAGE}/ocnes:${IMAGEVERSION}"
-  CELERY_IMAGE: "${CI_REGISTRY_IMAGE}/celery:${IMAGEVERSION}"
+# Whatever you do, do NOT count on variable de-referencing here. e.g.,
+# VAR1: "something"
+# VAR2: "${VAR1}"
+# results in VAR2 = "VAR1", NOT VAR2 = "something"
+#
+# Also, not all CI_ variables exist at this moment in time.  While CI_COMMIT_BRANCH apparently does,
+# things like CI_PIPELINE_CREATED_AT do not!  That's fun to figure out.
+# 
+# Use this for rudimentary values only.
+# variables:
   # Tell Docker CLI how to talk to Docker daemon
   # DOCKER_HOST: tcp://dockerdaemon:2375
   # DOCKER_HOST: tcp://localhost:2375
@@ -98,7 +104,7 @@ build-ocnes-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      --destination "${OCNES_IMAGE}"
+      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
   # rules:
   #   - if: $CI_COMMIT_TAG
 
@@ -118,7 +124,7 @@ build-celery-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      --destination "${CELERY_IMAGE}"
+      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
@@ -140,9 +146,9 @@ tag-latest-build:
     GODEBUG: x509ignoreCN=0
   script:
     - echo "Tagging OCNES image as latest..."
-    - crane tag "${OCNES_IMAGE}" latest
+    - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
     - echo "Tagging Celery image as latest..."
-    - crane tag "${CELERY_IMAGE}" latest
+    - crane tag "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
 
 
 # References:
