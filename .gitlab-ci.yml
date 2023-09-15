@@ -107,6 +107,12 @@ build-celery-image:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_COMMIT_TIMESTAMP:0:13}${CI_COMMIT_TIMESTAMP:14:2}${CI_COMMIT_TIMESTAMP:17:2}"
+    - echo "FINAL STEP / TEST"
+    - echo "Trying to pull/push the nginx image to our registry."
+    - echo "Using this to test if we can actually pull and run an image..."
+    - docker pull docker.io/library/nginx
+    - docker login -u ${GITLAB_REPO_USER} -p ${GITLAB_REPO_PASSWORD} ${CI_REGISTRY}
+    - docker push docker.io/library/nginx "${CI_REGISTRY_IMAGE}/nginx"
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
