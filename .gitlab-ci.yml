@@ -145,6 +145,8 @@ tag-latest-build:
     GIT_STRATEGY: none
     GODEBUG: x509ignoreCN=0
   script:
+    - echo "Logging into GitLab Container Registry..."
+    - crane auth login -u ${GITLAB_REGISTRY_USER} -p ${GITLAB_REGISTRY_PASSWORD}
     - echo "Tagging OCNES image as latest..."
     - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
     - echo "Tagging Celery image as latest..."
