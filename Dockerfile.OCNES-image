@@ -23,5 +23,17 @@ RUN pip install -r /dashboard/requirements.txt
 RUN pip install gunicorn
 
 RUN cd /dashboard
+WORKDIR /dashboard
 
-CMD [ "echo", "OCNES is running..."]
+EXPOSE 8000
+
+# Make sure the basics are all in place
+# RUN python3 manage.py createcachetable
+RUN python3 manage.py makemigrations
+# RUN python3 manage.py migrate
+RUN python3 manage.py collectstatic
+
+# Start Gunicorn processes
+RUN echo "Starting Gunicorn..."
+
+CMD [ "gunicorn", "wsgi"]
