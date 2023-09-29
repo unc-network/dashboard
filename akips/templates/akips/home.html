@@ -171,6 +171,20 @@
                 barChart.data.datasets[1].data = result['chart_trap_data'];
                 barChart.data.datasets[2].data = result['chart_battery_data'];
                 barChart.update();
+
+                if (result['above_max_unreachable']) {
+                    //alert("above max unreachable");
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'AKiPS Max Unreachable Devices Exceeded',
+                        body: 'Summary updates are paused because AKiPS reports an excessive number of devices down at once. \
+                               You may want to check the \
+                               <a href="https://akips.net.unc.edu/status-reporter?mode=unreachable_devices;controls=device;limit=100;refresh=15;title=Unreachable+Devices;ping4=on;ping6=on;snmp=on">AKiPS Unreachable Device Report</a> \
+                               directly.',
+                        autohide: true,
+                        delay: 30000
+                    });
+                }
             },
             error: function (xhr, status, error) {
                 console.log("Unable to refresh chart");

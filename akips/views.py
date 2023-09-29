@@ -1096,6 +1096,14 @@ class ChartDataView(LoginRequiredMixin, View):
             'chart_battery_data': list( battery_data.values() ),
         }
 
+        # Check and notify around MAX_UNREACHABLE
+        current_unreachable_count = Unreachable.objects.filter(status='Open', device__maintenance=False).count()
+        if settings.MAX_UNREACHABLE and current_unreachable_count >= settings.MAX_UNREACHABLE:
+            logger.warning("Unreachables are above acceptable limit")
+            result['above_max_unreachable'] = True
+        else:
+            result['above_max_unreachable'] = False
+
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
