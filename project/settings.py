@@ -318,3 +318,6 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
+
+# OCNES Specific
+MAX_UNREACHABLE = int(os.getenv('MAX_UNREACHABLE', 2000))

@@ -467,6 +467,14 @@ def refresh_unreachable(mode='poll'):
 
     # Process all current unreachable records
     unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True)
+
+    if settings.MAX_UNREACHABLE and len(unreachables) >= settings.MAX_UNREACHABLE:
+        # Something may be wrong, stop processing summaries
+        logger.error(f"AKiPS is showing an excessive amount of devices down and summary updates are being halted.  {len(unreachables)} vs max allowed {settings.MAX_UNREACHABLE}")
+        finish_time = timezone.now()
+        logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
+        return
+
     for unreachable in unreachables:
         logger.debug("Processing unreachable {}".format(unreachable))
 
