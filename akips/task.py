@@ -991,5 +991,7 @@ def test_locking(self):
         finally:
             logger.debug(f"{self.request.id} test locking, releasing lock now")
             cache.delete(lock_id)
+    else:
+        logger.debug(f"{self.request.id} failed to get task lock")
 
     logger.debug(f"{self.request.id} Finished test task")
