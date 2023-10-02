@@ -522,7 +522,7 @@ def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
 def refresh_unreachable(self, mode='poll', lock_expire=120):
     ''' Check for locks test '''
     logger.info(f"Task {self.request.id} starting refresh unreachable task")
-    lock_id = "task test"
+    lock_id = "refresh_unreachable_task"
     lock_expire = lock_expire
 
 
