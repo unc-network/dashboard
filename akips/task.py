@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 from django.db.models import Count
 from django.template.loader import render_to_string
@@ -973,3 +974,22 @@ def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
 
     logger.info(f'revoking following duplicate tasks - {duplicate_tasks}')
     current_app.control.revoke(duplicate_tasks, terminate=True, signal='SIGKILL')
+
+@shared_task(bind=True)
+def test_locking(self):
+    ''' Check for locks test '''
+    logger.debug(f"{self.request.id} Starting test task")
+    lock_id = "task test"
+    lock_expire = 60
+
+
+    # cache.add fails if the key already exists
+    if cache.add(lock_id, True, lock_expire):
+        try:
+            logger.debug(f"{self.request.id} test locking, task work now")
+            time.sleep(20)
+        finally:
+            logger.debug(f"{self.request.id} test locking, releasing lock now")
+            cache.delete(lock_id)
+
+    logger.debug(f"{self.request.id} Finished test task")
