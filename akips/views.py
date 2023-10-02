@@ -31,7 +31,8 @@ from django_celery_results.models import TaskResult
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
 from .forms import IncidentForm, HibernateForm, PreferencesForm
 from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
-from .utils import AKIPS, ServiceNow, pretty_duration
+from .utils import AKIPS, pretty_duration
+from akips.servicenow import ServiceNow
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
