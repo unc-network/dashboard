@@ -34,6 +34,13 @@ RUN python3 manage.py makemigrations
 RUN python3 manage.py collectstatic
 
 # Start Gunicorn processes
+
+# Note the additional flag --forwarded-allow-ips="*" is needed because
+# by default gunicorn only allows 127.0.0.1 to handle set secure headers.
+# As we will run this image in a K3s environ where Traefik is acting as
+# the reverse proxy, we do not know Traefik's IP in advance, and gunicorn
+# is isolated from the outside world, we can disable this limitation.
+# https://docs.gunicorn.org/en/latest/settings.html#forwarded-allow-ips
 RUN echo "Starting Gunicorn..."
 
-CMD [ "gunicorn", "wsgi"]
+CMD [ "gunicorn", '--forwarded-allow-ips="*"',"wsgi"]
