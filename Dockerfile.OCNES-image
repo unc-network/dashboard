@@ -43,4 +43,4 @@ RUN python3 manage.py collectstatic
 # https://docs.gunicorn.org/en/latest/settings.html#forwarded-allow-ips
 RUN echo "Starting Gunicorn..."
 
-CMD [ "gunicorn", "--forwarded-allow-ips='*'","wsgi"]
+CMD [ "gunicorn", "--forwarded-allow-ips='*'", "--bind=0.0.0.0:8000", "wsgi"]
