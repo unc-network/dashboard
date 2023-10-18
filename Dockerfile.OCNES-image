@@ -28,11 +28,15 @@ WORKDIR /dashboard
 EXPOSE 8000
 
 # Make sure the basics are all in place
-RUN python3 manage.py createcachetable
+# Note:  We cannot run commands which actually modify the database
+#        here as this Dockerfile runs on GitLab.  If we run them, they
+#        will generate a SQLite3 db.sqlite3 that is stored within the
+#        container.
+# RUN python3 manage.py createcachetable
 RUN python3 manage.py makemigrations
-RUN python3 manage.py migrate
+# RUN python3 manage.py migrate
 RUN python3 manage.py collectstatic
-RUN python3 manage.py check
+# RUN python3 manage.py check
 
 # Start Gunicorn processes
 
@@ -44,4 +48,6 @@ RUN python3 manage.py check
 # https://docs.gunicorn.org/en/latest/settings.html#forwarded-allow-ips
 RUN echo "Starting Gunicorn..."
 
-CMD [ "gunicorn", "--forwarded-allow-ips='*'", "--bind=0.0.0.0:8000", "wsgi"]
+# CMD [ "gunicorn", "--forwarded-allow-ips='*'", "--bind=0.0.0.0:8000", "wsgi"]
+RUN chmod 755 /dashboard/runcontainer.sh
+CMD [ "/dashboard/runcontainer.sh"]
