@@ -165,11 +165,14 @@ def refresh_akips_devices():
 
 @shared_task
 def refresh_ping_status():
+    """
+    Refresh local ping data
+    """
     logger.info("refreshing ping status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -205,11 +208,14 @@ def refresh_ping_status():
 
 @shared_task
 def refresh_snmp_status():
+    """
+    Refresh local snmp data
+    """
     logger.info("refreshing snmp status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -245,11 +251,14 @@ def refresh_snmp_status():
 
 @shared_task
 def refresh_ups_status():
+    """
+    Refresh local ups data
+    """
     logger.info("refreshing ups status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -285,11 +294,14 @@ def refresh_ups_status():
 
 @shared_task
 def refresh_battery_test_status():
+    """
+    Refresh local battery test data
+    """
     logger.info("refreshing battery test status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -325,6 +337,9 @@ def refresh_battery_test_status():
 
 @shared_task
 def refresh_inventory():
+    """
+    Refresh external device inventory feed
+    """
     logger.info("Refreshing inventory device data")
     now = timezone.now()
     sleep_delay = 0
@@ -379,7 +394,9 @@ def refresh_inventory():
 
 @shared_task
 def refresh_incidents():
-    ''' Check for any needed updates '''
+    """
+    Check for any needed updates
+    """
     logger.debug("Refreshing incidents")
     now = timezone.now()
     servicenow = ServiceNow()
@@ -409,17 +426,23 @@ def refresh_incidents():
 
 @shared_task
 def update_incident(number, message):
+    """
+    Update servicenow incident
+    """
     logger.debug("Updating incident {} with text {}".format( number, message ))
     servicenow = ServiceNow()
     servicenow.update_incident(number,message)
 
 @shared_task
 def refresh_hibernate():
+    """
+    Refresh hibernate status
+    """
     logger.info("Refreshing hibernated devices")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -475,8 +498,10 @@ def refresh_hibernate():
     logger.info("hibernate refresh runtime {}".format(finish_time - now))
 
 @shared_task
-#def clear_traps():
 def cleanup_dashboard_data():
+    """
+    Remove old data
+    """
     logger.info("Cleanup dashboard data is starting")
     now = timezone.now()
 
@@ -509,7 +534,9 @@ def cleanup_dashboard_data():
 
 @shared_task
 def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
-    ''' Testing duplicate task cleanup'''
+    """ 
+    Testing duplicate task cleanup
+    """
     logger.info("Duplicate task check for {}".format(task_name))
     task_args = '"' + str(tuple(task_args)) + '"'
     logger.info(f'Current Task Args - {task_args}')
@@ -527,7 +554,9 @@ def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
 
 @shared_task(bind=True)
 def refresh_unreachable(self, mode='poll', lock_expire=120):
-    ''' Check for locks test '''
+    """ 
+    Check for locks test
+    """
     logger.info(f"Task {self.request.id} starting refresh unreachable task")
     lock_id = "refresh_unreachable_task"
     lock_expire = lock_expire
