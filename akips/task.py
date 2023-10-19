@@ -1,20 +1,24 @@
-from celery import shared_task, current_app
-from django_celery_results.models import TaskResult
+"""
+Define tasks to be run in the background
+"""
 import logging
 import time
 import re
 from datetime import datetime, timedelta
 
+from celery import shared_task, current_app
+from django_celery_results.models import TaskResult
+
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
-from django.db.models import Count
 from django.template.loader import render_to_string
 
-from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
 from akips.utils import AKIPS, Inventory
 from akips.ocnes import EventManager
 from akips.servicenow import ServiceNow
+
+from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -22,16 +26,22 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def example_task():
+    """
+    A simple task example
+    """
     logger.info("task is running")
 
 
 @shared_task
 def refresh_akips_devices():
+    """
+    Refresh local data for devices
+    """
     logger.info("refreshing akips devices")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -50,11 +60,11 @@ def refresh_akips_devices():
             if match_name:
                 tier = match_name.group('tier')
                 bldg_name = match_name.group('bldg_name')
-                type = match_name.group('type').upper()
+                device_type = match_name.group('type').upper()
             elif match_location:
                 tier = match_location.group('tier')
                 bldg_name = match_location.group('bldg_name')
-                type = match_location.group('type').upper()
+                device_type = match_location.group('type').upper()
             else:
                 match_snowflake = re.match(
                     r'^(?P<tier>(RC|Micro|VPN))-', value['SNMPv2-MIB.sysName'])
@@ -108,7 +118,7 @@ def refresh_akips_devices():
             try:
                 device = Device.objects.get(name=key)
             except Device.DoesNotExist:
-                logger.warn("Attempting to set group membership for unknown device {}".format(key))
+                logger.warning("Attempting to set group membership for unknown device {}".format(key))
                 continue
 
             critical = False
@@ -173,7 +183,7 @@ def refresh_ping_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -213,7 +223,7 @@ def refresh_snmp_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -253,7 +263,7 @@ def refresh_ups_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -293,7 +303,7 @@ def refresh_battery_test_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -319,7 +329,7 @@ def refresh_inventory():
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -334,30 +344,27 @@ def refresh_inventory():
             if 'hierarchy' in device and device['hierarchy']:
                 hierarchy = device['hierarchy']
                 if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD']:
-                    type = 'SWITCH'
+                    device_type = 'SWITCH'
                 else:
-                    type = device['hierarchy']
+                    device_type = device['hierarchy']
             elif 'type' in device and device['type']:
                 hierarchy = ''
-                type = device['type'].upper()
+                device_type = device['type'].upper()
             else:
                 hierarchy = ''
-                type = ''
+                device_type = ''
             if device['building_name'] is None:
                 device['building_name'] = ''
-            
-            inventory_url = ''
-            if type.upper() == 'SWITCH':
-                inventory_url = 'https://nit.net.unc.edu/search_switches.pl?ip={}&submit=submit'.format(device['ip'])
-            elif type.upper() == 'AP':
-                inventory_url = 'https://nit.net.unc.edu/search_aps.pl?ip={}&submit=submit'.format(device['ip'])
-            elif type.upper() == 'UPS':
-                inventory_url = 'https://nit.net.unc.edu/search_upses.pl?ip={}&submit=submit'.format(device['ip'])
+
+            if device['inventory_url']:
+                inventory_url = device['inventory_url']
+            else:
+                inventory_url = ''
 
             Device.objects.filter(ip4addr=device['ip']).update(
                 # tier=device['tier1'],
                 # building_name=device['building_name'],
-                type=type.upper(),
+                type=device_type.upper(),
                 hierarchy=hierarchy.upper(),
                 # type=device['type'].upper()
                 # type=device['hierarchy'].upper()
