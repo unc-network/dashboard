@@ -101,46 +101,40 @@ based on the **type** field.
     "links": [],
     "nodes": [
         {
+            "ip": "172.29.8.16",
             "type": "switch",
-            "sysdescr": "ExtremeXOS (X460G2-24p-24hp) version 30.7.3.12 30.7.3.12 by release-manager on Fri Feb 11 07:21:30 EST 2022",
-            "sysobjectid": ".1.3.6.1.4.1.1916.2.258",
-            "ip": "172.29.168.113",
+            "building_name": "Physician Off",
             "hierarchy": "EDGE",
-            "building_name": "Sheps Bldg",
-            "syslocation": "DavH-514-725MLK-Sw2-Rm1244",
-            "id": "172.29.168.113",
-            "building_id": "514"
+            "building_id": "658",
+            "sysobjectid": ".1.3.6.1.4.1.1916.2.258",
+            "sysdescr": "ExtremeXOS (X460G2-24p-24hp) version 30.7.3.12 30.7.3.12 by release-manager on Fri Feb 11 07:21:30 EST 2022",
+            "id": "172.29.8.16",
+            "inventory_url": "https://nit.net.unc.edu/search_switches.pl?ip=172.29.8.16&submit=submit",
+            "syslocation": "Mars-658-PhysicianOff-SW5-RmG169"
         },
         {
-            "building_id": "670",
-            "id": "172.29.94.14",
-            "building_name": "BotGrEducation",
-            "syslocation": "BotGrEducation",
-            "ip": "172.29.94.14",
-            "sysdescr": "CrN-670-BotGrEducation-AP_A115",
-            "type": "ap"
+            "building_id": "643",
+            "sysdescr": "CrNR-643-RamsVil560PH-AP_1106",
+            "inventory_url": "https://nit.net.unc.edu/search_aps.pl?ip=172.29.72.55&submit=submit",
+            "syslocation": "RamsVil 560 PH",
+            "id": "172.29.72.55",
+            "ip": "172.29.72.55",
+            "type": "ap",
+            "building_name": "RamsVil 560 PH"
         },
         {
-            "building_id": "670",
-            "syslocation": "BotGrEducation",
-            "building_name": "BotGrEducation",
-            "id": "172.29.147.15",
-            "ip": "172.29.147.15",
-            "sysdescr": null,
-            "type": "ups"
-        }
+            "type": "ap",
+            "building_name": "RamsVil 560 PH",
+            "ip": "172.29.72.61",
+            "sysdescr": "CrNR-643-RamsVil560PH-AP_11H",
+            "syslocation": "RamsVil 560 PH",
+            "inventory_url": "https://nit.net.unc.edu/search_aps.pl?ip=172.29.72.61&submit=submit",
+            "id": "172.29.72.61",
+            "building_id": "643"
+        },
     ]
 }
 ```
-
-#### Inventory Device Links
-
-Each device tracked in OCNES supports an "inventory url" for use on the 
-dashboards.  They provide a quick way for users to access other tools.
-
-* "SWITCH" https://nit.net.unc.edu/search_switches.pl?ip={}&submit=submit
-* "AP" https://nit.net.unc.edu/search_aps.pl?ip={}&submit=submit
-* "UPS" https://nit.net.unc.edu/search_upses.pl?ip={}&submit=submit
 
 ## AKIPS API Accounts
 
