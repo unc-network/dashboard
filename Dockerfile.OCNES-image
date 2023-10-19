@@ -18,9 +18,9 @@ RUN cd /
 # system to exposes things like the requirements.txt file so we can install
 # all the relevant Python modules for this project
 COPY . /dashboard/
-RUN pip install --upgrade pip
-RUN pip install -r /dashboard/requirements.txt
-RUN pip install gunicorn
+RUN pip3 install --upgrade pip
+RUN pip3 install -r /dashboard/requirements.txt
+RUN pip3 install gunicorn
 
 RUN cd /dashboard
 WORKDIR /dashboard
@@ -28,12 +28,26 @@ WORKDIR /dashboard
 EXPOSE 8000
 
 # Make sure the basics are all in place
+# Note:  We cannot run commands which actually modify the database
+#        here as this Dockerfile runs on GitLab.  If we run them, they
+#        will generate a SQLite3 db.sqlite3 that is stored within the
+#        container.
 # RUN python3 manage.py createcachetable
 RUN python3 manage.py makemigrations
 # RUN python3 manage.py migrate
 RUN python3 manage.py collectstatic
+# RUN python3 manage.py check
 
 # Start Gunicorn processes
+
+# Note the additional flag --forwarded-allow-ips="*" is needed because
+# by default gunicorn only allows 127.0.0.1 to handle set secure headers.
+# As we will run this image in a K3s environ where Traefik is acting as
+# the reverse proxy, we do not know Traefik's IP in advance, and gunicorn
+# is isolated from the outside world, we can disable this limitation.
+# https://docs.gunicorn.org/en/latest/settings.html#forwarded-allow-ips
 RUN echo "Starting Gunicorn..."
 
-CMD [ "gunicorn", "wsgi"]
+# CMD [ "gunicorn", "--forwarded-allow-ips='*'", "--bind=0.0.0.0:8000", "wsgi"]
+RUN chmod 755 /dashboard/runcontainer.sh
+CMD [ "/dashboard/runcontainer.sh"]
