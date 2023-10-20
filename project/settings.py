@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 import os
 import sys
+from datetime import timedelta
 import ldap
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
@@ -315,6 +316,61 @@ CELERY_RESULT_EXTENDED = True
 
 # django-celery-beat
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Celery Schedule Defaults
+CELERY_BEAT_SCHEDULE = {
+    'Refresh AKIPS Devices': {
+        'task': 'akips.task.refresh_akips_devices',
+        'schedule': timedelta(hours=2),
+        'description': 'Update the local cache of devices registered in AKiPS.'
+    },
+    'Refresh Inventory Feed': {
+        'task': 'akips.task.refresh_inventory',
+        'schedule': timedelta(hours=4),
+        'description': 'Pull device details from the external inventory feed.'
+    },
+    'Refresh Unreachable': {
+        'task': 'akips.task.refresh_unreachable',
+        'schedule': timedelta(seconds=30),
+        # 'kwargs': {"mode": "status"},
+        'description': 'This is the primary job that calculates and updates summary data.'
+    },
+    'Refresh SNMP Status': {
+        'task': 'akips.task.refresh_snmp_status',
+        'schedule': timedelta(hours=1),
+        'description': 'Synchronize the local SNMP status for all AKiPS devices.'
+    },
+    'Refresh Ping Status': {
+        'task': 'akips.task.refresh_ping_status',
+        'schedule': timedelta(hours=1),
+        'description': 'Synchronize the local Ping status for all AKiPS devices.'
+    },
+    'Refresh UPS Status': {
+        'task': 'akips.task.refresh_ups_status',
+        'schedule': timedelta(hours=1),
+        'description': 'Synchronize the local UPS status for all AKiPS devices.'
+    },
+    'Refresh Battery Test Status': {
+        'task': 'akips.task.refresh_battery_test_status',
+        'schedule': timedelta(hours=4),
+        'description': 'Synchronize the local Battery Test status for all AKiPS devices.'
+    },
+    'Refresh Hibernate': {
+        'task': 'akips.task.refresh_hibernate',
+        'schedule': timedelta(minutes=1),
+        'description': 'Review hibernate device requests and update device status if needed.'
+    },
+    'Refresh ServiceNow': {
+        'task': 'akips.task.refresh_incidents',
+        'schedule': timedelta(minutes=10),
+        'description': 'Refresh our ServiceNow incident status if needed.'
+    },
+    'Cleanup Dashboard Data': {
+        'task': 'akips.task.cleanup_dashboard_data',
+        'schedule': timedelta(hours=1),
+        'description': 'Basic task to remove old data no longer needed or helpful.'
+    }
+}
 
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
