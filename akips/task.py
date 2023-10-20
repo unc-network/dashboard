@@ -565,7 +565,7 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
     # cache.add fails if the key already exists
     if cache.add(lock_id, True, lock_expire):
         try:
-            logger.info(f"Task {self.request.id} obtained refresh unreachable task lock")
+            logger.debug(f"Task {self.request.id} obtained refresh unreachable task lock")
             em = EventManager()
 
             sn_update_cleared = em.refresh_unreachable(mode=mode)
@@ -589,9 +589,9 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
                 update_incident.delay(number, message)
 
         finally:
-            logger.info(f"Task {self.request.id} releasing refresh unreachable task lock")
+            logger.debug(f"Task {self.request.id} releasing refresh unreachable task lock")
             cache.delete(lock_id)
     else:
-        logger.info(f"Task {self.request.id} failed to get refresh unreachable task lock")
+        logger.warning(f"Task {self.request.id} failed to get refresh unreachable task lock")
 
     logger.info(f"Task {self.request.id} finished refresh unreachable task")
