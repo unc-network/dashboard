@@ -128,7 +128,7 @@ LOGOUT_REDIRECT_URL = "/"
 # https://django-auth-ldap.readthedocs.io/en/latest/example.html
 
 # Baseline configuration.
-AUTH_LDAP_SERVER_URI = "ldaps://ldap.unc.edu"
+AUTH_LDAP_SERVER_URI = os.getenv('LDAP_SERVER','ldaps://ldap.unc.edu')
 
 AUTH_LDAP_BIND_DN = os.getenv('LDAP_USERNAME', '')
 AUTH_LDAP_BIND_PASSWORD = os.getenv('LDAP_PASSWORD', '')
