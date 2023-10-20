@@ -62,7 +62,7 @@ services:
     working_dir: /dashboard
     env_file: .env
     restart: unless-stopped
-    command: [ 'celery', '--app', 'project', 'worker', '-B' ]
+    command: [ 'celery', '--app', 'project', 'worker', '--autoscale=6,2', '-B' ]
     depends_on:
       ocnes:
         condition: service_healthy
