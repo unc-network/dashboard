@@ -59,18 +59,16 @@ DATABASE_USER=postgres
 DATABASE_PASSWORD=OCNESisCOOL
 POSTGRESQL_SERVICE_HOST=db
 POSTGRESQL_SERVICE_PORT=5432
+POSTGRES_PASSWORD=OCNESisCOOL
 
 # AKIPS variables
 AKIPS_SERVER=<FQDN/IP of AKiPS server>
-#AKIPS_USERNAME=api-ro
-#AKIPS_PASSWORD=<api-ro_password>
 AKIPS_USERNAME=api-rw
 AKIPS_PASSWORD=<api-rw_password>
 
-# NIT variables (unique to UNC CH)
-NIT_SERVER=<FQDN/IP of NIT server>
-NIT_USERNAME=<NITuser>
-NIT_PASSWORD=<NITpassword>
+# External Device Inventory Feed
+INVENTORY_URL=https://server.example.com/dump.json
+INVENTORY_TOKEN=<feed_token>
 
 # Webhook
 AKIPS_WEBHOOK_TOKEN=<AKiPS_web_token>
