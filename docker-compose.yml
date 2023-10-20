@@ -65,7 +65,7 @@ services:
     command: [ 'celery', '--app', 'project', 'worker', '-B' ]
     depends_on:
       ocnes:
-        condition: service_started
+        condition: service_healthy
       db:
         condition: service_healthy
       redis:
@@ -100,9 +100,12 @@ services:
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
         gunicorn ${GUNICORN_CMD_ARGS} wsgi
+    healthcheck:
+      test: curl --fail -s http://ocnes:8000/health || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
     depends_on:
-      # celery:
-      #   condition: service_started
       db:
         condition: service_healthy
       redis:
