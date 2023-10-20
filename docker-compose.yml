@@ -102,8 +102,9 @@ services:
         gunicorn ${GUNICORN_CMD_ARGS} wsgi
     healthcheck:
       test: curl --fail -s http://ocnes:8000/health/ || exit 1
-      interval: 1m
-      timeout: 10s
+      interval: 10s
+      timeout: 3s
+      start_period: 40s
       retries: 3
     depends_on:
       db:
