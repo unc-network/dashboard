@@ -99,7 +99,7 @@ services:
         python manage.py collectstatic
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
-        gunicorn wsgi
+        gunicorn ${GUNICORN_CMD_ARGS} wsgi
     depends_on:
       # celery:
       #   condition: service_started
