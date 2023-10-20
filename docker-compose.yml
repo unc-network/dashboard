@@ -96,6 +96,7 @@ services:
         echo "Migrating the database before starting the server..."
         python manage.py migrate
         python manage.py createcachetable
+        python manage.py collectstatic
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
         gunicorn wsgi
