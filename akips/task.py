@@ -41,7 +41,8 @@ def refresh_akips_devices():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -172,7 +173,8 @@ def refresh_ping_status():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -215,7 +217,8 @@ def refresh_snmp_status():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -258,7 +261,8 @@ def refresh_ups_status():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -301,7 +305,8 @@ def refresh_battery_test_status():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -344,7 +349,10 @@ def refresh_inventory():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    logger.debug("Settings {}".format(settings.DATABASES))
+
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -442,7 +450,8 @@ def refresh_hibernate():
     now = timezone.now()
     sleep_delay = 0
 
-    if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
