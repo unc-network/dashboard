@@ -30,7 +30,7 @@ services:
   ########################################
   db:
     # Use official PostgreSQL image
-    image: "${DOCKER_ARCH}postgres:latest"
+    image: "${DOCKER_ARCH}postgres:15"
     # Expose port 5432 to host machine    
     ports:
       - 5432:5432
@@ -64,6 +64,8 @@ services:
     restart: unless-stopped
     command: [ 'celery', '--app', 'project', 'worker', '-B' ]
     depends_on:
+      ocnes:
+        condition: service_started
       db:
         condition: service_healthy
       redis:
@@ -93,12 +95,13 @@ services:
       - |
         echo "Migrating the database before starting the server..."
         python manage.py migrate
+        python manage.py createcachetable
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
         gunicorn wsgi
     depends_on:
-      celery:
-        condition: service_started
+      # celery:
+      #   condition: service_started
       db:
         condition: service_healthy
       redis:
