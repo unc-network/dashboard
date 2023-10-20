@@ -82,7 +82,7 @@ class About(LoginRequiredMixin, View):
         context = {}
 
         try:
-            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_nit').latest('date_done')
+            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
         except TaskResult.DoesNotExist:
             last_inventory_sync = None
         context['last_inventory_sync'] = last_inventory_sync
