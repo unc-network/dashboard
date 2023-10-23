@@ -372,6 +372,8 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
+# AKiPS settings
+AKIPS_CACERT = os.getenv('AKIPS_CACERT', None)
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
 

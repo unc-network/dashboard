@@ -70,6 +70,7 @@ LDAP_SERVER=ldaps://ldap.example.com
 AKIPS_SERVER=<FQDN/IP of AKiPS server>
 AKIPS_USERNAME=api-rw
 AKIPS_PASSWORD=<api-rw_password>
+# AKIPS_CACERT=/dashboard/incommon-ca-chain.pem
 
 # External Device Inventory Feed
 INVENTORY_URL=https://server.example.com/dump.json

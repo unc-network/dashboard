@@ -28,6 +28,7 @@ class AKIPS:
     akips_username = os.getenv('AKIPS_USERNAME', '')
     akips_password = os.getenv('AKIPS_PASSWORD', '')
     session = requests.Session()
+    cacert = settings.AKIPS_CACERT
 
     def get_devices(self):
         ''' Pull a list of fields for all devices in akips '''
@@ -384,8 +385,12 @@ class AKIPS:
         params['username'] = self.akips_username
         params['password'] = self.akips_password
         # GET requests have 2 args: URL, HEADERS
-        # Verify is off because the 'certifi' python module is missing the InCommon interim CA
-        r = self.session.get(url, params=params, verify=False)
+        if self.cacert:
+            # Use the custom CA chain provided
+            r = self.session.get(url, params=params, verify=self.cacert)
+        else:
+            # Verify is off because the 'certifi' python module is missing the InCommon interim CA
+            r = self.session.get(url, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
