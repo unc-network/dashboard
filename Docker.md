@@ -61,6 +61,11 @@ POSTGRESQL_SERVICE_HOST=db
 POSTGRESQL_SERVICE_PORT=5432
 POSTGRES_PASSWORD=OCNESisCOOL
 
+# LDAP variables
+LDAP_SERVER=ldaps://ldap.example.com
+# LDAPTLS_CACERT=/dashboard/incommon-ca-chain.pem
+# LDAPTLS_REQCERT=never
+
 # AKIPS variables
 AKIPS_SERVER=<FQDN/IP of AKiPS server>
 AKIPS_USERNAME=api-rw
