@@ -8,4 +8,6 @@ python3 manage.py migrate
 ############################################################
 # Run the Django app using gunicorn
 ############################################################
-gunicorn --forwarded-allow-ips='*' --bind=0.0.0.0:8000 wsgi
+echo "Running gunicorn ${GUNICORN_CMD_ARGS} wsgi..."
+# gunicorn --forwarded-allow-ips='*' --bind=0.0.0.0:8000 wsgi
+gunicorn --forwarded-allow-ips='*' --bind=0.0.0.0:8000 --access-logfile=- wsgi
