@@ -131,9 +131,12 @@ build-celery-image:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-  # only:
-  #   changes:
-  #     - Dockerfile.Celery-image
+  only:
+    changes:
+      - Dockerfile.Celery-image
+      - requirements.txt
+      - project/celery.py
+      - project/settings.py
 
 ###############################################################################
 # Stage 4:  Tag OCNES and Celery images as latest.
