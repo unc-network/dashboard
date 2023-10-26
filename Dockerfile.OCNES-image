@@ -1,5 +1,5 @@
 # Use official Python image from hub.docker.com
-FROM python
+FROM python:3.11
 
 # NOTE:  To fully mimic production, we can set tags to match specific versions
 #        of things like Python.
@@ -35,7 +35,7 @@ EXPOSE 8000
 # RUN python3 manage.py createcachetable
 RUN python3 manage.py makemigrations
 # RUN python3 manage.py migrate
-RUN python3 manage.py collectstatic
+RUN python3 manage.py collectstatic --noinput
 # RUN python3 manage.py check
 
 # Start Gunicorn processes
