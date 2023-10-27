@@ -44,7 +44,7 @@ stages:
 # Define default settings that apply to all jobs unless overridden
 ###############################################################################
 default:
-  image: python:3
+  image: python:3.11
   # image: rockylinux:8
   #
   # Pick zero or more services to be used on all builds.
