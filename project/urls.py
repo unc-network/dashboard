@@ -17,22 +17,14 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-from welcome.views import index, health
-from akips import views as akips_views
-
-#handler400 = rp_views.handler400
-#handler403 = rp_views.handler403
-#handler404 = akips_views.handler404
-#handler500 = rp_views.handler500
+from welcome.views import health
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include("django.contrib.auth.urls")),
     path('health/', health),
 
-    #path('', index, name='home'),
     path('', include('akips.urls')),
-    #path('akips/', include('akips.urls')),
 ]
 
 if settings.DEBUG:

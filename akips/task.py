@@ -1,33 +1,48 @@
-from celery import shared_task, current_app
-from django_celery_results.models import TaskResult
+"""
+Define tasks to be run in the background
+"""
 import logging
 import time
 import re
 from datetime import datetime, timedelta
 
+from celery import shared_task, current_app
+from django_celery_results.models import TaskResult
+
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
-from django.db.models import Count
+from django.template.loader import render_to_string
 
-from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
-from akips.utils import AKIPS, NIT
+from akips.utils import AKIPS, Inventory
+from akips.ocnes import EventManager
+from akips.servicenow import ServiceNow
 
-# Get an isntace of a logger
+from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
+
+# Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 
 @shared_task
 def example_task():
+    """
+    A simple task example
+    """
     logger.info("task is running")
 
 
 @shared_task
 def refresh_akips_devices():
-    logger.debug("refreshing akips devices")
+    """
+    Refresh local data for devices
+    """
+    logger.info("refreshing akips devices")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -46,11 +61,11 @@ def refresh_akips_devices():
             if match_name:
                 tier = match_name.group('tier')
                 bldg_name = match_name.group('bldg_name')
-                type = match_name.group('type').upper()
+                device_type = match_name.group('type').upper()
             elif match_location:
                 tier = match_location.group('tier')
                 bldg_name = match_location.group('bldg_name')
-                type = match_location.group('type').upper()
+                device_type = match_location.group('type').upper()
             else:
                 match_snowflake = re.match(
                     r'^(?P<tier>(RC|Micro|VPN))-', value['SNMPv2-MIB.sysName'])
@@ -104,7 +119,7 @@ def refresh_akips_devices():
             try:
                 device = Device.objects.get(name=key)
             except Device.DoesNotExist:
-                logger.warn("Attempting to set group membership for unknown device {}".format(key))
+                logger.warning("Attempting to set group membership for unknown device {}".format(key))
                 continue
 
             critical = False
@@ -151,11 +166,15 @@ def refresh_akips_devices():
 
 @shared_task
 def refresh_ping_status():
-    logger.debug("refreshing ping status")
+    """
+    Refresh local ping data
+    """
+    logger.info("refreshing ping status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -169,7 +188,7 @@ def refresh_ping_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -177,8 +196,11 @@ def refresh_ping_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -188,11 +210,15 @@ def refresh_ping_status():
 
 @shared_task
 def refresh_snmp_status():
-    logger.debug("refreshing snmp status")
+    """
+    Refresh local snmp data
+    """
+    logger.info("refreshing snmp status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -206,7 +232,7 @@ def refresh_snmp_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -214,8 +240,11 @@ def refresh_snmp_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -225,11 +254,15 @@ def refresh_snmp_status():
 
 @shared_task
 def refresh_ups_status():
-    logger.debug("refreshing ups status")
+    """
+    Refresh local ups data
+    """
+    logger.info("refreshing ups status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -243,7 +276,7 @@ def refresh_ups_status():
             try:
                 device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to update unknown device {}".format(entry['device']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
             Status.objects.update_or_create(
@@ -251,8 +284,11 @@ def refresh_ups_status():
                 child=entry['child'],
                 attribute=entry['attribute'],
                 defaults={
+                    'index': entry['index'],
                     'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
                     'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
             time.sleep(sleep_delay)
@@ -261,379 +297,161 @@ def refresh_ups_status():
     logger.info("refresh ups status runtime {}".format(finish_time - now))
 
 @shared_task
-def refresh_nit():
-    logger.debug("Refeshing nit device data")
+def refresh_battery_test_status():
+    """
+    Refresh local battery test data
+    """
+    logger.info("refreshing battery test status")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
-        sleep_delay = 0.05
-        logger.debug("Delaying database by {} seconds".format(sleep_delay))
-    else:
-        logger.debug("Delaying database by {} seconds".format(sleep_delay))
-
-    nit = NIT()
-    device_data = nit.get_device_data()
-    #logger.debug("nit data {}".format(device_data))
-    if device_data:
-        for device in device_data['nodes']:
-            logger.debug("Updating device {}".format(device))
-            if 'hierarchy' in device and device['hierarchy']:
-                hierarcy = device['hierarchy']
-                if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD']:
-                    type = 'SWITCH'
-                else:
-                    type = device['hierarchy']
-            elif 'type' in device and device['type']:
-                hierarcy = ''
-                type = device['type'].upper()
-            else:
-                hierarcy = ''
-                type = ''
-            if device['building_name'] is None:
-                device['building_name'] = ''
-            Device.objects.filter(ip4addr=device['ip']).update(
-                # tier=device['tier1'],
-                # building_name=device['building_name'],
-                type=type.upper(),
-                hierarcy=hierarcy.upper()
-                # type=device['type'].upper()
-                # type=device['hierarchy'].upper()
-            )
-            #logger.debug("Found devices {}".format(devices))
-            time.sleep(sleep_delay)
-
-    finish_time = timezone.now()
-    logger.info("NIT refresh runtime {}".format(finish_time - now))
-
-
-@shared_task
-def refresh_unreachable():
-    logger.debug("AKIPS unreachable refresh starting")
-    now = timezone.now()
-    sleep_delay = 0
-
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
-        sleep_delay = 0.05
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+        sleep_delay = 0.01
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
     akips = AKIPS()
-    unreachables = akips.get_unreachable()
-    if unreachables:
-        for k, v in unreachables.items():
-            logger.debug("{}".format(v['name']))
+    data = akips.get_status(type='battery_test')
+    if data:
+        for entry in data:
+            logger.debug("updating {}".format(entry))
             try:
-                device = Device.objects.get(name=v['name'])
+                device = Device.objects.get(name=entry['device'])
             except Device.DoesNotExist:
-                logger.warn("Attempting to create unreachable data for unknown device {}".format(v['name']))
+                logger.warning("Attempting to update unknown device {}".format(entry['device']))
                 continue
 
-            Unreachable.objects.update_or_create(
+            Status.objects.update_or_create(
                 device=device,
-                #status='Open',
-                #child = entry['child'],
-                event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
+                child=entry['child'],
+                attribute=entry['attribute'],
                 defaults={
-                    # 'name': key,                        # akips device name
-                    'child': v['child'],            # ping4
-                    'ping_state': v['ping_state'],            # down
-                    'snmp_state': v['snmp_state'],            # down
-                    'index': v['index'],            # 1
-                    'device_added': datetime.fromtimestamp(int(v['device_added']), tz=timezone.get_current_timezone()),
-                    'event_start': datetime.fromtimestamp(int(v['event_start']), tz=timezone.get_current_timezone()),
-                    'ip4addr': v['ip4addr'],
-                    'last_refresh': now,
-                    'status': 'Open',
+                    'index': entry['index'],
+                    'value': entry['state'],
+                    'device_added': datetime.fromtimestamp(int(entry['device_added']), tz=timezone.get_current_timezone()),
+                    'last_change': datetime.fromtimestamp(int(entry['event_start']), tz=timezone.get_current_timezone()),
+                    'ip4addr': entry['ipaddr']
                 }
             )
-
             time.sleep(sleep_delay)
 
-        # Remove stale entries
-        Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
-
     finish_time = timezone.now()
-    logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
+    logger.info("refresh battery test status runtime {}".format(finish_time - now))
 
-# @shared_task
-# def refresh_summary():
-
-    logger.debug("AKIPS summary refresh starting")
+@shared_task
+def refresh_inventory():
+    """
+    Refresh external device inventory feed
+    """
+    logger.info("Refreshing inventory device data")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    logger.debug("Settings {}".format(settings.DATABASES))
+
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
-    # Process all current unreachable records
-    unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True)
-    for unreachable in unreachables:
-        logger.debug("Processing unreachable {}".format(unreachable))
-
-        if unreachable.device.critical:
-            # Handle Critical devices
-            if unreachable.device.sysName:
-                d_name = unreachable.device.sysName
-            else:
-                d_name = unreachable.device.name
-            c_summary, c_created = Summary.objects.get_or_create(
-                type='Critical',
-                #name=unreachable.device.name,
-                name=d_name,
-                status='Open',
-                defaults={
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': 1
-                }
-            )
-            if c_created:
-                logger.debug("Crit summary created {}".format(
-                    unreachable.device.name))
-            else:
-                if c_summary.first_event > unreachable.event_start:
-                    c_summary.first_event = unreachable.event_start
-                if c_summary.last_event < unreachable.event_start:
-                    c_summary.last_event = unreachable.event_start
-                c_summary.last_refresh = now
-                c_summary.save()
-            c_summary.unreachables.add(unreachable)
-
-        elif unreachable.device.group == 'default':
-            # Handle Non-Critical switch, ap, and ups devices
-
-            # Handle blank tier or building names
-            if unreachable.device.tier:
-                tier_name = unreachable.device.tier
-            else:
-                tier_name = 'Other'
-            if unreachable.device.building_name:
-                bldg_name = unreachable.device.building_name
-            else:
-                bldg_name = 'Other'
-
-            # Find the tier summary to update
-            t_summary, t_created = Summary.objects.get_or_create(
-                type='Distribution',
-                name=tier_name,
-                status='Open',
-                defaults={
-                    'tier': tier_name,
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
-                    #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
-            if t_created:
-                logger.debug("Tier summary created {}".format(tier_name))
-            else:
-                t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
-                if t_summary.first_event > unreachable.event_start:
-                    t_summary.first_event = unreachable.event_start
-                if t_summary.last_event < unreachable.event_start:
-                    t_summary.last_event = unreachable.event_start
-                t_summary.last_refresh = now
-                t_summary.save()
-            t_summary.unreachables.add(unreachable)
-
-            # Find the building summary to update
-            b_summary, b_created = Summary.objects.get_or_create(
-                type='Building',
-                name=bldg_name,
-                status='Open',
-                defaults={
-                    'tier': tier_name,
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
-            if b_created:
-                logger.debug("Building summary created {}".format(bldg_name))
-            else:
-                b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
-                if b_summary.first_event > unreachable.event_start:
-                    b_summary.first_event = unreachable.event_start
-                if b_summary.last_event < unreachable.event_start:
-                    b_summary.last_event = unreachable.event_start
-                b_summary.last_refresh = now
-                b_summary.save()
-            b_summary.unreachables.add(unreachable)
-
-        else:
-            # non critical and non default devices
-            logger.debug("Processing special group {}".format( unreachable.device.group ))
-
-            # Find the speciality summary to update
-            s_summary, s_created = Summary.objects.get_or_create(
-                type='Speciality',
-                name= unreachable.device.group,
-                status='Open',
-                defaults={
-                    'first_event': unreachable.event_start,
-                    'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(group=unreachable.device.group).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
-                }
-            )
-            if s_created:
-                logger.debug("Speciality summary created {}".format( unreachable.device.group ))
-            else:
-                s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
-                if s_summary.first_event > unreachable.event_start:
-                    s_summary.first_event = unreachable.event_start
-                if s_summary.last_event < unreachable.event_start:
-                    s_summary.last_event = unreachable.event_start
-                s_summary.last_refresh = now
-                s_summary.save()
-            s_summary.unreachables.add(unreachable)
-
-        time.sleep(sleep_delay)
-
-    # Process all ups on battery
-    ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True)
-    for ups in ups_on_battery:
-        logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
-
-        # Find the tier summary to update
-        t_summary, t_created = Summary.objects.get_or_create(
-            type='Distribution',
-            name=ups.device.tier,
-            status='Open',
-            defaults={
-                'tier': ups.device.tier,
-                'first_event': ups.last_change,
-                'last_event': ups.last_change,
-                'max_count': Device.objects.filter(tier=ups.device.tier).count(),
-                'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            }
-        )
-        if t_created:
-            logger.debug("Tier summary created {}".format(ups.device.tier))
-        else:
-            t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            if t_summary.first_event > ups.last_change:
-                t_summary.first_event = ups.last_change
-            if t_summary.last_event < ups.last_change:
-                t_summary.last_event = ups.last_change
-            t_summary.last_refresh = now
-            t_summary.save()
-        t_summary.batteries.add(ups)
-
-        # Find the building summary to update
-        b_summary, b_created = Summary.objects.get_or_create(
-            type='Building',
-            name=ups.device.building_name,
-            status='Open',
-            defaults={
-                'tier': ups.device.tier,
-                'first_event': ups.last_change,
-                'last_event': ups.last_change,
-                'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            }
-        )
-        if b_created:
-            logger.debug("Building summary created {}".format( ups.device.building_name ))
-        else:
-            b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-            if b_summary.first_event > ups.last_change:
-                b_summary.first_event = ups.last_change
-            if b_summary.last_event < ups.last_change:
-                b_summary.last_event = ups.last_change
-            b_summary.last_refresh = now
-            b_summary.save()
-        b_summary.batteries.add(ups)
-
-    # Calculate summary counts
-    summaries = Summary.objects.filter(status='Open')
-    for summary in summaries:
-        logger.debug("Updating counts on {}".format(summary))
-
-        count = {
-            'SWITCH': {},
-            'AP': {},
-            'UPS': {},
-            'UNKNOWN': {},
-            'TOTAL': {},
-        }
-        unreachables = summary.unreachables.filter(status='Open')
-        for unreachable in unreachables:
-            if unreachable.device.maintenance == False:
-                if unreachable.device.type in ['SWITCH', 'AP', 'UPS']:
-                    count[unreachable.device.type][unreachable.device.name] = True
+    inventory = Inventory()
+    device_data = inventory.get_device_data()
+    #logger.debug("inventory data {}".format(device_data))
+    if device_data:
+        for device in device_data['nodes']:
+            logger.debug("Updating device {}".format(device))
+            if 'hierarchy' in device and device['hierarchy']:
+                hierarchy = device['hierarchy']
+                if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD']:
+                    device_type = 'SWITCH'
                 else:
-                    count['UNKNOWN'][unreachable.device.name] = True
-                count['TOTAL'][unreachable.device.name] = True
-        logger.debug("Counts {} are {}".format(summary.name, count))
+                    device_type = device['hierarchy']
+            elif 'type' in device and device['type']:
+                hierarchy = ''
+                device_type = device['type'].upper()
+            else:
+                hierarchy = ''
+                device_type = ''
+            if device['building_name'] is None:
+                device['building_name'] = ''
 
-        if summary.type == 'Distribution':
-            summary.ups_battery = Status.objects.filter(device__tier=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-        elif summary.type == 'Building':
-            summary.ups_battery = Status.objects.filter(device__building_name=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            if device['inventory_url']:
+                inventory_url = device['inventory_url']
+            else:
+                inventory_url = ''
 
-        summary.switch_count = len(count['SWITCH'].keys())
-        summary.ap_count = len(count['AP'].keys())
-        summary.ups_count = len(count['UPS'].keys())
-        total_count = len(count['TOTAL'].keys())
-        percent_down = round(total_count / summary.max_count, 3)
-
-        # Moving avg calculation
-        # new_average = old_average * (n-1)/n + new_value /n
-        # new_average = old_average * 0.80 + new_value * 0.20 
-        if summary.moving_avg_count == 0:
-            summary.moving_avg_count += 1
-            summary.moving_average = total_count
-            new_average = total_count
-        #elif summary.moving_avg_count < 4:
-        else:
-            # n = summary.moving_avg_count + 1
-            # new_average = ( summary.moving_average * (n-1) + total_count ) / n
-            new_average = summary.moving_average * 0.8 + total_count * 0.2
-        # else:
-        #     n = 4
-        #     new_average = summary.moving_average * (n-1)/n + total_count / n
-        logger.debug("Moving average: last={}, total={}, new={}".format(summary.moving_average,total_count,new_average))
-
-        new_threshold = now - timedelta(minutes=5)
-        if summary.first_event >= new_threshold:
-            summary.trend = 'New'
-        elif total_count > new_average * 1.05:
-            summary.trend = 'Increasing'
-        elif total_count < new_average * 0.95:
-            summary.trend = 'Decreasing'
-        else:
-            summary.trend = 'Stable'
-        summary.total_count = total_count
-        summary.percent_down = percent_down
-        summary.moving_average = new_average
-
-        summary.save()
-
-        time.sleep(sleep_delay)
-
-    # Close building type events open with no down devices
-    #Summary.objects.filter(status='Open').exclude(last_event__gte=now).update(status='Closed')
-    Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
+            Device.objects.filter(ip4addr=device['ip']).update(
+                # tier=device['tier1'],
+                # building_name=device['building_name'],
+                type=device_type.upper(),
+                hierarchy=hierarchy.upper(),
+                # type=device['type'].upper()
+                # type=device['hierarchy'].upper()
+                inventory_url=inventory_url
+            )
+            #logger.debug("Found devices {}".format(devices))
+            time.sleep(sleep_delay)
 
     finish_time = timezone.now()
-    logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
+    logger.info("Inventory refresh runtime {}".format(finish_time - now))
 
 
 @shared_task
+def refresh_incidents():
+    """
+    Check for any needed updates
+    """
+    logger.debug("Refreshing incidents")
+    now = timezone.now()
+    servicenow = ServiceNow()
+
+    open_incidents = ServiceNowIncident.objects.filter(active=True)
+    for incident in open_incidents:
+        # pull the real incident from servicenow
+        sn_incident = servicenow.get_incident( incident.instance, incident.sys_id )
+
+        if sn_incident:
+            logger.debug("{} state {} is active {}".format( sn_incident['number'], sn_incident['state'], sn_incident['active'] ))
+
+            # State codes for reference
+            # New=1
+            # Active=2
+            # Awaiting Problem=3
+            # Awaiting User Info=4
+            # Awaiting Evidence=5
+            # Resolved=6
+            # Closed=7
+            if int(sn_incident['state']) == 6 or int(sn_incident['state']) == 7:
+                incident.active=False
+                incident.save()
+
+    finish_time = timezone.now()
+    logger.info("ServiceNow incident refresh runtime {}".format(finish_time - now))
+
+@shared_task
+def update_incident(number, message):
+    """
+    Update servicenow incident
+    """
+    logger.debug("Updating incident {} with text {}".format( number, message ))
+    servicenow = ServiceNow()
+    servicenow.update_incident(number,message)
+
+@shared_task
 def refresh_hibernate():
-    logger.debug("Refeshing hibernated devices")
+    """
+    Refresh hibernate status
+    """
+    logger.info("Refreshing hibernated devices")
     now = timezone.now()
     sleep_delay = 0
 
-    if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+    #if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
+    if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         sleep_delay = 0.05
         logger.debug("Delaying database by {} seconds".format(sleep_delay))
     else:
@@ -689,9 +507,11 @@ def refresh_hibernate():
     logger.info("hibernate refresh runtime {}".format(finish_time - now))
 
 @shared_task
-#def clear_traps():
 def cleanup_dashboard_data():
-    logger.debug("Cleanup dashboard data is starting")
+    """
+    Remove old data
+    """
+    logger.info("Cleanup dashboard data is starting")
     now = timezone.now()
 
     # Define the periods we care about
@@ -711,7 +531,7 @@ def cleanup_dashboard_data():
     # delete closed summary events based on age
     Summary.objects.filter(status='Closed',first_event__lt=seven_days_ago,last_event__lt=seven_days_ago).delete()
 
-    # delete clsoed unreachables based on age
+    # delete closed unreachables based on age
     Unreachable.objects.filter(status='Closed',event_start__lt=seven_days_ago,last_refresh__lt=seven_days_ago).delete()
 
     # Status objects
@@ -723,7 +543,9 @@ def cleanup_dashboard_data():
 
 @shared_task
 def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
-    ''' Testing duplicate task cleanup'''
+    """ 
+    Testing duplicate task cleanup
+    """
     logger.info("Duplicate task check for {}".format(task_name))
     task_args = '"' + str(tuple(task_args)) + '"'
     logger.info(f'Current Task Args - {task_args}')
@@ -738,3 +560,47 @@ def revoke_duplicate_tasks(task_name, task_args=[], request_id=None):
 
     logger.info(f'revoking following duplicate tasks - {duplicate_tasks}')
     current_app.control.revoke(duplicate_tasks, terminate=True, signal='SIGKILL')
+
+@shared_task(bind=True)
+def refresh_unreachable(self, mode='poll', lock_expire=120):
+    """ 
+    Check for locks test
+    """
+    logger.info(f"Task {self.request.id} starting refresh unreachable task")
+    lock_id = "refresh_unreachable_task"
+    lock_expire = lock_expire
+
+
+    # cache.add fails if the key already exists
+    if cache.add(lock_id, True, lock_expire):
+        try:
+            logger.debug(f"Task {self.request.id} obtained refresh unreachable task lock")
+            em = EventManager()
+
+            sn_update_cleared = em.refresh_unreachable(mode=mode)
+            for number, u_list in sn_update_cleared.items():
+                logger.info("servicenow {} update for cleared {}".format(number,u_list))
+                ctx = {
+                    'type': 'clear',
+                    'u_list': u_list
+                }
+                message = render_to_string('akips/incident_status_update.txt',ctx)
+                update_incident.delay(number, message)
+
+            sn_update_add = em.refresh_summary()
+            for number, u_list in sn_update_add.items():
+                logger.info("servicenow {} update for new unreachables{}".format(number,u_list))
+                context = {
+                    'type': 'new',
+                    'u_list': u_list
+                }
+                message = render_to_string('akips/incident_status_update.txt',context)
+                update_incident.delay(number, message)
+
+        finally:
+            logger.debug(f"Task {self.request.id} releasing refresh unreachable task lock")
+            cache.delete(lock_id)
+    else:
+        logger.warning(f"Task {self.request.id} failed to get refresh unreachable task lock")
+
+    logger.info(f"Task {self.request.id} finished refresh unreachable task")

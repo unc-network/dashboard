@@ -1,0 +1,286 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES {{ name }}{% endblock %}
+{% block page_name %}User Preferences {{ name }}{% endblock %}
+
+
+{% block content %}
+<form action="" method="post" id="options">
+{% csrf_token %}
+<div class="card">
+    <div class="card-body table-responsive">
+
+        <div class="row">
+            <div class="col-md-4">
+                <table class="table table-sm">
+                    <tr>
+                        <th>User</th>
+                        <td>{{ user.username }} </td>
+                    </tr>
+                    <tr>
+                        <th>Full Name</th>
+                        <td>{{ user.get_full_name }} </td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user.email }} </td>
+                    </tr>
+                    <tr>
+                        <th>Alerts</th>
+                        <td>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                {{ form.alert_enabled.errors }}
+                                {{ form.alert_enabled }}
+                                <label class="custom-control-label" for="{{ form.alert_enabled.auto_id }}">{{ form.alert_enabled.label }}</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                {{ form.voice_enabled.errors }}
+                                {{ form.voice_enabled }}
+                                <label class="custom-control-label" for="{{ form.voice_enabled.auto_id }}">{{ form.voice_enabled.label }}</label>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-8">
+
+                <h3>Speech Synthesizer</h3>
+
+                <p>Enter message text below, select various options, and click the "play" button to hear the voice.</p>
+            
+                <div class="form-group row">
+                  <label for="txt" class="col-sm-2 col-form-label">Message</label>
+                  <div class="col-sm-10">
+                    <input id="txt" type="text" class="txt form-control" value="New: 1 building alert for Just A Test Building"/>
+                  </div>
+                </div>
+                <div class="form-group row">
+                    <label for="rate" class="col-sm-2 col-form-label">Rate</label>
+                    <div class="col-sm-9">
+                        <input type="range" class="custom-range" min="0.5" max="2" value="1" step="0.1" id="rate" />
+                    </div>
+                    <div class="col-sm-1 text-center">
+                        <div class="rate-value">1</div>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="form-group row">
+                    <label for="pitch" class="col-sm-2 col-form-label">Pitch</label>
+                    <div class="col-sm-9">
+                        <input type="range" class="custom-range" min="0" max="2" value="1" step="0.1" id="pitch" />
+                    </div>
+                    <div class="col-sm-1 text-center">
+                        <div class="pitch-value">1</div>
+                    </div>
+                    <div class="clearfix"></div>
+                  </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Voice</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" id="voice"></select>
+                    </div>
+                </div>
+                <div class="controls text-center">
+                    <button id="play" type="button" class="btn btn-primary">Play</button>
+                    <!-- <button type="button" id="save_cookie" class="btn btn-primary">Save Speech Options</button> -->
+                    <button type="button" id="reset_cookie" class="btn btn-primary">Restore Default Options</button>
+                </div>
+            </div>
+        </div> <!-- end of row -->
+
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <button type="submit" class="btn btn-primary">Save Preferences</button>
+            </div>
+            <div class="col-md-4">
+            </div>
+        </div>
+
+    </div>
+</div>
+</form>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    $(document).ready(function () {
+        speech_setup();
+
+        // Setup Alerting
+        //refresh_alerts();
+        enable_alert_toggle();
+
+        // Update voice settings
+        $('#save_cookie').click(function () {
+            // var speech = {}
+            // speech.rate = $("#rate").val();
+            // speech.pitch = $("#pitch").val();
+            // speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
+            // var jsonString = JSON.stringify(speech);
+            // setCookie('ocnes_voice', jsonString, 365);
+
+            // console.log("Saving rate " + rate + ", pitch " + pitch + ", and voice " + voice);
+            save_options();
+            $('#options').submit()
+        });
+
+        // Reset voice settings
+        $('#reset_cookie').click(function () {
+            //console.log("Deleting cookie");
+            deleteCookie('ocnes_voice');
+            $('#options').submit()
+        });
+    });
+</script>
+<script type="text/javascript">
+    function save_options() {
+        var speech = {}
+        speech.rate = $("#rate").val();
+        speech.pitch = $("#pitch").val();
+        speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
+        var jsonString = JSON.stringify(speech);
+        setCookie('ocnes_voice', jsonString, 365);
+        // console.log("Saving rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+    }
+
+    function speech_setup() {
+        // Handle rate, pitch, voice inputs
+        const synth = window.speechSynthesis;
+
+        const inputForm = document.querySelector("form");
+        const inputTxt = document.querySelector(".txt");
+        const voiceSelect = document.querySelector("select");
+
+        const pitch = document.querySelector("#pitch");
+        const pitchValue = document.querySelector(".pitch-value");
+        const rate = document.querySelector("#rate");
+        const rateValue = document.querySelector(".rate-value");
+
+        let voices = [];
+
+        function populateVoiceList() {
+            voices = synth.getVoices().sort(function (a, b) {
+                const aname = a.name.toUpperCase();
+                const bname = b.name.toUpperCase();
+
+                if (aname < bname) {
+                    return -1;
+                } else if (aname == bname) {
+                    return 0;
+                } else {
+                    return +1;
+                }
+            });
+            // console.log("total voices " + voices.length);
+            const selectedIndex = voiceSelect.selectedIndex < 0 ? 0 : voiceSelect.selectedIndex;
+            let defaultIndex = 0;
+            voiceSelect.innerHTML = "";
+
+            for (let i = 0; i < voices.length; i++) {
+                // console.log("voice name " + voices[i].name);
+                const option = document.createElement("option");
+                option.textContent = `${voices[i].name} (${voices[i].lang})`;
+
+                if (voices[i].default) {
+                    option.textContent += " -- DEFAULT";
+                }
+
+                if ( voices[i].lang == 'en-US') {
+                    option.setAttribute("data-lang", voices[i].lang);
+                    option.setAttribute("data-name", voices[i].name);
+
+                    voiceSelect.appendChild(option);
+                }
+            }
+            voiceSelect.selectedIndex = selectedIndex;
+
+            // Load voice options from cookie
+            var speech_json = getCookie('ocnes_voice');
+            if (speech_json) {
+                var speech = JSON.parse(speech_json);
+                $("#rate").val(speech.rate);
+                $("#pitch").val(speech.pitch);
+                $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);
+                // console.log("Loading rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
+            } else {
+                // find the default voice and set it selected
+                for (let i = 0; i < voices.length; i++) {
+                    if (voices[i].default) {
+                        $("#voice option[data-name='" + voices[i].name + "']").prop("selected", true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        populateVoiceList();
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        function speak() {
+            if (synth.speaking) {
+                console.error("speechSynthesis.speaking");
+                return;
+            }
+
+            if (inputTxt.value !== "") {
+                const utterThis = new SpeechSynthesisUtterance(inputTxt.value);
+
+                utterThis.onend = function (event) {
+                    console.log("SpeechSynthesisUtterance.onend");
+                };
+
+                utterThis.onerror = function (event) {
+                    console.error("SpeechSynthesisUtterance.onerror");
+                };
+
+                const selectedOption =
+                voiceSelect.selectedOptions[0].getAttribute("data-name");
+
+                for (let i = 0; i < voices.length; i++) {
+                    if (voices[i].name === selectedOption) {
+                        utterThis.voice = voices[i];
+                        break;
+                    }
+                }
+                utterThis.pitch = pitch.value;
+                utterThis.rate = rate.value;
+                synth.speak(utterThis);
+            }
+        }
+
+        $('#play').click(function(){
+            speak();
+            inputTxt.blur();
+        })
+        // inputForm.onsubmit = function (event) {
+        //     event.preventDefault();
+
+        //     speak();
+
+        //     inputTxt.blur();
+        // };
+
+        pitch.onchange = function () {
+            pitchValue.textContent = pitch.value;
+            save_options();
+        };
+
+        rate.onchange = function () {
+            rateValue.textContent = rate.value;
+            save_options();
+        };
+
+        voiceSelect.onchange = function () {
+            save_options();
+            speak();
+        };
+    }
+</script>
+{% endblock %}

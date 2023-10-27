@@ -1,0 +1,63 @@
+{% extends 'akips/base.html' %}
+{% load static %}
+
+{% block title %}OCNES Dashboard{% endblock %}
+{% block page_name %}About OCNES{% endblock %}
+
+{% block style_sheets %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
+{% endblock %}
+
+{% block content %}
+ <div class="card">
+    <div class="card-body table-responsive">
+        <p>Operations Center Network Event Summary (OCNES) provides a dashboard view of network health.
+            It is built on top of the <a href="https://www.akips.com/">AKiPS</a> network monitoring platform, which provides all polling and status data.
+        </p>
+
+        <table class="table table-hover table-responsive table-sm">
+            <tr>
+                <th>Current Status</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+            </tr>
+            <tr>
+                <td>Last AKiPS device sync</td>
+                {% if last_akips_sync %}
+                <td>{{ last_akips_sync.date_created }}</td>
+                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_akips_sync.date_done }}{% endif %}</td>
+                <td>{{ last_akips_sync.status }}</td>
+                {% else %}
+                <td></td>
+                <td></td>
+                <td>None</td>
+                {% endif %}
+            </tr>
+            <tr>
+                <td>Last Inventory device sync</td>
+                {% if last_inventory_sync %}
+                <td>{{ last_inventory_sync.date_created }}</td>
+                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_inventory_sync.date_done }}{% endif %}</td>
+                <td>{{ last_inventory_sync.status }}</td>
+                {% else %}
+                <td></td>
+                <td></td>
+                <td>None</td>
+                {% endif %}
+            </tr>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
+    })
+</script>
+{% endblock js %}

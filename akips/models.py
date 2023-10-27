@@ -18,12 +18,13 @@ class Device(models.Model):
     critical = models.BooleanField(default=False)
     tier = models.CharField(max_length=255, blank=True)
     building_name = models.CharField(max_length=255, blank=True)
-    hierarcy = models.CharField(max_length=255, blank=True)
+    hierarchy = models.CharField(max_length=255, blank=True)
     type = models.CharField(max_length=255, blank=True)
     maintenance = models.BooleanField(default=False)
     hibernate = models.BooleanField(default=False)
     comment = models.CharField(max_length=1024, blank=True)
     last_refresh = models.DateTimeField()
+    inventory_url = models.URLField(blank=True,default='')
 
     class Meta:
         ordering = ['name']
@@ -48,9 +49,9 @@ class Unreachable(models.Model):
     attribute = models.CharField(max_length=255)
     ping_state = models.CharField( max_length=32, choices=STATE_CHOICES, default='unreported')
     snmp_state = models.CharField( max_length=32, choices=STATE_CHOICES, default='unreported')
-    index = models.CharField(max_length=255)    # extracted from value
+    index = models.CharField(max_length=255,blank=True)    # extracted from value
     # state = models.CharField(max_length=255)    # extracted from value
-    device_added = models.DateTimeField()       # extracted from value
+    device_added = models.DateTimeField( blank=True, null=True)       # extracted from value
     event_start = models.DateTimeField()        # extracted from value
     ip4addr = models.GenericIPAddressField( blank=True, null=True)    # extracted from value
     comment = models.CharField(max_length=1024, blank=True)
@@ -62,6 +63,15 @@ class Unreachable(models.Model):
 
     def __str__(self):
         return str(self.device)
+
+class ServiceNowIncident(models.Model):
+    number = models.CharField(max_length=10)
+    sys_id = models.CharField(max_length=32,blank=True)
+    instance = models.CharField(max_length=32,default='uncchdev')
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.number)
 
 class Trap(models.Model):
     STATUS_CHOICES = (
@@ -82,6 +92,7 @@ class Trap(models.Model):
     cleared_by = models.CharField(max_length=32, blank=True)
     cleared_at = models.DateTimeField(null=True, blank=True)
     incident = models.CharField(blank=True, max_length=255)
+    sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     dup_count = models.IntegerField(default=0)
     dup_last = models.DateTimeField(null=True, blank=True)
@@ -97,8 +108,11 @@ class Status(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     child = models.CharField(max_length=255)
     attribute = models.CharField(max_length=255)
+    index = models.CharField(max_length=255,blank=True)
     value = models.CharField(max_length=255)
+    device_added = models.DateTimeField(blank=True,null=True)
     last_change = models.DateTimeField()
+    ip4addr = models.GenericIPAddressField(blank=True,null=True)
 
     class Meta:
         verbose_name_plural = 'statuses'
@@ -114,7 +128,7 @@ class Summary(models.Model):
         ('Distribution', 'Distribution'),
         ('Building', 'Building'),
         ('Critical', 'Critical'),
-        ('Speciality', 'Speciality'),
+        ('Specialty', 'Specialty'),
     )
     STATUS_CHOICES = (
         ('Open', 'Open'),
@@ -143,7 +157,8 @@ class Summary(models.Model):
     comment = models.CharField(max_length=1024, blank=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
     incident = models.CharField(blank=True, max_length=255)
-    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summmary data was refreshed")
+    sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summary data was refreshed")
 
     class Meta:
         verbose_name_plural = 'summaries'
@@ -184,6 +199,7 @@ class HibernateRequest(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    alert_enabled = models.BooleanField(default=True)
     voice_enabled = models.BooleanField(default=True)
 
     def __str__(self):

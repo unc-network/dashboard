@@ -14,7 +14,7 @@
   --blue: #4B9CD3;
   --indigo: #6610f2;
   --purple: #6f42c1;
-  --pink: #e83e8c;
+  --pink: #e83ec;
   --red: #dc3545;
   --orange: #fd7e14;
   --yellow: #ffc107;
@@ -1759,7 +1759,9 @@ pre code {
 .table-primary,
 .table-primary > th,
 .table-primary > td {
-  background-color: #b8daff;
+  /* background-color: #b8daff; */
+  background-color: #4b9cd3;
+  color: #ffffff;
 }
 
 .table-primary th,

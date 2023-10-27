@@ -1,25 +1,50 @@
+###############################################################################
 # List of stages for jobs, and their order of execution
 # All jobs within a stage run in parallel
+###############################################################################
 stages:
   - build
   - test
-  - deploy
+  - buildimage
+  - tagimage
 
-workflow:
-  rules:
-    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
-    - if: $CI_COMMIT_BRANCH == "main"
+###############################################################################
+# workflow:
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+    # - if: $CI_COMMIT_BRANCH == "main"
+    ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
 
+###############################################################################
 # Define variables needed by the various jobs
-variables:
-  POSTGRES_DB: $POSTGRES_DB
-  POSTGRES_USER: $POSTGRES_USER
-  POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-  POSTGRES_HOST_AUTH_METHOD: trust
+# Whatever you do, do NOT count on variable de-referencing here. e.g.,
+# VAR1: "something"
+# VAR2: "${VAR1}"
+# results in VAR2 = "VAR1", NOT VAR2 = "something"
+#
+# Also, not all CI_ variables exist at this moment in time.  While CI_COMMIT_BRANCH apparently does,
+# things like CI_PIPELINE_CREATED_AT do not!  That's fun to figure out.
+# 
+# Use this for rudimentary values only.
+###############################################################################
+# variables:
+  # Tell Docker CLI how to talk to Docker daemon
+  # DOCKER_HOST: tcp://dockerdaemon:2375
+  # DOCKER_HOST: tcp://localhost:2375
+  # # Use the overlayfs driver for improved performance
+  # DOCKER_DRIVER: overlay2
+  # # Disable TLS since we're running inside local network
+  # DOCKER_TLS_CERTDIR: ""
+  # POSTGRES_DB: $POSTGRES_DB
+  # POSTGRES_USER: $POSTGRES_USER
+  # POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  # POSTGRES_HOST_AUTH_METHOD: trust
 
+###############################################################################
 # Define default settings that apply to all jobs unless overridden
+###############################################################################
 default:
-  image: python:3
+  image: python:3.11
   # image: rockylinux:8
   #
   # Pick zero or more services to be used on all builds.
@@ -36,20 +61,26 @@ default:
   before_script:
     # Install needed modules so LDAP bits in pip modules will install properly
     - apt-get update
-    - apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
+    - apt-get -y install libsasl2-dev python3-dev libldap2-dev libssl-dev
     - pip3 install --upgrade pip
     - pip3 install --user -r requirements.txt
 
+###############################################################################
 # Stage 1:  Build the app
+###############################################################################
 migrations:
   stage: build
   script:
+    - python3 manage.py createcachetable
     - python3 manage.py makemigrations
     # - python3 manage.py makemigrations myapp
     - python3 manage.py migrate
+    - python3 manage.py collectstatic
     - python3 manage.py check
 
+###############################################################################
 # Stage 2:  Test the app
+###############################################################################
 django-tests:
   stage: test
   script:
@@ -59,28 +90,109 @@ django-tests:
     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
     - python3 manage.py test
 
-# If the previous stages all succeeded, then it is time to build the containers to run in production
 
-# Stage 3:  Deploy the app
-deploy:
-  stage: deploy
+# NOTE:  If the previous stages all succeeded, then it is time to build the images to run in the cluster
+
+
+###############################################################################
+# Stage 3:  Create OCNES image
+###############################################################################
+build-ocnes-image:
+  stage: buildimage
   environment: production
-  # image provides Docker client
-  image: docker:latest
-  # [job container] ===> [service container]
-  # e.g., [python container] ===> [mysql db container]
-  # service provides Docker daemon
-  services:
-    - docker:dind
-  variables:
-    # Next line needed so client and server can communicate with same certs
-    DOCKER_TLS_CERTDIR: "/certs"
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
   script:
-    - echo "Building containers..."
+    - echo "Building OCNES image..."
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
+      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
+  # rules:
+  #   - if: $CI_COMMIT_TAG
 
+###############################################################################
+# Stage 3:  Create Celery image
+###############################################################################
+build-celery-image:
+  stage: buildimage
+  environment: production
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
+  script:
+    - echo "Building Celery image..."
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
+      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
+  only:
+    changes:
+      - Dockerfile.Celery-image
+      - requirements.txt
+      - project/celery.py
+      - project/settings.py
+
+###############################################################################
+# Stage 4:  Tag OCNES image as latest.
+#           This should trigger K3s to pull images and build new containers
+#           in the develop branch.
+###############################################################################
+tag-latest-build-ocnes:
+  stage: tagimage
+  environment: production
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
+  variables:
+    GIT_STRATEGY: none
+    GODEBUG: x509ignoreCN=0
+  script:
+    - echo "Logging into GitLab Container Registry..."
+    # - crane auth login -u ${GITLAB_REGISTRY_USER} -p ${GITLAB_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - echo "Tagging OCNES image as latest..."
+    - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
+
+###############################################################################
+# Stage 4:  Tag Celery image as latest.
+#           This should trigger K3s to pull images and build new containers
+#           in the develop branch.
+###############################################################################
+tag-latest-build-celery:
+  stage: tagimage
+  environment: production
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
+  variables:
+    GIT_STRATEGY: none
+    GODEBUG: x509ignoreCN=0
+  script:
+    - echo "Logging into GitLab Container Registry..."
+    # - crane auth login -u ${GITLAB_REGISTRY_USER} -p ${GITLAB_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - echo "Tagging Celery image as latest..."
+    - crane tag "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
+  only:
+    changes:
+      - Dockerfile.Celery-image
+      - requirements.txt
+      - project/celery.py
+      - project/settings.py
 
 
 # References:
 # From GitLab example templates: https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates
 # - Testing Django with MySQL: https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Django.gitlab-ci.yml
 # - https://docs.gitlab.com/ee/ci/services/postgres.html
+# - For container image creation: https://docs.gitlab.com/ee/ci/docker/using_kaniko.html

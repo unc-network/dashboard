@@ -11,6 +11,11 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
+        <p>AKiPS uses "maintenance mode" to disable polling for a device.  While in maintenance,
+            the device state will not change.  If the device went down and was put into maintenance mode,
+            the status will stay "down" until it has to be removed from maintenance and polls with the "up" 
+            state.  Human interaction is needed to move devices in and out of AKiPS maintenance mode.
+        </p>
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
@@ -56,47 +61,16 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                })
-            } )
-        }
-    }
-</script>
-<script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
 
         $("#myTable").DataTable({
           "responsive": true, "lengthChange": false, "autoWidth": false,
           "buttons": ["copy", "csv", "excel", "pdf", "print"],
           "pageLength": 25,
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-        voice_alert();
-
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
-
-        // Update the page content on a dynamic refresh interval
-        var intervalId = window.setInterval(function () {
-            voice_alert();
-        }, refresh_seconds);
 
     })
 </script>

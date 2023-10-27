@@ -1,12 +1,20 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
+from django.template.loader import render_to_string
+
 import os
-import logging
 import requests
 import re
 import pprint
 import json
 import ipaddress
+import logging
+import time
+from datetime import datetime, timedelta
+
+from .models import Device, Unreachable, Status, Summary, ServiceNowIncident
+#from akips.task import update_incident
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
@@ -15,11 +23,12 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings()
 
 class AKIPS:
-    # Class to handle interactions with the NIT database
+    # Class to handle interactions with AKiPS instance
     akips_server = os.getenv('AKIPS_SERVER', '')
     akips_username = os.getenv('AKIPS_USERNAME', '')
     akips_password = os.getenv('AKIPS_PASSWORD', '')
     session = requests.Session()
+    cacert = settings.AKIPS_CACERT
 
     def get_devices(self):
         ''' Pull a list of fields for all devices in akips '''
@@ -102,7 +111,7 @@ class AKIPS:
         return None
 
     def set_maintenance_mode(self, device_name, mode='True'):
-        ''' Set mantenance mode on or off for a device '''
+        ''' Set maintenance mode on or off for a device '''
         params = {
             'function': 'web_manual_grouping',
             'type': 'device',
@@ -150,7 +159,7 @@ class AKIPS:
         return None
 
     def get_device_by_ip(self, ipaddr, use_cache=True):
-        # Search for a device by an alterate IP address
+        # Search for a device by an alternate IP address
         # This makes use of a special site script and not the normal api
         cache_key = 'device_name_' + ipaddr
         cache_timeout = 3600
@@ -211,7 +220,8 @@ class AKIPS:
                 if match:
                     name = match.group(1)
                     attribute = match.group(3)
-                    event_start = match.group(7)    # epoch in local timezone
+                    # event_start = match.group(7)    # epoch in local timezone
+                    event_start = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                     if name not in data:
                         # populate a starting point for this device
                         data[name] = { 
@@ -224,15 +234,19 @@ class AKIPS:
                         data[name]['child'] = match.group(2),
                         data[name]['ping_state'] =  match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = match.group(6) # epoch in local timezone
-                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        # data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=timezone.get_current_timezone())
+                        # data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                         data[name]['ip4addr'] = match.group(8)
                     elif attribute == 'SNMP.snmpState':
                         data[name]['child'] = match.group(2),
                         data[name]['snmp_state'] =  match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = match.group(6) # epoch in local timezone
-                        data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        # data[name]['device_added'] = match.group(6) # epoch in local timezone
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=timezone.get_current_timezone())
+                        # data[name]['event_start'] = match.group(7)  # epoch in local timezone
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=timezone.get_current_timezone())
                         data[name]['ip4addr'] = None
                     if event_start < data[name]['event_start']:
                         data[name]['event_start'] = event_start
@@ -240,6 +254,42 @@ class AKIPS:
             logger.debug("data: {}".format(data))
             return data
         return None
+
+    def get_unreachable_status(self):
+        ''' Pull a list of unreachable devices from status tables'''
+        data = {}
+
+        list = Status.objects.filter(value='down').filter(attribute__in=['PING.icmpState','SNMP.snmpState'])
+        for entry in list:
+            name = entry.device.name
+            # event_start = str(int(entry.last_change.timestamp()))   # workaround string of timestamp
+            event_start = entry.last_change   # workaround string of timestamp
+            if name not in data:
+                # populate a starting point for this device
+                data[ name ] = { 
+                    'name': name,
+                    'ping_state': 'up',         # default for ping
+                    'snmp_state': 'unreported', # default for snmp
+                    'event_start': event_start  # epoch in local timezone
+                }
+            if entry.attribute == 'PING.icmpState':
+                data[name]['child'] = entry.child
+                data[name]['ping_state'] =  entry.value
+                data[name]['index'] = entry.index
+                data[name]['device_added'] = entry.device_added
+                data[name]['event_start'] = event_start
+                data[name]['ip4addr'] = entry.ip4addr
+            elif entry.attribute == 'SNMP.snmpState':
+                data[name]['child'] = entry.child
+                data[name]['snmp_state'] =  entry.value
+                data[name]['index'] = entry.index
+                data[name]['device_added'] = entry.device_added
+                data[name]['event_start'] = event_start
+                data[name]['ip4addr'] = entry.ip4addr
+            if event_start < data[name]['event_start']: # use earlier of date if ping and snmp
+                data[name]['event_start'] = event_start
+
+        return data
 
     def get_status(self, type='ping'):
         ''' Pull the status values we are most interested in '''
@@ -257,6 +307,9 @@ class AKIPS:
         elif type == 'snmp':
             params = { 'cmds': 'mget * * sys SNMP.snmpState' }
             # 172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+        elif type == 'battery_test':
+            params = { 'cmds': 'mget * * battery LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult' }
+            # 172.28.12.11 battery LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult = 2,passed,1473262633,1695182760,
         else:
             logger.warning("Invalid get status type {}".format(type))
             return None
@@ -332,8 +385,12 @@ class AKIPS:
         params['username'] = self.akips_username
         params['password'] = self.akips_password
         # GET requests have 2 args: URL, HEADERS
-        # Verify is off because the 'certifi' python module is missing the InCommon interim CA
-        r = self.session.get(url, params=params, verify=False)
+        if self.cacert:
+            # Use the custom CA chain provided
+            r = self.session.get(url, params=params, verify=self.cacert)
+        else:
+            # Verify is off because the 'certifi' python module is missing the InCommon interim CA
+            r = self.session.get(url, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
@@ -354,22 +411,21 @@ class AKIPS:
             else:
                 return r.text
 
-class NIT:
+class Inventory:
     # Class to handle interactions with the NIT
-    nit_server = os.getenv('NIT_SERVER', '')
-    nit_username = os.getenv('NIT_USERNAME', '')
-    nit_password = os.getenv('NIT_PASSWORD', '')
+    inventory_url = os.getenv('INVENTORY_URL', '')
+    inventory_token = os.getenv('INVENTORY_TOKEN', '')
     session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
-        url = 'https://' + self.nit_server + '/json/full_dump_with_aps.json'
-        logger.debug("WAPI GET %s" % (url))
+        headers = {
+            'Authorization': self.inventory_token
+        }
+        logger.debug("WAPI GET %s" % (self.inventory_url))
         logger.debug("WAPI GET params: " + pprint.pformat(params))
-        #params['username'] = self.nit_username
-        #params['password'] = self.nit_password
         # GET requests have 2 args: URL, HEADERS
-        r = self.session.get(url, params=params, verify=False)
+        r = self.session.get(self.inventory_url, headers=headers, params=params, verify=False)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
@@ -386,126 +442,9 @@ class NIT:
                         % (r.status_code, r.reason))
             return json.loads(r.text)
 
-class ServiceNow:
-    # Class to handle interactions with ServiceNow
-    url = os.getenv('SN_URL', '')
-    username = os.getenv('SN_USERNAME', '')
-    password = os.getenv('SN_PASSWORD', '')
-    session = requests.Session()
 
-    def create_incident(self, group, description, callerid=None, severity=None, work_notes=None):
-        ''' Create a new SN incident '''
-        # Set proper headers
-        headers = {"Content-Type":"application/json", "Accept":"application/json"}
 
-        data = {
-            # Required fields
-            'u_assignment_group': group,
-            'u_caller_id': self.username,
-            'u_short_description': "OCNES: {}".format(description),
 
-            # Optional fields
-            #'u_business_service': 'Network: IP Services',
-            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
-            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
-            #'u_opened_by': user,             # optional
-            #'u_work_notes': '',            # optional
-
-            # u_category is not listed in API doc as supported on create,
-            # but it is required to close an incident and can be set here
-            'u_category': 'Network',     # optional
-        }
-        if callerid:
-            data['u_caller_id'] = callerid
-        if severity == 'Critical':
-            # "1 - Critical" servicenow priority
-            data['u_impact'] = '1'
-            data['u_urgency'] = '1'
-        elif severity == 'High':
-            # "2 - High" servicenow priority
-            data['u_impact'] = '1'
-            data['u_urgency'] = '2'
-        elif severity == 'Moderate':
-            # "3 - Moderate" servicenow priority
-            data['u_impact'] = '2'
-            data['u_urgency'] = '2'
-        elif severity == 'Low':
-            # "4 - Low" servicenow priority
-            data['u_impact'] = '3'
-            data['u_urgency'] = '2'
-
-        if work_notes:
-            data['u_work_notes'] = work_notes
-
-        logger.debug("data: {}".format(data))
-        # Do the HTTP request
-        response = requests.post(self.url, auth=(self.username,self.password), headers=headers ,data=json.dumps(data))
-
-        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
-        if response.status_code != 201:
-            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
-            return
-
-        # Decode the JSON response into a dictionary and use the data
-        result_data = response.json()
-        for entry in result_data['result']:
-            logger.debug("Result: {}".format(entry))
-            # Example entry for success
-            # {
-            #     "display_name": "number",
-            #     "display_value": "INC0319066",
-            #     "record_link": "https://uncchdev.service-now.com/api/now/table/incident/08bd97cc970ad5502d6274671153af52",
-            #     "status": "inserted",
-            #     "sys_id": "08bd97cc970ad5502d6274671153af52",
-            #     "table": "incident",
-            #     "transform_map": "Incident In"
-            # }
-            if entry['status'] == 'error':
-                logger.error("Failed to create ServiceNow Incident {}".format(entry['error_message']))
-                return 
-            else:
-                return {'number': entry['display_value'], 'link': entry['record_link']}
-
-    def update_incident(self, number, work_notes):
-        ''' Update an existing SN incident '''
-
-        # Set proper headers
-        headers = {"Content-Type":"application/json", "Accept":"application/json"}
-
-        # Resolving is not allowed by the API
-        data = {
-            'u_number': number,
-            #'u_category': 'Network',     # optional
-            #'u_state': 'In Progress',    # optional: New, In Progress, On Hold, Resolved, Canceled
-                                        # resolved requires fields we can't set in the api
-            ### create fields below are optional
-            #'u_assignment_group': 'IP-Services',
-            #'u_caller_id': "wew",
-            #'u_short_description': "create test",
-            #'u_business_service': 'Network: IP Services',
-            #'u_impact': '2',        # 1 (Critical), 2 (Significant), 3 (Minor)
-            #'u_urgency': '2',       # 1 (High), 2 (Medium), 3 (Low)
-            #'u_opened_by': 'wew',
-            'u_work_notes': work_notes,
-        }
-
-        # Do the HTTP request
-        response = requests.post(self.url, auth=(self.username, self.password), headers=headers ,data=json.dumps(data))
-
-        # All requests return a 201 HTTP status code even if there is an error.  Must check 'status' in result.
-        if response.status_code != 201:
-            logger.debug('Status: {}, Headers: {}, Error Response: {}'.format(response.status_code, response.headers, response.json()))
-            return
-
-        # Decode the JSON response into a dictionary and use the data
-        result_data = response.json()
-        for entry in result_data['result']:
-            logger.debug("Result: {}".format(entry))
-            if entry['status'] == 'error':
-                logger.error("Failed to update ServiceNow Incident {}".format(entry['error_message']))
-                return 
-            else:
-                return {'number': entry['display_value'], 'link': entry['record_link']}
 
 # Gives a human-readable uptime string
 def pretty_duration(seconds):

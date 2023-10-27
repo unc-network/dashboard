@@ -20,7 +20,8 @@
                     <th>Session Start</th>
                     <th>Session Expire</th>
                     <th>Superuser</th>
-                    <th>Voice Enabled</th>
+                    <th>Alert Enabled</th>
+                    <th>Use Voice</th>
                     <th></th>
                 </tr>
             </thead>
@@ -31,6 +32,7 @@
                     <td>{{ u.start|date:'m-d H:i:s' }}</td>
                     <td>{{ u.expire|date:'m-d H:i:s' }}</td>
                     <td>{{ u.user.is_superuser }}</td>
+                    <td>{{ u.user.profile.alert_enabled }}</td>
                     <td>{{ u.user.profile.voice_enabled }}</td>
                     <td>{{ u.session_keys }}</td>
                 </tr>
@@ -57,21 +59,10 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                })
-            } )
-        }
-    }
-</script>
-<script type="text/javascript">
     $(document).ready(function () {
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
 
         $("#myTable").DataTable({
           "responsive": true, "lengthChange": false, "autoWidth": false,
@@ -80,17 +71,6 @@
           "ordering": false,
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
     })
 </script>
 {% endblock %}

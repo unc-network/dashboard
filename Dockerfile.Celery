@@ -1,7 +1,7 @@
 # Use official Python image from hub.docker.com
 # If you have M1 Mac, use
 # FROM: arm64v8/python
-FROM ${DOCKER_ARCH}python
+FROM ${DOCKER_ARCH}python:3.11
 
 # NOTE:  To fully mimic production, we can set tags to match specific versions
 #        of things like Python.
@@ -10,7 +10,7 @@ FROM ${DOCKER_ARCH}python
 
 # Install needed modules so LDAP bits in pip modules will install properly
 RUN apt-get update
-RUN apt-get -y install libsasl2-dev python-dev libldap2-dev libssl-dev
+RUN apt-get -y install libsasl2-dev python3-dev libldap2-dev libssl-dev
 
 # Prep a non-root user to run Celery under
 ARG USERNAME=celery

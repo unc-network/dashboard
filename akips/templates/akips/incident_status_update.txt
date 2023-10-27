@@ -1,0 +1,3 @@
+{% if type == "new" %}New Unreachable Devices{% else %}Unreachable Devices Cleared{% endif %}
+{% for u in u_list %}
+{{ u.device.sysName }}    {{ u.device.ip4addr }}    start {{ u.event_start|date:'m-d H:i:s' }}{% if type == "clear" %} end {{ u.last_refresh|date:'m-d H:i:s' }}{% endif %}{% endfor %} 

@@ -13,7 +13,7 @@
             <th>% Affected</th>
             <th>Last Event</th>
             <th>Trend</th>
-            <th>Incident Request</th>
+            <th class="text-center">Incident</th>
         </tr>
     </thead>
     <tbody>
@@ -37,8 +37,8 @@
                 {% endif %}
             </td>
             <td>
-                <a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a> 
-                <!-- <a href="{% url 'summary' summary.id %}">{{ summary.name }}</a>  -->
+                <span class="font-weight-bold mr-2"><a href="{% url 'summary' summary.id %}"><i class="fas fa-building"></i> {{ summary.name }}</a></span>
+                <span class="small summary-comment" data-url="{% url 'set_comment' summary.id %}">{% if summary.comment %}<br>{{ summary.comment }}{% else %}<i class="fas fa-comment-medical text-primary"></i>{% endif %}</span>
             </td>
             <!-- <td>{{ summary.switch_count }}</td> -->
             <!-- <td>{{ summary.ap_count }}</td> -->
@@ -54,17 +54,24 @@
             <!-- <td>{{ summary.last_event|date:'m/d h:i:s a' }}</td> -->
             <td>{{ summary.last_event|date:'m-d H:i:s' }}</td>
             {% if summary.trend == 'New' %}
-                <td class="text-center bg-danger akips_trend"><i class="fas fa-plus"></i></td>
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="New"></i></td>
             {% elif summary.trend == 'Increasing' %}
-                <td class="text-center bg-warning akips_trend"><i class="fas fa-level-up-alt"></i></td>
+                <td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="Increasing"></i></td>
             {% elif summary.trend == 'Decreasing' %}
-                <td class="text-center bg-success akips_trend"><i class="fas fa-level-down-alt"></i></td>
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-down" title="Decreasing"></i></td>
+            {% elif summary.trend == 'Recovered' %}
+                <td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up" title="Recovered"></i></td>
             {% else %}
-                <td class="text-center akips_trend"><i class="fas fa-long-arrow-alt-right"></i></td>
+                <td class="text-center akips_trend d-none d-md-table-cell"></td>
             {% endif %}
-            <td class="text-center">
-                {% if summary.incident %}
-                {{ summary.incident }}
+            <td class="text-center text-primary">
+                {% if summary.sn_incident %}
+                <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a>
+                    {% if summary.sn_incident.active %}
+                        <i class="fas fa-door-open"></i>
+                    {% else %}
+                        <i class="fas fa-door-closed"></i>
+                    {% endif %}
                 {% else %}
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" name="event" value="summary_{{ summary.id }}">

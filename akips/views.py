@@ -26,30 +26,18 @@ from django.db.transaction import atomic, non_atomic_requests
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status
-from .forms import IncidentForm, HibernateForm
-from .task import example_task
-from .utils import AKIPS, ServiceNow, pretty_duration
+from django_celery_results.models import TaskResult
+
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
+from .forms import IncidentForm, HibernateForm, PreferencesForm
+from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
+from .utils import AKIPS, pretty_duration
+from akips.servicenow import ServiceNow
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
 
 # Create your views here.
-
-# def handler403(request, exception):
-#     response = render(request, "akips/403.html")
-#     response.status_code = 403
-#     return response
-
-# def handler404(request, exception):
-#     response = render(request, "akips/404.html")
-#     response.status_code = 404
-#     return response
-
-# def handler500(request):
-#     response = render(request, "akips/500.html")
-#     response.status_code = 500
-#     return response
 
 # def login(request, *args, **kwargs):
 #     if request.method == 'POST':
@@ -86,6 +74,26 @@ class Home(LoginRequiredMixin, View):
         context = {}
         return render(request, post_template, context=context)
 
+class About(LoginRequiredMixin, View):
+    ''' basic about page '''
+    template_name = 'akips/about.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        try:
+            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
+        except TaskResult.DoesNotExist:
+            last_inventory_sync = None
+        context['last_inventory_sync'] = last_inventory_sync
+
+        try:
+            last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices').latest('date_done')
+        except TaskResult.DoesNotExist:
+            last_device_sync = None
+        context['last_akips_sync'] = last_device_sync
+
+        return render(request, self.template_name, context=context)
 
 class Devices(LoginRequiredMixin, View):
     ''' Generic first view '''
@@ -98,6 +106,21 @@ class Devices(LoginRequiredMixin, View):
         # devices = Device.objects.exclude(type__in=list)
         devices = Device.objects.all()
         context['devices'] = devices
+
+        # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
+        # context['last_device_sync'] = last_device_sync
+
+        return render(request, self.template_name, context=context)
+
+class UPSProblems(LoginRequiredMixin, View):
+    ''' List UPS current in a problem state '''
+    template_name = 'akips/ups_problems.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        bad_battery_tests = Status.objects.filter(attribute='LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult',value='failed')
+        context['bad_battery_tests'] = bad_battery_tests
 
         return render(request, self.template_name, context=context)
 
@@ -125,6 +148,36 @@ class Users(LoginRequiredMixin, View):
                 })
         context['session_list'] = sessions
 
+
+        return render(request, self.template_name, context=context)
+
+class UserPreferences(LoginRequiredMixin, View):
+    ''' Edit user preferences '''
+    template_name = 'akips/user_preferences.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        initial = {
+            'alert_enabled': self.request.user.profile.alert_enabled,
+            'voice_enabled': self.request.user.profile.voice_enabled,
+        }
+        context['form'] = PreferencesForm(initial=initial)
+
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        context = {}
+        form = PreferencesForm(request.POST)
+        context['form'] = form
+
+        if form.is_valid():
+            user = request.user
+            user.profile.alert_enabled = form.cleaned_data.get('alert_enabled')
+            user.profile.voice_enabled = form.cleaned_data.get('voice_enabled')
+            user.save()
+            messages.success(request, "{}'s preferences were saved".format(user.username))
+        else:
+            pass
 
         return render(request, self.template_name, context=context)
 
@@ -159,13 +212,13 @@ class BuildingCard(LoginRequiredMixin, View):
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
         return render(request, self.template_name, context=context)
 
-class SpecialityCard(LoginRequiredMixin, View):
+class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_special.html'
 
     def get(self, request, *args, **kwargs):
         context = {}
-        types = ['Speciality']
+        types = ['Specialty']
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
         return render(request, self.template_name, context=context)
 
@@ -176,7 +229,8 @@ class TrapCard(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-tt')[:50]
+            status='Open').order_by('-tt')
+            # status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
 
 
@@ -187,8 +241,8 @@ class UnreachableView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
-        #unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).order_by('-event_start')
-        unreachables = Unreachable.objects.filter(status='Open').order_by('-event_start')
+        unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).order_by('-event_start')
+        # unreachables = Unreachable.objects.filter(status='Open').order_by('-event_start')
         context['unreachables'] = unreachables
 
         return render(request, self.template_name, context=context)
@@ -269,7 +323,8 @@ class RecentTrapsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
-        traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
+        # traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
+        traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
@@ -430,6 +485,9 @@ class CreateIncidentView(LoginRequiredMixin, View):
         }
         context['form'] = IncidentForm(initial=initial)
 
+        servicenow = ServiceNow()
+        context['recent'] = servicenow.get_recent_incidents()
+
         return render(request, self.template_name, context=context)
 
     def post(self, request, *args, **kwargs):
@@ -455,33 +513,49 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 traps = Trap.objects.filter(id__in=trap_ids)
                 ctx['traps'] = traps
 
-            # Create the ServiceNow Incident
+            # Work with ServiceNow Incident
             servicenow = ServiceNow()
-            incident = servicenow.create_incident(
-                form.cleaned_data.get('assignment_group'),
-                form.cleaned_data.get('description'),
-                severity=form.cleaned_data.get('criticality'),
-                work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                callerid=request.user.username
-            )
+            if form.cleaned_data.get('number'):
+                # Get an existing Incident
+                incident = servicenow.associate_incident(
+                    form.cleaned_data.get('number'),
+                    # work_notes=render_to_string('akips/incident_worknote.txt',ctx),
+                )
+                if incident:
+                    context['create_message'] = "Incident {} was found.".format(incident.number)
+            else:
+                # Get a new Incident
+                incident = servicenow.create_incident(
+                    form.cleaned_data.get('assignment_group'),
+                    form.cleaned_data.get('description'),
+                    severity=form.cleaned_data.get('criticality'),
+                    work_notes=render_to_string('akips/incident_worknote.txt',ctx),
+                    caller_id=request.user.username
+                )
+                if incident:
+                    context['create_message'] = "Incident {} was created.".format(incident.number)
+
             if incident:
-                context['create_message'] = "Incident {} was created.".format(
-                    incident['number'])
-                logger.debug("created {}".format(incident['number']))
+                # Map selected summaries to this incident
+                # context['create_message'] = "Incident {} was created.".format(incident.number)
+                logger.debug("mapping summaries to incident {}".format(incident.number))
                 for id in summary_ids:
                     summary = Summary.objects.get(id=id)
-                    summary.incident = incident['number']
+                    #summary.incident = incident['number']
+                    summary.sn_incident = incident
                     summary.save()
                 for id in trap_ids:
                     trap = Trap.objects.get(id=id)
-                    trap.incident = incident['number']
+                    #trap.incident = incident['number']
+                    trap.sn_incident = incident
                     trap.save()
-                messages.success(
-                    request, "ServiceNow Incident {} was created.".format(incident['number']))
+                messages.success(request, "ServiceNow Incident {} was associated.".format(incident.number))
                 return HttpResponseRedirect(reverse('home'))
             else:
-                messages.error(request, "ServiceNow Incident creation failed.")
+                messages.error(request, "ServiceNow Incident association failed.")
 
+            # Failed to associate incident
+            context['form'] = form
             return render(request, self.template_name, context=context)
 
         else:
@@ -489,6 +563,20 @@ class CreateIncidentView(LoginRequiredMixin, View):
             context['form'] = form
         return render(request, self.template_name, context=context)
 
+class DevicesAPI(View):
+    ''' API view to export device definitions'''
+
+    def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
+        result = {}
+        devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate')
+        
+        result = {"result": list(devices)}
+        # Return the results
+        if pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
 
 class SetMaintenanceView(LoginRequiredMixin, View):
     ''' API view '''
@@ -524,6 +612,123 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
+class UnreachablesAPI(View):
+    ''' API view to export unreachable definitions'''
+
+    def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
+        result = {}
+        unreachables = Unreachable.objects.filter(status='Open').values('id','ping_state','snmp_state','event_start','device__name','device__ip4addr','device__sysName','device__maintenance','device__hibernate')
+        
+        result = {"result": list(unreachables)}
+        # Return the results
+        if pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+class SummariesAPI(LoginRequiredMixin, View):
+    ''' API view to export all current summary data'''
+
+    def get(self, request, *args, **kwargs):
+        pretty_print = request.GET.get('pretty_print', None)
+        type = request.GET.get('type', None)
+        status = request.GET.get('status', 'Open')
+        logger.debug("Type is {}".format(type))
+        result = {}
+        result_list = []
+        if type:
+            summary_list = Summary.objects.filter(type=type,status=status)
+        else:
+            summary_list = Summary.objects.filter(status=status)
+        
+        for summary in summary_list:
+            unreachables = summary.unreachables.values('device__name','device__sysName','device__ip4addr').order_by('device__name').distinct()
+            batteries = summary.batteries.values('device__name','device__sysName','device__ip4addr').order_by('device__name').distinct()
+            data = {
+                'id': summary.id,
+                'type': summary.type,
+                'name': summary.name,
+                'ack': summary.ack,
+                'ack_by': summary.ack_by,
+                'ack_at': summary.ack_at,
+                'comment': summary.comment,
+                'first_event': summary.first_event,
+                'last_event': summary.last_event,
+                'trend': summary.trend,
+                'status': summary.status,
+                'unreachables': list(unreachables),
+                'batteries': list(batteries)
+            }
+            if summary.sn_incident:
+                data['sn_incident__number'] = summary.sn_incident.number
+            else:
+                data['sn_incident__number'] = None
+            result_list.append(data)
+
+        # logger.debug("result {}".format(result_list))
+        result = {"result": result_list}
+        if pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+class SetComment(LoginRequiredMixin, View):
+    ''' API call to set the comment for a summary '''
+    pretty_print = True
+
+    def post(self, request, *args, **kwargs):
+        summary_id = self.kwargs.get('summary_id', None)
+        comment = request.POST.get('comment', '')
+        logger.debug("Summary {} set comment".format(summary_id))
+    
+        response_data = {
+            'success': True
+        }
+        summary = get_object_or_404(Summary, id=summary_id)
+        summary.comment = comment
+        summary.save()
+
+        return JsonResponse(response_data)
+
+# class SetIncident(LoginRequiredMixin, View):
+#     ''' API call to set the Incident for a summary '''
+#     pretty_print = True
+
+#     def post(self, request, *args, **kwargs):
+#         summary_id = self.kwargs.get('summary_id', None)
+#         incident_number = request.POST.get('incident', '')
+#         logger.debug("Summary {} set incident".format(summary_id))
+    
+#         # validate summary id first
+#         summary = get_object_or_404(Summary, id=summary_id)
+
+#         response_data = {
+#             'success': False
+#         }
+
+#         if incident_number:
+#             # Check ServiceNow data
+#             servicenow = ServiceNow()
+#             incident_list = servicenow.get_incident_by_number(incident_number)
+#             if len(incident_list) == 1:
+#                 incident = incident_list[0]
+#             else:
+#                 incident = None
+
+#         if incident:
+#             # add incident to database if necessary
+#             sn_incident = ServiceNowIncident.objects.get_or_create(
+#                 number=incident['number'],
+#                 sys_id=incident['sys_id'],
+#                 instance=self.instance
+#             )
+#             # associate with summary
+#             summary.incident = sn_incident
+#             summary.save()
+#             response_data['success'] = True
+
+#         return JsonResponse(response_data)
 
 class AckView(LoginRequiredMixin, View):
     ''' API view '''
@@ -625,6 +830,57 @@ class StatusExportView(View):
         else:
             return JsonResponse(result)
 
+class RequestSync(LoginRequiredMixin,View):
+    ''' API view to trigger backend refresh job '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {
+            "status": 'submitted',
+            "ping_sync_started": True,
+            "snmp_sync_started": True,
+            "ups_sync_started": True,
+            "device_sync_started": True,
+        }
+        
+        ping_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='PENDING').count()
+        ping_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='STARTED').count()
+        if (ping_tasks_pending == 0 and ping_tasks_started == 0):
+            refresh_ping_status.delay()
+        else:
+            result['ping_sync_started'] = False
+            logger.debug("Ping status sync is already in progress")
+
+        snmp_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='PENDING').count()
+        snmp_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='STARTED').count()
+        if (snmp_tasks_pending == 0 and snmp_tasks_started == 0):
+            refresh_snmp_status.delay()
+        else:
+            result['snmp_sync_started'] = False
+            logger.debug("SNMP status sync is already in progress")
+
+        ups_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='PENDING').count()
+        ups_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='STARTED').count()
+        if (ups_tasks_pending == 0 and ups_tasks_started == 0):
+            refresh_ups_status.delay()
+        else:
+            result['ups_sync_started'] = False
+            logger.debug("UPS status sync is already in progress")
+
+        device_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='PENDING').count()
+        device_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='STARTED').count()
+        if (device_tasks_pending == 0 and device_tasks_started == 0):
+            refresh_akips_devices.delay()
+        else:
+            result['device_sync_started'] = False
+            logger.debug("Device sync is already in progress")
+
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
 
 class UserAlertView(LoginRequiredMixin, View):
     ''' API view '''
@@ -642,7 +898,10 @@ class UserAlertView(LoginRequiredMixin, View):
 
         result = {
             'last_notified': now,
-            'messages': []
+            'level': 'info',
+            'messages': [],
+            'alert_enabled': self.request.user.profile.alert_enabled,
+            'voice_enabled': self.request.user.profile.voice_enabled,
         }
 
         if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:
@@ -745,7 +1004,8 @@ class UserAlertView(LoginRequiredMixin, View):
                 if trap_count == 1:
                     # result['messages'].append("{} new trap for {},".format( trap_count, traps.first().ipaddr))
                     # result['messages'].append("{} new trap,".format( trap_count ))
-                    tmp_messages.append("{} trap for {}".format( trap_count, traps.first().device.sysName ))
+                    # tmp_messages.append("{} trap for {}".format( trap_count, traps.first().device.sysName ))
+                    tmp_messages.append("{} trap".format( trap_count ))
                 else:
                     # result['messages'].append("{} new traps,".format( trap_count ))
                     tmp_messages.append("{} traps".format( trap_count ))
@@ -792,7 +1052,7 @@ class ChartDataView(LoginRequiredMixin, View):
         keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         #logger.debug("time stamps {}".format(keyList))
 
-        # Initalize the graph time periods
+        # Initialize the graph time periods
         event_data = {}
         trap_data = {}
         battery_data = {}
@@ -837,6 +1097,14 @@ class ChartDataView(LoginRequiredMixin, View):
             'chart_battery_data': list( battery_data.values() ),
         }
 
+        # Check and notify around MAX_UNREACHABLE
+        current_unreachable_count = Unreachable.objects.filter(status='Open', device__maintenance=False).count()
+        if settings.MAX_UNREACHABLE and current_unreachable_count >= settings.MAX_UNREACHABLE:
+            logger.warning("Unreachables are above acceptable limit")
+            result['above_max_unreachable'] = True
+        else:
+            result['above_max_unreachable'] = False
+
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
@@ -877,11 +1145,16 @@ class SetUserProfileView(LoginRequiredMixin, View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
+        logger.debug("Preference update for {}")
+        alert_enabled = request.GET.get('alert_enabled', None)
         voice_enabled = request.GET.get('voice_enabled', None)
-        user = request.user
-        logger.debug("Preference update for {} with voice_enabled {}".format(user,voice_enabled))
 
         user = request.user
+        if alert_enabled is not None:
+            if alert_enabled == 'False':
+                user.profile.alert_enabled = False
+            else:
+                user.profile.alert_enabled = True
         if voice_enabled is not None:
             if voice_enabled == 'False':
                 user.profile.voice_enabled = False
@@ -931,8 +1204,8 @@ def process_webhook_payload(payload):
     if 'device' not in payload:
         logger.warn("Webhook is missing device field")
         return False
-    elif 'type' not in payload:
-        logger.warn("Webhook is missing type field")
+    elif 'kind' not in payload:
+        logger.warn("Webhook is missing kind field")
         return False
 
     device = None
@@ -950,7 +1223,7 @@ def process_webhook_payload(payload):
         # logger.warn("Trap {} received from unknown device {} with address {}".format(
         #     payload['trap_oid'], payload['device'], payload['ipaddr']))
 
-    # Check the api for alternte addresses if we don't have a device match
+    # Check the api for alternate addresses if we don't have a device match
     if not device and 'ipaddr' in payload:
         akips = AKIPS()
         device_name = akips.get_device_by_ip(payload['ipaddr'])
@@ -965,7 +1238,27 @@ def process_webhook_payload(payload):
         logger.warn("Webhook call from {} could not be mapped to a device record".format(payload['device']))
         return False
 
-    if payload['type'] == 'Trap':
+    if payload['kind'] == 'status':
+        Status.objects.update_or_create(
+            device=device,
+            child=payload['child'],
+            attribute=payload['attr'],
+            defaults={
+                'value': payload['state'],
+                'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+            }
+        )
+        return True
+
+    elif payload['kind'] == 'threshold':
+        # no current processing
+        return False
+
+    elif payload['kind'] == 'syslog':
+        # no current processing
+        return False
+
+    elif payload['kind'] == 'trap' and not device.maintenance:
         # Check for Open duplicates
         duplicates = Trap.objects.filter( 
             device=device, 
@@ -992,18 +1285,6 @@ def process_webhook_payload(payload):
             )
         return True
 
-    elif payload['type'] == 'Status':
-        Status.objects.update_or_create(
-            device=device,
-            child=payload['child'],
-            attribute=payload['attr'],
-            defaults={
-                'value': payload['state'],
-                'last_change': datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
-            }
-        )
-        return True
-
     else:
-        logger.warn("Unknown type value {}".format( str(payload) ))
+        logger.warn("Unknown kind value {}".format( str(payload) ))
         return False

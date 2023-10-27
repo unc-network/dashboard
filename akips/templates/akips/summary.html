@@ -36,11 +36,15 @@
                         <th>Status</th>
                         <td>{{ summary.status }}</td>
                     </tr>
-                    {% if request.user.is_superuser %}
                     <tr>
-                        <th>Moving Average</th>
-                        <td>{{ summary.moving_average }}<br>low: {{ avg_low }}<br>high: {{ avg_high }}</td>
+                        <th>Comment</th>
+                        <td>{{ summary.comment }}</td>
                     </tr>
+                    {% if request.user.is_superuser %}
+                    <!-- <tr>
+                        <th>Moving Average</th>
+                        <td>Now: {{ summary.moving_average }} / Low: {{ avg_low }} / High: {{ avg_high }}</td>
+                    </tr> -->
                     {% endif %}
                 </table>
             </div>
@@ -73,6 +77,10 @@
                     <tr>
                         <th>UPS On Battery</th>
                         <td>{{ summary.ups_battery }}</td>
+                    </tr>
+                    <tr>
+                        <th>Incident</th>
+                        <td><a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a></td>
                     </tr>
                 </table>
             </div>
@@ -122,10 +130,10 @@
                     <tbody>
                         {% for unreachable in u_open %}
                         <tr>
-                            <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a></td>
+                            <td><a href="{% url 'device' unreachable.device.name %}">{% if unreachable.device.sysName %}{{ unreachable.device.sysName }}{% else %}{{unreachable.device.name}}{% endif %}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
+                            <!-- <td>{{ unreachable.device.hierarchy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
                             <!-- <td>{{ unreachable.last_refresh }}</td> -->
@@ -141,7 +149,7 @@
                 
                 {% if u_open %}
                 <div class="float-right p-3">
-                    <!-- <button class="btn btn-primary" id="hibernate_clear" >Clear Foucus</button> -->
+                    <!-- <button class="btn btn-primary" id="hibernate_clear" >Clear Focus</button> -->
                     <button class="btn btn-primary" id="hibernate" type="submit">Hibernate Selected</button>
                 </div>
                 {% endif %}
@@ -169,10 +177,10 @@
                             <td><a href="{% url 'device' unreachable.device.name %}">{{ unreachable.device.sysName }}</a></td>
                             <td>{{ unreachable.device.ip4addr }}</td>
                             <td>{% if unreachable.ping_state == 'down' %}ping{% endif %} {% if unreachable.snmp_state == 'down' %}snmp{% endif %}</td>
-                            <!-- <td>{{ unreachable.device.hierarcy }} {{ unreachable.device.type}}</td> -->
+                            <!-- <td>{{ unreachable.device.hierarchy }} {{ unreachable.device.type}}</td> -->
                             <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ unreachable.device.sysDescr }}</span></td>
                             <td>{{ unreachable.event_start|date:'m-d H:i:s' }}</td>
-                            <td>{{ unreachable.last_refresh }}</td>
+                            <td>{{ unreachable.last_refresh|date:'m-d H:i:s' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -198,7 +206,7 @@
                             <td><a href="{% url 'device' status.device.name %}">{{ status.device.name }}</a></td>
                             <td>{{ status.device.ip4addr }}</td>
                             <td>{{ status.value }}</td>
-                            <td>{{ status.last_change }}</td>
+                            <td>{{ status.last_change|date:'m-d H:i:s' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -213,41 +221,10 @@
 
 {% block js %}
 <script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        if (alert_toggle) {
-            $.get( alert_url, function( data ) {
-                data.messages.forEach(function (item) {
-                    var msg = new SpeechSynthesisUtterance(item);
-                    speechSynthesis.speak(msg);
-                })
-            } )
-        }
-    }
-</script>
-<script type="text/javascript">
     $(document).ready(function () {
-        var refresh_seconds = 30000;
-
-        voice_alert();
-
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
-            var url = $(this).data("url");
-            if (this.checked) {
-                console.log("ack checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("ack checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
-        });
-
-        // Update the page content on a dynamic refresh interval
-        var intervalId = window.setInterval(function () {
-            voice_alert();
-        }, refresh_seconds);
+        // Setup Alerting
+        refresh_alerts();
+        enable_alert_toggle();
 
     })
 </script>

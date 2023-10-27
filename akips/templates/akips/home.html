@@ -1,5 +1,6 @@
 {% extends 'akips/base.html' %}
 {% load static %}
+{% load auth_extras %}
 
 {% block title %}OCNES Dashboard{% endblock %}
 {% block extra_head%}
@@ -8,23 +9,22 @@
 
 {% block no_heading %}
 <div class="row">
-    <!-- <div class="col-8">
-    </div>
-    <div class="col text-right">
-        <div class="text-right small">Refresh in <span id="time-remain">30</span> seconds</div>
-    </div> -->
-    <div class="col text-right text-sm">
+    <div class="col-sm-6 my-auto text-left text-sm">
         <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
             <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
         </div>
     </div>
+    <div class="col-sm-6 text-right">
+        <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
+        <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
+    </div>
 </div> 
 {% endblock %}
 
 {% block content %}
-<form method="get" action="{% url 'create_incident' %}">
-
+<form method="get" id="myForm" action="{% url 'create_incident' %}">
     <div id="chart" class="card">
         <div class="card-header">
             <h3 class="card-title">New Event Trends</h3>
@@ -64,52 +64,19 @@
         </div>
     </div>
 
-    <div class="text-right p-3">
-        <button type="submit" id="incident_button" class="btn btn-primary">Create Incident</button>
+    <!-- <div class="text-right p-3">
+        {% if request.user|has_group:"refresh" %}
+        <button type="button" id="sync_button" class="btn btn-primary" data-url="{% url 'request_sync' %}">Request AKiPS Sync</button>
+        {% endif %}
+        <button type="submit" id="incident_button" class="btn btn-primary">Associate Incident</button>
         <button type="button" id="clear_all_traps" class="btn btn-primary">Clear All Traps</button>
-    </div>
+    </div> -->
 
 </form>
 {% endblock %}
 
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
-<script type="text/javascript">
-    function voice_alert() {
-        var alert_toggle = $('#voice-alert-toggle').prop('checked') // Boolean
-        var alert_url = $('#voice-alert-toggle').data('alert-url')
-        $.get( alert_url, function( data ) {
-            var long_msg = data.messages.join(' ');
-            if ( long_msg ) {
-                if (alert_toggle) {
-                    // If we have something to say, say it once
-                    console.log("Attempting to speak " + long_msg);
-                    const utterThis = new SpeechSynthesisUtterance(long_msg);
-
-                    utterThis.onend = function (event) {
-                        console.log(`Utterance has finished being spoken after ${event.elapsedTime} seconds.`);
-                    };
-
-                    utterThis.onerror = function (event) {
-                        console.error(`An error has occured with the speech synthesis: ${event.error}`);
-                    };
-                    
-                    speechSynthesis.speak(utterThis);
-                }
-
-                // Display the popup alert even if voice is off
-                $(document).Toasts('create', {
-                    // class: 'bg-warning',
-                    class: 'bg-' + data.level,
-                    title: 'OCNES Notification',
-                    body: long_msg,
-                    autohide: true,
-                    delay: 30000
-                });
-            }
-        } )
-    }
-</script>
 <script type="text/javascript">
     function setup_chart() {
         /* ChartJS
@@ -182,16 +149,16 @@
             }
         }
 
-        var barchart = new Chart(barChartCanvas, {
+        var barChart = new Chart(barChartCanvas, {
             type: 'bar',
             data: barChartData,
             options: barChartOptions
         })
 
-        refresh_chart(barchart);
-        return barchart;
+        refresh_chart(barChart);
+        return barChart;
     }
-    function refresh_chart( barchart ) {
+    function refresh_chart( barChart ) {
         var url = $('#barChart').data("url")
         $.ajax({
             type: "GET",
@@ -199,18 +166,32 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
-                barchart.data.labels = result['chart_labels'];
-                barchart.data.datasets[0].data = result['chart_event_data'];
-                barchart.data.datasets[1].data = result['chart_trap_data'];
-                barchart.data.datasets[2].data = result['chart_battery_data'];
-                barchart.update();
+                barChart.data.labels = result['chart_labels'];
+                barChart.data.datasets[0].data = result['chart_event_data'];
+                barChart.data.datasets[1].data = result['chart_trap_data'];
+                barChart.data.datasets[2].data = result['chart_battery_data'];
+                barChart.update();
+
+                if (result['above_max_unreachable']) {
+                    //alert("above max unreachable");
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'AKiPS Max Unreachable Devices Exceeded',
+                        body: 'Summary updates are paused because AKiPS reports an excessive number of devices down at once. \
+                               You may want to check the \
+                               <a href="https://akips.net.unc.edu/status-reporter?mode=unreachable_devices;controls=device;limit=100;refresh=15;title=Unreachable+Devices;ping4=on;ping6=on;snmp=on">AKiPS Unreachable Device Report</a> \
+                               directly.',
+                        autohide: true,
+                        delay: 30000
+                    });
+                }
             },
             error: function (xhr, status, error) {
                 console.log("Unable to refresh chart");
             }
         });
     }
-    function refresh_dups() {
+    function refresh_duplicates() {
         $('.dup-data').each(function (index) {
             var now = new Date();
             var last = new Date( $(this).data("last") );
@@ -224,6 +205,9 @@
     function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
         var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
+
+        // Close any open popovers before refreshing the display
+        $(".popover").popover('hide');
 
         $('.event-card').each(function (index) {
             var id = this.id;
@@ -247,7 +231,7 @@
                         // body.append(water);
                     }
                     if (id == "trap_card") {
-                        refresh_dups();
+                        refresh_duplicates();
                     }
                 },
                 error: function (xhr, status, error) {
@@ -257,7 +241,8 @@
             });
         });
 
-        voice_alert();
+        // voice_alert();
+        alert_user();
 
     }
 </script>
@@ -266,7 +251,83 @@
         var refresh_seconds = 30;
         var auto_refresh = true;
 
-        // Bind to the document so dynamicly added content will still work
+        var csrfToken = getCookie('csrftoken');
+
+        // Bind to the document so dynamically added content will still work
+        // Configure the comment edit field
+        $(document).on('click', '.summary-comment', function (e) {
+            var comment = $(this).text();
+            // var comment = $(this).data("content");
+            var url = $(this).data("url");
+            console.log("comment update " + comment);
+
+            $(this).html('');
+            $('<input></input>')
+                .attr({
+                    'type': 'text',
+                    'name': 'comment_text',
+                    'class': 'form-control input-sm txt_comment',
+                    'size': '20',
+                    'value': comment
+                })
+                .appendTo(this);
+            $('.txt_comment').focus();
+        });
+        $(document).on('keypress','.txt_comment', function(e){
+            if (e.which === 13) {
+                e.preventDefault();
+                var comment = $(this).val();
+                var url = $(this).closest('.summary-comment').data("url");
+                console.log("Calling save comment: " + comment);
+                console.log("Calling save url: " + url);
+                $.ajax({
+                    type: 'post',
+                    url: url,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    data: {
+                        'comment': comment
+                    },
+                    success: function(){
+                        console.log("Comment updated");
+                    }
+                });
+                if (comment) {
+                    //$(this).closest('.summary-comment').text(comment);
+                    $(this).closest('.summary-comment').html('<br>' + comment);
+                } else {
+                    $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
+                }
+            }
+        });
+        $(document).on('blur','.txt_comment', function(){
+            var comment = $(this).val();
+            var url = $(this).closest('.summary-comment').data("url");
+            console.log("Calling save comment: " + comment);
+            console.log("Calling save url: " + url);
+            $.ajax({
+                type: 'post',
+                url: url,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                data: {
+                    'comment': comment
+                },
+                success: function(){
+                    console.log("Comment updated");
+                }
+            });
+            if (comment) {
+                //$(this).closest('.summary-comment').text(comment);
+                $(this).closest('.summary-comment').html('<br>' + comment);
+            } else {
+                $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
+            }
+        });
+
+        // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {
             var url = $(this).data("url");
@@ -279,7 +340,7 @@
             }
         });
 
-        // Bind to the document so dynamicly added content will still work
+        // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for traps
         $(document).on('change', 'input.ack-trap', function () {
             var url = $(this).data("url");
@@ -292,7 +353,7 @@
             }
         });
 
-        // Bind to the document so dynamicly added content will still work
+        // Bind to the document so dynamically added content will still work
         // Configure the Clear Trap button for traps
         $(document).on('click', 'button.trap-clear', function () {
             //$(this).prop('disabled', true);
@@ -306,14 +367,12 @@
             });
         });
 
-        // Bind to the document so dynamicly added content will still work
-        // enable popoover
+        // Bind to the document so dynamically added content will still work
+        // enable popover
         $('body').popover({
-            // selector: '[rel="popover"]',
             selector: '[data-toggle="popover"]',
             trigger: 'hover',
             delay: { "hide": 10 }
-
         });
 
         // Configure the Clear All Traps button for traps
@@ -337,25 +396,76 @@
         $('#incident_button').click(function () {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
-                alert("Please select one summary to create an incident.");
+                $(document).Toasts('create', {
+                    class: 'bg-warning',
+                    title: 'Manage Incident',
+                    body: 'Please select one or more summaries (or traps) to continue with incidents.',
+                    autohide: true,
+                    delay: 5000
+                });
+                // alert("Please select one summary to create an incident.");
                 return false;
+            } else {
+                $("#myForm").submit();
             }
         });
 
-        // Configure the user preference switch
-        $(document).on('change', 'input.voice-alert-toggle', function () {
+        // Configure the Sync Button
+        $('#sync_button').click(function () {
             var url = $(this).data("url");
-            if (this.checked) {
-                console.log("voice checkbox on");
-                $.get(url, { "voice_enabled": 'True' })
-            } else {
-                console.log("voice checkbox off")
-                $.get(url, { "voice_enabled": 'False' })
-            }
+            console.log("requesting data sync " + url)
+            $.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json",
+                data: {},
+                success: function (result, status, xhr) {
+                    var message = '';
+                    if (result['ping_sync_started']) {
+                        message += "Ping status sync started<br>"
+                    } else {
+                        message += "Ping status sync already running<br>"
+                    }
+                    if (result['snmp_sync_started']) {
+                        message += "SNMP status sync started<br>"
+                    } else {
+                        message += "SNMP status sync already running<br>"
+                    }
+                    if (result['ups_sync_started']) {
+                        message += "UPS battery sync started<br>"
+                    } else {
+                        message += "UPS battery sync already running<br>"
+                    }
+                    if (result['device_sync_started']) {
+                        message += "Device sync started<br>"
+                    } else {
+                        message += "Device sync already running<br>"
+                    }
+                    $(document).Toasts('create', {
+                        class: 'bg-info',
+                        title: 'AKiPS Status Refresh',
+                        body: message,
+                        autohide: true,
+                        delay: 30000
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.log("Unable to refresh status");
+                }
+            });
+            // $.get(url, {})
+            // $(document).Toasts('create', {
+            //     class: 'bg-info',
+            //     title: 'AKiPS Status Refresh',
+            //     body: 'Ping and SNMP status is being updated from AKiPS.',
+            //     autohide: true,
+            //     delay: 30000
+            // });
         });
 
         // Populate the page content for the first time
         refresh_cards();
+        enable_alert_toggle();
         var chart = setup_chart();
 
         // Update the refresh counter
@@ -373,7 +483,7 @@
         // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
             remaining = max_remaining;
-            if ( $('#refresh-toggle').is(':checked') ) {
+            if ( $('#refresh-toggle').is(':checked') && $("input[name=comment_text]:focus").length == 0 ) {
                 refresh_cards();
                 refresh_chart(chart);
             }

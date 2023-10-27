@@ -1,0 +1,176 @@
+# OLD CI/CD pipeline file
+# Keeping around for notes so I can prune production file
+
+# List of stages for jobs, and their order of execution
+# All jobs within a stage run in parallel
+stages:
+  # - build
+  # - test
+  - deploy
+
+workflow:
+  rules:
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+    # - if: $CI_COMMIT_BRANCH == "main"
+    ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
+
+# Define variables needed by the various jobs
+variables:
+  # Tell Docker CLI how to talk to Docker daemon
+  # DOCKER_HOST: tcp://dockerdaemon:2375
+  # DOCKER_HOST: tcp://localhost:2375
+  # # Use the overlayfs driver for improved performance
+  # DOCKER_DRIVER: overlay2
+  # # Disable TLS since we're running inside local network
+  # DOCKER_TLS_CERTDIR: ""
+  # POSTGRES_DB: $POSTGRES_DB
+  # POSTGRES_USER: $POSTGRES_USER
+  # POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  # POSTGRES_HOST_AUTH_METHOD: trust
+
+# Define default settings that apply to all jobs unless overridden
+default:
+  image: python:3
+  # image: rockylinux:8
+  #
+  # Pick zero or more services to be used on all builds.
+  # Only needed when using a docker container to run your tests in.
+  # Check out: https://docs.gitlab.com/ee/ci/services/index.html
+  services:
+    - postgres:15
+  #
+  # This folder is cached between builds
+  # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
+  cache:
+    paths:
+      - ~/.cache/pip/
+  before_script:
+    # Install needed modules so LDAP bits in pip modules will install properly
+    - apt-get update
+    - apt-get -y install libsasl2-dev python3-dev libldap2-dev libssl-dev
+    - pip3 install --upgrade pip
+    - pip3 install --user -r requirements.txt
+
+# # Stage 1:  Build the app
+# migrations:
+#   stage: build
+#   script:
+#     - python3 manage.py makemigrations
+#     # - python3 manage.py makemigrations myapp
+#     - python3 manage.py migrate
+#     - python3 manage.py check
+
+# # Stage 2:  Test the app
+# django-tests:
+#   stage: test
+#   script:
+#     # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+#     # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+#     # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+#     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+#     - python3 manage.py test
+
+# If the previous stages all succeeded, then it is time to build the containers to run in production
+
+# Stage 3:  Deploy the OCNES app
+deploy-ocnes:
+  stage: deploy
+  environment: production
+  # From https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
+  script:
+    - echo "Building OCNES image..."
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+  # rules:
+  #   - if: $CI_COMMIT_TAG
+
+
+  # image provides Docker client
+  # image: docker:dind
+  # [job container] ===> [service container]
+  # e.g., [python container] ===> [mysql db container]
+  # service provides Docker daemon
+  # services:
+  #   - name: docker:dind
+  #     alias: dockerdaemon
+      # command: ["--tls=false"]
+  # variables:
+    # Next line needed so client and server can communicate with same certs
+    # DOCKER_TLS_CERTDIR: "/certs"
+  # before_script:
+  #   - echo "This is here to prevent default apt-get calls."
+    # Override default to prevent trying to install updates here which will fail.
+    #
+    # The following hack is needed to make sure the Docker daemon is fully up
+    # before attempting to build an image. Without this, expect an error.
+    # - echo "Waiting for Docker daemon to start..."
+    # - until docker info; do sleep 1; done
+  # script:
+  #   - docker --version
+  #   # - docker pull alpine
+  #   - apk add nmap
+  #   - nmap -sT -p- docker
+    # - echo "Building OCNES container..."
+    # - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+    # - docker build -t registry.sc.its.unc.edu/network/dashboard/ocnes:latest -f ./Dockerfile.OCNES .
+    # - echo "Push OCNES container to registry..."
+    # - docker push registry.sc.its.unc.edu/network/dashboard/ocnes:latest
+
+
+# Stage 3:  Deploy Celery container if Dockerfile.Celery changes
+deploy-celery:
+  stage: deploy
+  environment: production
+  only:
+    changes:
+      - Dockerfile.Celery-image
+  # From https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  before_script:
+    - echo "Disabling CI/CD default settings"
+  script:
+    - echo "Building Celery image..."
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+
+
+#   # image provides Docker client
+#   image: docker
+#   # [job container] ===> [service container]
+#   # e.g., [python container] ===> [mysql db container]
+#   # service provides Docker daemon
+#   services:
+#     - name: docker:dind
+#       alias: dockerdaemon
+#   # variables:
+#     # Next line needed so client and server can communicate with same certs
+#     # DOCKER_TLS_CERTDIR: "/certs"
+#   before_script:
+#     # Override default to prevent trying to install updates here which will fail.
+#     #
+#     # The following hack is needed to make sure the Docker daemon is fully up
+#     # before attempting to build an image. Without this, expect an error.
+#     - until docker info; do sleep 1; done
+#   script:
+#     - echo "Building Celery container..."
+#     - docker login -u gitlab-ci-token -p $GITLAB_TOKEN registry.sc.its.unc.edu
+#     - docker build -t registry.sc.its.unc.edu/network/dashboard/celery:latest -f ./Dockerfile.Celery .
+#     - echo "Push Celery container to registry..."
+#     - docker push registry.sc.its.unc.edu/network/dashboard/celery:latest
+
+
+# References:
+# From GitLab example templates: https://gitlab.com/gitlab-org/gitlab-foss/tree/master/lib/gitlab/ci/templates
+# - Testing Django with MySQL: https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Django.gitlab-ci.yml
+# - https://docs.gitlab.com/ee/ci/services/postgres.html
