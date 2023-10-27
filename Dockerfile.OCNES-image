@@ -33,7 +33,7 @@ EXPOSE 8000
 #        will generate a SQLite3 db.sqlite3 that is stored within the
 #        container.
 # RUN python3 manage.py createcachetable
-RUN python3 manage.py makemigrations
+RUN python3 manage.py makemigrations --noinput
 # RUN python3 manage.py migrate
 RUN python3 manage.py collectstatic --noinput
 # RUN python3 manage.py check
