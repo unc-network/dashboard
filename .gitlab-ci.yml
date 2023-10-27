@@ -44,7 +44,7 @@ stages:
 # Define default settings that apply to all jobs unless overridden
 ###############################################################################
 default:
-  image: python:3
+  image: python:3.11
   # image: rockylinux:8
   #
   # Pick zero or more services to be used on all builds.
@@ -143,7 +143,7 @@ build-celery-image:
 #           This should trigger K3s to pull images and build new containers
 #           in the develop branch.
 ###############################################################################
-tag-latest-build:
+tag-latest-build-ocnes:
   stage: tagimage
   environment: production
   image:
@@ -166,7 +166,7 @@ tag-latest-build:
 #           This should trigger K3s to pull images and build new containers
 #           in the develop branch.
 ###############################################################################
-tag-latest-build:
+tag-latest-build-celery:
   stage: tagimage
   environment: production
   image:
