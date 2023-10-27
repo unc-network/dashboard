@@ -6,7 +6,9 @@ echo "Creating cache table if it does not exist..."
 python3 manage.py createcachetable
 echo "Migrating the database..."
 python3 manage.py migrate
-
+echo "____ ENVIRONMENT TABLE ____"
+env
+echo "___________________________"
 ############################################################
 # Run the Django app using gunicorn
 ############################################################
