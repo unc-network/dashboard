@@ -21,6 +21,6 @@ RUN cd /
 RUN --mount=type=bind,source=./,target=/dashboard pip install -r /dashboard/requirements.txt
 RUN pip install gunicorn
 
-RUN cd /dashboard
+WORKDIR /dashboard
 
 CMD [ "echo", "OCNES is running..."]
