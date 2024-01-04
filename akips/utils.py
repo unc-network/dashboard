@@ -413,12 +413,16 @@ class AKIPS:
 
 class Inventory:
     # Class to handle interactions with the NIT
-    inventory_url = os.getenv('INVENTORY_URL', '')
-    inventory_token = os.getenv('INVENTORY_TOKEN', '')
+    inventory_url = settings.INVENTORY_URL
+    inventory_token = settings.INVENTORY_TOKEN
     session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
+        if not self.inventory_url:
+            logger.debug("Inventory feed url is not defined")
+            return None
+
         headers = {
             'Authorization': self.inventory_token
         }
