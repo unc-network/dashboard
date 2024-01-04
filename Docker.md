@@ -160,27 +160,6 @@ docker compose down
 
 
 # Initial Configuration
-Once setup, the first thing you will likely want to do is add enough entries into OCNES that it can begin pulling down the list of AKIPS devices so that the reporting works properly.  So with OCNES fully up, this means going into the Django Admin GUI and adding entries for **Periodic Tasks**.  That is, log into the Web UI, and then
-- Click `Admin` at the top
-- Click `Periodic Tasks` down the left side
-- Click the `[ADD PERIODIC TASK]` button in the upper right
-- Setup each task
-
-As you do this, you will also likely be adding entries to other tables, notably `Intervals`.  At the very least, you will likely want to setup the following:
-
-| Name                  | Task                             | Enabled | Interval Schedule | One-off Task |
-|-----------------------|----------------------------------|---------|-------------------|--------------|
-| Refresh AKIPS Devices | akips.task.refresh_akips_devices |   [x]   | every 15 seconds  |     [x]      |
-| Refresh Unreachable   | akips.task.refresh_unreachable   |   [x]   | every 30 seconds  |              |
-
-The first task is set to run just once, which should pull down all ~15K devices stored in AKIPS into your local PostgreSQL db.  In production, you'd likely set this to run once every 6 hours or so.  For dev work, just once is enough.  Note this will take time to populate.
-
-The second task is the key one for updating the dashboard.
-
-**NOTE**:  If you do not notice entries populating the `Devices` table (check the logs), you may need to bring down the containers for a second, then bring them back up if you have not done so yet.  I have found that if you follow the steps above without bringing down the containers, some bits appear to be missing.  You will know things are setup properly when you see an entry in `Periodic Tasks` for **Celery backend cleanup (celery.backend_cleanup)**, as that is added automatically by Celery.
-
-You might also want to set up other tasks such as cleanup dashboard data (akips.task.cleanup_dashboard_data).  But this is left as an exercise to the reader.  [Hint:  Go look at the production instance.]
-
 
 # Development Workflow
 

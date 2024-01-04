@@ -44,4 +44,4 @@ WORKDIR /dashboard
 USER $USERNAME
 
 # CMD [ "echo", "Celery workers running..."]
-CMD [ "celery", "--app", "project", "worker", "-B" ]
+CMD [ "celery", "--app", "project", "worker", "--autoscale=6,2", "-B" ]
