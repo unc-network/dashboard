@@ -1,10 +1,8 @@
-![logo](akips/static/akips/img/apple-touch-icon.png)
-
 OCNES
 =======
 Operations Center Network Event Summary (OCNES) provides a dashboard view of network health. It is built on top of the [AKiPS Network Monitoring Software](http://akips.com) network monitoring platform, which provides all polling and status data.
 
-![screenshot](akips/static/akips/img/dashboard.png)
+![Screenshot of OCNES UI](akips/static/akips/img/dashboard.png "OCNES UI")
 
 ## Why?
 
@@ -21,6 +19,10 @@ This project was initially designed to run under OpenShift.
 It also runs under Docker, refer to [Docker Readme](Docker.md).
 
 Most recently work has been to build a K3s setup.
+
+## Contributing
+
+Contributions are welcome.  The project has been in-house for a while but we recently published the repository to facilitate collaboration with other higher education institutions utilizing AKiPS.  Interested developers can contact William Whitaker at will.whitaker@unc.edu.
 
 --- 
 UNC Chapel Hill   
