@@ -1,5 +1,5 @@
 # Use official Python image from hub.docker.com
-FROM python
+FROM python:3.11
 
 # NOTE:  To fully mimic production, we can set tags to match specific versions
 #        of things like Python.
@@ -44,4 +44,4 @@ WORKDIR /dashboard
 USER $USERNAME
 
 # CMD [ "echo", "Celery workers running..."]
-CMD [ "celery", "--app", "project", "worker", "-B" ]
+CMD [ "celery", "--app", "project", "worker", "--autoscale=6,2", "-B" ]

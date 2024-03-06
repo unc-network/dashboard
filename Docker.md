@@ -30,60 +30,12 @@ But with Docker, there is an alternative.  With just Docker Desktop installed on
 ### 3. Bring up a Terminal/shell and navigate to the directory containing this file and the other Docker config files including `docker-compose.yml`
 ### 4. Create a file called `.env` to store your local environment variables.  This file should be saved in the same directory as `docker-compose.yml`.  It defines your local environment and should look something like the following (adjust as needed):
 
-```toml
-# Dockerfile/Docker Compose
-# The following is needed to build ARM64/Apple Silicon images if you are
-# running your containers on that platform. Leave blank for x86_64.
-# DOCKER_ARCH='arm64v8/'
-DOCKER_ARCH=
-
-# The following is due to nerdctl not working exactly like docker CLI
-# with respect to environment variables
-PWD='/path/to/directory/with/docker-compose.yml'
-
-# Environment variable definitions file
-DJANGO_DEBUG=True
-LOG_LEVEL=DEBUG
-
-# The following entry is if running under Gunicorn
-GUNICORN_CMD_ARGS="--bind=0.0.0.0:8000 --access-logfile=-"
-
-# Celery
-CELERY_BROKER_URL='redis://redis:6379/0'
-
-# PostgreSQL db
-DATABASE_SERVICE_NAME=postgresql
-DATABASE_ENGINE=postgresql
-DATABASE_NAME=postgres
-DATABASE_USER=postgres
-DATABASE_PASSWORD=OCNESisCOOL
-POSTGRESQL_SERVICE_HOST=db
-POSTGRESQL_SERVICE_PORT=5432
-POSTGRES_PASSWORD=OCNESisCOOL
-
-# LDAP variables
-LDAP_SERVER=ldaps://ldap.example.com
-# LDAPTLS_CACERT=/dashboard/incommon-ca-chain.pem
-# LDAPTLS_REQCERT=never
-
-# AKIPS variables
-AKIPS_SERVER=<FQDN/IP of AKiPS server>
-AKIPS_USERNAME=api-rw
-AKIPS_PASSWORD=<api-rw_password>
-# AKIPS_CACERT=/dashboard/incommon-ca-chain.pem
-
-# External Device Inventory Feed
-INVENTORY_URL=https://server.example.com/dump.json
-INVENTORY_TOKEN=<feed_token>
-
-# Webhook
-AKIPS_WEBHOOK_TOKEN=<AKiPS_web_token>
-
-# ServiceNow
-SN_URL=<ServiceNOW_URL>
-SN_USERNAME=<ServiceNow_username>
-SN_PASSWORD=<ServiceNow_password>
+```bash
+# Copy the example file
+cp env.example .env
 ```
+
+At the minimum, you should set the DJANGO_SECRET to something unique and the AKiPS server, username, and password.
 
 With this file in place, and noting that `.gitignore` does not upload this, you can have your instance running quickly and easily.
 
@@ -160,27 +112,6 @@ docker compose down
 
 
 # Initial Configuration
-Once setup, the first thing you will likely want to do is add enough entries into OCNES that it can begin pulling down the list of AKIPS devices so that the reporting works properly.  So with OCNES fully up, this means going into the Django Admin GUI and adding entries for **Periodic Tasks**.  That is, log into the Web UI, and then
-- Click `Admin` at the top
-- Click `Periodic Tasks` down the left side
-- Click the `[ADD PERIODIC TASK]` button in the upper right
-- Setup each task
-
-As you do this, you will also likely be adding entries to other tables, notably `Intervals`.  At the very least, you will likely want to setup the following:
-
-| Name                  | Task                             | Enabled | Interval Schedule | One-off Task |
-|-----------------------|----------------------------------|---------|-------------------|--------------|
-| Refresh AKIPS Devices | akips.task.refresh_akips_devices |   [x]   | every 15 seconds  |     [x]      |
-| Refresh Unreachable   | akips.task.refresh_unreachable   |   [x]   | every 30 seconds  |              |
-
-The first task is set to run just once, which should pull down all ~15K devices stored in AKIPS into your local PostgreSQL db.  In production, you'd likely set this to run once every 6 hours or so.  For dev work, just once is enough.  Note this will take time to populate.
-
-The second task is the key one for updating the dashboard.
-
-**NOTE**:  If you do not notice entries populating the `Devices` table (check the logs), you may need to bring down the containers for a second, then bring them back up if you have not done so yet.  I have found that if you follow the steps above without bringing down the containers, some bits appear to be missing.  You will know things are setup properly when you see an entry in `Periodic Tasks` for **Celery backend cleanup (celery.backend_cleanup)**, as that is added automatically by Celery.
-
-You might also want to set up other tasks such as cleanup dashboard data (akips.task.cleanup_dashboard_data).  But this is left as an exercise to the reader.  [Hint:  Go look at the production instance.]
-
 
 # Development Workflow
 
