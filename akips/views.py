@@ -570,8 +570,20 @@ class DevicesAPI(View):
         pretty_print = request.GET.get('pretty_print', None)
         result = {}
         devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate')
-        
         result = {"result": list(devices)}
+        
+        try:
+            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
+            result['last_inventory_sync'] = last_inventory_sync.date_done
+        except TaskResult.DoesNotExist:
+            result['last_inventory_sync'] = None
+
+        try:
+            last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices').latest('date_done')
+            result['last_akips_sync'] = last_device_sync.date_done
+        except TaskResult.DoesNotExist:
+            result['last_akips_sync'] = None
+
         # Return the results
         if pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})
