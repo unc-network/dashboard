@@ -37,7 +37,6 @@ if DJANGO_DEBUG == 'True':
     DEBUG = True
 else:
     DEBUG = False
-# DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -46,7 +45,6 @@ ALLOWED_HOSTS = ['*']
 OPENSHIFT_NAMESPACE = os.getenv('OPENSHIFT_BUILD_NAMESPACE', 'LOCAL')
 
 # Application definition
-
 INSTALLED_APPS = [
     #'adminlte3_theme',
     'django.contrib.admin',
