@@ -569,7 +569,7 @@ class DevicesAPI(View):
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
         result = {}
-        devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate')
+        devices = Device.objects.values('id','name','ip4addr','sysName','sysDescr','group','tier','building_name','critical','type','maintenance','hibernate','inventory_url')
         result = {"result": list(devices)}
         
         try:
