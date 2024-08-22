@@ -122,14 +122,19 @@ CACHES = {
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
+# Base LDAP credentials
+LDAP_SERVER = os.getenv('LDAP_SERVER', 'ldaps://ldap.unc.edu:636')
+LDAP_USERNAME = os.getenv('LDAP_USERNAME', '')
+LDAP_PASSWORD = os.getenv('LDAP_PASSWORD', '')
+
 # LDAP Authentication Configuration
 # https://django-auth-ldap.readthedocs.io/en/latest/example.html
 
 # Baseline configuration.
-AUTH_LDAP_SERVER_URI = os.getenv('LDAP_SERVER','ldaps://ldap.unc.edu')
+AUTH_LDAP_SERVER_URI = LDAP_SERVER
 
-AUTH_LDAP_BIND_DN = os.getenv('LDAP_USERNAME', '')
-AUTH_LDAP_BIND_PASSWORD = os.getenv('LDAP_PASSWORD', '')
+AUTH_LDAP_BIND_DN = LDAP_USERNAME
+AUTH_LDAP_BIND_PASSWORD = LDAP_PASSWORD
 AUTH_LDAP_USER_SEARCH = LDAPSearch(
     'ou=people,dc=unc,dc=edu',
     ldap.SCOPE_SUBTREE,
