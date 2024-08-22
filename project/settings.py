@@ -98,6 +98,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
+# Added for 4.2 upgrade, was not needed in 3.2
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.netapps.unc.edu',
+    'https://*.cloudapps.unc.edu',
+    'https://*.127.0.0.1'
+]
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
