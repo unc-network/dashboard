@@ -23,9 +23,9 @@
                 <tr>
                     <th>Device</th>
                     <th>Ping Status</th>
-                    <th>Request</th>
                     <th>Clear Condition</th>
                     <th>Comment</th>
+                    <th>Set By</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,9 +38,9 @@
                             {{ status.value }}
                         {% endfor %}
                     </td>
-                    <td>{{ entry.hibernate.status }}</td>
                     <td>{{ entry.hibernate.type }}{% if entry.hibernate.type == 'Time' %} {{ entry.hibernate.scheduled }}{% endif %}</td>
                     <td>{{ entry.hibernate.comment }}</td>
+                    <td>{{ entry.hibernate.created_by }} - {{ entry.hibernate.created_at }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

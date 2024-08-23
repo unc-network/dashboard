@@ -83,7 +83,7 @@ class Trap(models.Model):
     ipaddr = models.GenericIPAddressField()
     trap_oid = models.CharField(max_length=255)
     uptime = models.CharField(max_length=255)
-    oids = models.CharField(max_length=1024)
+    oids = models.CharField(max_length=2048)
     ack = models.BooleanField(default=False)
     ack_by = models.CharField(max_length=32, blank=True)
     ack_at = models.DateTimeField(null=True, blank=True)

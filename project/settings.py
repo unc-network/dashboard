@@ -37,7 +37,6 @@ if DJANGO_DEBUG == 'True':
     DEBUG = True
 else:
     DEBUG = False
-# DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -46,7 +45,6 @@ ALLOWED_HOSTS = ['*']
 OPENSHIFT_NAMESPACE = os.getenv('OPENSHIFT_BUILD_NAMESPACE', 'LOCAL')
 
 # Application definition
-
 INSTALLED_APPS = [
     #'adminlte3_theme',
     'django.contrib.admin',
@@ -100,6 +98,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
+# Added for 4.2 upgrade, was not needed in 3.2
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.netapps.unc.edu',
+    'https://*.cloudapps.unc.edu',
+    'https://*.127.0.0.1'
+]
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
@@ -124,14 +128,19 @@ CACHES = {
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
+# Base LDAP credentials
+LDAP_SERVER = os.getenv('LDAP_SERVER', 'ldaps://ldap.unc.edu:636')
+LDAP_USERNAME = os.getenv('LDAP_USERNAME', '')
+LDAP_PASSWORD = os.getenv('LDAP_PASSWORD', '')
+
 # LDAP Authentication Configuration
 # https://django-auth-ldap.readthedocs.io/en/latest/example.html
 
 # Baseline configuration.
-AUTH_LDAP_SERVER_URI = os.getenv('LDAP_SERVER','ldaps://ldap.unc.edu')
+AUTH_LDAP_SERVER_URI = LDAP_SERVER
 
-AUTH_LDAP_BIND_DN = os.getenv('LDAP_USERNAME', '')
-AUTH_LDAP_BIND_PASSWORD = os.getenv('LDAP_PASSWORD', '')
+AUTH_LDAP_BIND_DN = LDAP_USERNAME
+AUTH_LDAP_BIND_PASSWORD = LDAP_PASSWORD
 AUTH_LDAP_USER_SEARCH = LDAPSearch(
     'ou=people,dc=unc,dc=edu',
     ldap.SCOPE_SUBTREE,
@@ -217,7 +226,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 INTERNAL_IPS = ['127.0.0.1']
 
@@ -376,6 +385,10 @@ CELERY_BEAT_SCHEDULE = {
 AKIPS_CACERT = os.getenv('AKIPS_CACERT', None)
 # Incoming Webhook, default to something for testing
 AKIPS_WEBHOOK_TOKEN = os.getenv('AKIPS_WEBHOOK_TOKEN', 'Tkjh9P6PlqYQLqVz1fLNMPu4lNv9ac2EBkejAIKt2hgH8D7GtvtA')
+
+# Inventory Feed Settings
+INVENTORY_URL = os.getenv('INVENTORY_URL', None)
+INVENTORY_TOKEN = os.getenv('INVENTORY_TOKEN', None)
 
 # OCNES Specific
 MAX_UNREACHABLE = int(os.getenv('MAX_UNREACHABLE', 2000))
