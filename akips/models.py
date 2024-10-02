@@ -25,6 +25,7 @@ class Device(models.Model):
     comment = models.CharField(max_length=1024, blank=True)
     last_refresh = models.DateTimeField()
     inventory_url = models.URLField(blank=True,default='')
+    notify = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['name']

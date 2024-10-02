@@ -116,7 +116,7 @@ class EventManager:
         sn_update_add = {}
 
         # Process all current unreachable records
-        unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True)
+        unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True).exclude(device__notify=False)
 
         if settings.MAX_UNREACHABLE and len(unreachables) >= settings.MAX_UNREACHABLE:
             # Something may be wrong, stop processing summaries
@@ -307,7 +307,7 @@ class EventManager:
             time.sleep(sleep_delay)
 
         # Process all ups on battery
-        ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True)
+        ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True).exclude(device__notify=False)
         for ups in ups_on_battery:
             logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 

@@ -7,7 +7,7 @@ from . import models
 @admin.register(models.Device)
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'sysName', 'ip4addr', 'group', 'type', 'last_refresh']
-    list_filter = ['group', 'critical', 'maintenance', 'type', 'tier', 'building_name']
+    list_filter = ['group', 'critical', 'maintenance', 'type', 'notify', 'tier', 'building_name']
     search_fields = ['name', 'sysName', 'ip4addr']
 
 @admin.register(models.Unreachable)
