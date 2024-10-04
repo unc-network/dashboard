@@ -52,40 +52,43 @@ class EventManager:
                     logger.warning("Attempting to create unreachable data for unknown device {}".format(v['name']))
                     continue
 
-                Unreachable.objects.update_or_create(
-                    device=device,
-                    #status='Open',
-                    #child = entry['child'],
-                    # event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
-                    event_start = v['event_start'],
-                    defaults={
-                        # 'name': key,                        # akips device name
-                        'child': v['child'],            # ping4
-                        'ping_state': v['ping_state'],            # down
-                        'snmp_state': v['snmp_state'],            # down
-                        'index': v['index'],            # 1
-                        # 'device_added': datetime.fromtimestamp(int(v['device_added']), tz=timezone.get_current_timezone()),
-                        'device_added': v['device_added'],
-                        # 'event_start': datetime.fromtimestamp(int(v['event_start']), tz=timezone.get_current_timezone()),
-                        'event_start': v['event_start'],
-                        'ip4addr': v['ip4addr'],
-                        'last_refresh': now,
-                        'status': 'Open',
-                    }
-                )
-
-                time.sleep(sleep_delay)
+                if device.maintenance is False:
+                    Unreachable.objects.update_or_create(
+                        device=device,
+                        #status='Open',
+                        #child = entry['child'],
+                        # event_start = datetime.fromtimestamp( int(v['event_start']), tz=timezone.get_current_timezone() ),
+                        event_start = v['event_start'],
+                        defaults={
+                            # 'name': key,                        # akips device name
+                            'child': v['child'],            # ping4
+                            'ping_state': v['ping_state'],            # down
+                            'snmp_state': v['snmp_state'],            # down
+                            'index': v['index'],            # 1
+                            # 'device_added': datetime.fromtimestamp(int(v['device_added']), tz=timezone.get_current_timezone()),
+                            'device_added': v['device_added'],
+                            # 'event_start': datetime.fromtimestamp(int(v['event_start']), tz=timezone.get_current_timezone()),
+                            'event_start': v['event_start'],
+                            'ip4addr': v['ip4addr'],
+                            'last_refresh': now,
+                            'status': 'Open',
+                        }
+                    )
+                    time.sleep(sleep_delay)
 
             # Handle unreachables that have cleared and need notifications
-            cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
-            for cleared in cleared_unreachables:
-                # for summary in cleared.summary_set.all():
-                for summary in cleared.summary_set.filter(sn_incident__isnull=False):
-                    logger.debug("unreachable {} has cleared and was port of summary {}".format(cleared,summary))
-                    if summary.sn_incident.number in sn_update_cleared:
-                        sn_update_cleared[ summary.sn_incident.number ].append( cleared )
-                    else:
-                        sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
+            # cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
+            # for cleared in cleared_unreachables:
+            #     # for summary in cleared.summary_set.all():
+            #     for summary in cleared.summary_set.filter(sn_incident__isnull=False):
+            #         logger.debug("unreachable {} has cleared and was port of summary {}".format(cleared,summary))
+            #         if summary.sn_incident.number in sn_update_cleared:
+            #             sn_update_cleared[ summary.sn_incident.number ].append( cleared )
+            #         else:
+            #             sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
+
+            # Close unreachables for AKiPS maintenance mode devices, they never clear in AKiPS
+            Unreachable.objects.filter(status='Open', device__maintenance=True).update(status='Closed',last_refresh=now)
 
             # Remove stale entries
             Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
