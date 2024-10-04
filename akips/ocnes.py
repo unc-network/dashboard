@@ -179,15 +179,20 @@ class EventManager:
         ''' Update summary for critical unreachable device '''
         logger.debug("Processing critical {}".format(unreachable))
 
+        if unreachable.device.maintenance is True or unreachable.device.notify is False:
+            logger.info(f"Unreachable device {unreachable.device} should be excluded from summary")
+            return
+
         if unreachable.device.sysName:
-            d_name = unreachable.device.sysName
+            device_name = unreachable.device.sysName
         else:
-            d_name = unreachable.device.name
+            device_name = unreachable.device.name
+        
         try:
             c_summary, c_created = Summary.objects.get_or_create(
                 type='Critical',
                 #name=unreachable.device.name,
-                name=d_name,
+                name=device_name,
                 status='Open',
                 defaults={
                     'first_event': unreachable.event_start,
@@ -197,11 +202,10 @@ class EventManager:
             )
         except Summary.MultipleObjectsReturned:
             # if we get more than one, just use the first
-            c_summary = Summary.objects.filter(type='Critical',name=d_name,status='Open').first()
+            c_summary = Summary.objects.filter(type='Critical',name=device_name,status='Open').first()
             c_created = False
         if c_created:
-            logger.debug("Crit summary created {}".format(
-                unreachable.device.name))
+            logger.debug("Crit summary created {}".format(unreachable.device.name))
         else:
             if c_summary.first_event > unreachable.event_start:
                 c_summary.first_event = unreachable.event_start
@@ -219,12 +223,16 @@ class EventManager:
         ''' Update Tier summary for default unreachable network device '''
         logger.debug("Processing tier for unreachable {}".format( unreachable.device ))
 
+        if unreachable.device.maintenance is True or unreachable.device.notify is False:
+            logger.info(f"Unreachable device {unreachable.device} should be excluded from summary")
+            return
+
         # Handle blank tier or building names
         if unreachable.device.tier:
             tier_name = unreachable.device.tier
         else:
             tier_name = 'Other'
-
+        
         # Find the tier summary to update
         try:
             t_summary, t_created = Summary.objects.get_or_create(
@@ -235,8 +243,7 @@ class EventManager:
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
                     'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
-                    #'ups_battery': Status.objects.filter(device__tier=unreachable.device.tier,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    #'max_count': Device.objects.filter(tier=unreachable.device.tier).count()
                 }
             )
         except Summary.MultipleObjectsReturned:
@@ -246,7 +253,7 @@ class EventManager:
         if t_created:
             logger.debug("Tier summary created {}".format(tier_name))
         else:
-            t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
+            #t_summary.max_count = Device.objects.filter(tier=unreachable.device.tier).count()
             if t_summary.first_event > unreachable.event_start:
                 t_summary.first_event = unreachable.event_start
             if t_summary.last_event < unreachable.event_start:
@@ -263,6 +270,10 @@ class EventManager:
         ''' Update summary for building of unreachable device '''
         logger.debug("Processing building for unreachable {}".format( unreachable.device ))
 
+        if unreachable.device.maintenance is True or unreachable.device.notify is False:
+            logger.info(f"Unreachable device {unreachable.device} should be excluded from summary")
+            return
+
         # Handle blank tier or building names
         if unreachable.device.tier:
             tier_name = unreachable.device.tier
@@ -272,7 +283,7 @@ class EventManager:
             bldg_name = unreachable.device.building_name
         else:
             bldg_name = 'Other'
-
+        
         # Find the building summary to update
         try:
             b_summary, b_created = Summary.objects.get_or_create(
@@ -283,8 +294,7 @@ class EventManager:
                     'tier': tier_name,
                     'first_event': unreachable.event_start,
                     'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    #'max_count': Device.objects.filter(building_name=unreachable.device.building_name).count(),
                 }
             )
         except Summary.MultipleObjectsReturned:
@@ -294,7 +304,7 @@ class EventManager:
         if b_created:
             logger.debug("Building summary created {}".format(bldg_name))
         else:
-            b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
+            #b_summary.max_count = Device.objects.filter(building_name=unreachable.device.building_name).count()
             if b_summary.first_event > unreachable.event_start:
                 b_summary.first_event = unreachable.event_start
             if b_summary.last_event < unreachable.event_start:
@@ -311,6 +321,10 @@ class EventManager:
         ''' Update summary for non critical and non default unreachable device '''
         logger.debug("Processing special group {}".format( unreachable.device.group ))
 
+        if unreachable.device.maintenance is True or unreachable.device.notify is False:
+            logger.info(f"Unreachable device {unreachable.device} should be excluded from summary")
+            return
+
         # Find the specialty summary to update
         try:
             s_summary, s_created = Summary.objects.get_or_create(
@@ -320,8 +334,7 @@ class EventManager:
                 defaults={
                     'first_event': unreachable.event_start,
                     'last_event': unreachable.event_start,
-                    'max_count': Device.objects.filter(group=unreachable.device.group).count(),
-                    #'ups_battery': Status.objects.filter(device__building_name=unreachable.device.building_name,object='UPS-MIB.upsOutputSource',value='battery').count()
+                    #'max_count': Device.objects.filter(group=unreachable.device.group).count(),
                 }
             )
         except Summary.MultipleObjectsReturned:
@@ -331,7 +344,7 @@ class EventManager:
         if s_created:
             logger.debug("Specialty summary created {}".format( unreachable.device.group ))
         else:
-            s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
+            #s_summary.max_count = Device.objects.filter(group=unreachable.device.group).count()
             if s_summary.first_event > unreachable.event_start:
                 s_summary.first_event = unreachable.event_start
             if s_summary.last_event < unreachable.event_start:
@@ -347,6 +360,10 @@ class EventManager:
     def update_tier_battery(self, now, ups):
         ''' Update tier summary for ups on battery '''
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
+
+        if ups.maintenance is True or ups.notify is False:
+            logger.info(f"Unreachable device {ups} should be excluded from summary")
+            return
 
         # Handle blank tier or building names
         if ups.device.tier:
@@ -364,8 +381,8 @@ class EventManager:
                     'tier': tier_name,
                     'first_event': ups.last_change,
                     'last_event': ups.last_change,
-                    'max_count': Device.objects.filter(tier=ups.device.tier).count(),
-                    'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+                    #'max_count': Device.objects.filter(tier=ups.device.tier).count(),
+                    #'ups_battery': Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
         except Summary.MultipleObjectsReturned:
@@ -377,7 +394,7 @@ class EventManager:
         if t_created:
             logger.debug("Tier summary created {}".format(ups.device.tier))
         else:
-            t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            #t_summary.ups_battery = Status.objects.filter(device__tier=ups.device.tier,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             if t_summary.first_event > ups.last_change:
                 t_summary.first_event = ups.last_change
             if t_summary.last_event < ups.last_change:
@@ -390,6 +407,10 @@ class EventManager:
         ''' Update building summary for ups on battery '''
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
+        if ups.maintenance is True or ups.notify is False:
+            logger.info(f"Unreachable device {ups} should be excluded from summary")
+            return
+
         # Handle blank tier or building names
         if ups.device.tier:
             tier_name = ups.device.tier
@@ -399,7 +420,7 @@ class EventManager:
             bldg_name = ups.device.building_name
         else:
             bldg_name = 'Other'
-
+        
         # Find the building summary to update
         try:
             b_summary, b_created = Summary.objects.get_or_create(
@@ -410,8 +431,8 @@ class EventManager:
                     'tier': tier_name,
                     'first_event': ups.last_change,
                     'last_event': ups.last_change,
-                    'max_count': Device.objects.filter(building_name=ups.device.building_name).count(),
-                    'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+                    #'max_count': Device.objects.filter(building_name=ups.device.building_name).count(),
+                    #'ups_battery': Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
                 }
             )
         except Summary.MultipleObjectsReturned:
@@ -423,7 +444,7 @@ class EventManager:
         if b_created:
             logger.debug("Building summary created {}".format( ups.device.building_name ))
         else:
-            b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            #b_summary.ups_battery = Status.objects.filter(device__building_name=ups.device.building_name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
             if b_summary.first_event > ups.last_change:
                 b_summary.first_event = ups.last_change
             if b_summary.last_event < ups.last_change:
@@ -454,15 +475,22 @@ class EventManager:
         logger.debug("Counts {} are {}".format(summary.name, count))
 
         if summary.type == 'Distribution':
+            summary.max_count = Device.objects.filter(tier=summary.name).count()
             summary.ups_battery = Status.objects.filter(device__tier=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
         elif summary.type == 'Building':
+            summary.max_count = Device.objects.filter(building_name=summary.name).count()
             summary.ups_battery = Status.objects.filter(device__building_name=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+        elif summary.type == 'Special':
+            summary.max_count = Device.objects.filter(group=summary.name).count()
 
         summary.switch_count = len(count['SWITCH'].keys())
         summary.ap_count = len(count['AP'].keys())
         summary.ups_count = len(count['UPS'].keys())
         total_count = len(count['TOTAL'].keys())
-        percent_down = round(total_count / summary.max_count, 3)
+        if summary.max_count == 0:
+            percent_down = 0
+        else:
+            percent_down = round(total_count / summary.max_count, 3)
 
         # Moving avg calculation
         # new_average = old_average * (n-1)/n + new_value /n
