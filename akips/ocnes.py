@@ -1,11 +1,15 @@
-from django.conf import settings
-from django.core.cache import cache
-from django.utils import timezone
-from django.template.loader import render_to_string
+"""
+Module to handle OCNES business logic
+"""
 
 import logging
 import time
 from datetime import timedelta
+
+from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone
+from django.template.loader import render_to_string
 
 from .models import Device, Unreachable, Status, Summary
 from .utils import AKIPS
@@ -24,7 +28,7 @@ class EventManager:
         now = timezone.now()
         sleep_delay = 0
 
-        if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
             sleep_delay = 0.05
             logger.debug("Delaying database by {} seconds".format(sleep_delay))
         else:
@@ -45,7 +49,7 @@ class EventManager:
                 try:
                     device = Device.objects.get(name=v['name'])
                 except Device.DoesNotExist:
-                    logger.warn("Attempting to create unreachable data for unknown device {}".format(v['name']))
+                    logger.warning("Attempting to create unreachable data for unknown device {}".format(v['name']))
                     continue
 
                 Unreachable.objects.update_or_create(
@@ -106,7 +110,7 @@ class EventManager:
         now = timezone.now()
         sleep_delay = 0
 
-        if ( settings.OPENSHIFT_NAMESPACE == 'LOCAL'):
+        if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
             sleep_delay = 0.05
             logger.debug("Delaying database by {} seconds".format(sleep_delay))
         else:
@@ -123,7 +127,7 @@ class EventManager:
             logger.error(f"AKiPS is showing an excessive amount of devices down and summary updates are being halted.  {len(unreachables)} vs max allowed {settings.MAX_UNREACHABLE}")
             finish_time = timezone.now()
             logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
-            return
+            return None
 
         for unreachable in unreachables:
             logger.debug("Processing unreachable {}".format(unreachable))
@@ -349,7 +353,6 @@ class EventManager:
             tier_name = ups.device.tier
         else:
             tier_name = 'Other'
-        logger.debug("Using tier name {} and building name {}".format(tier_name,bldg_name))
 
         # Find the tier summary to update
         try:
@@ -396,7 +399,6 @@ class EventManager:
             bldg_name = ups.device.building_name
         else:
             bldg_name = 'Other'
-        logger.debug("Using tier name {} and building name {}".format(tier_name,bldg_name))
 
         # Find the building summary to update
         try:
@@ -443,7 +445,7 @@ class EventManager:
         }
         unreachables = summary.unreachables.filter(status='Open')
         for unreachable in unreachables:
-            if unreachable.device.maintenance == False:
+            if unreachable.device.maintenance is False:
                 if unreachable.device.type in ['SWITCH', 'AP', 'UPS']:
                     count[unreachable.device.type][unreachable.device.name] = True
                 else:
@@ -464,7 +466,7 @@ class EventManager:
 
         # Moving avg calculation
         # new_average = old_average * (n-1)/n + new_value /n
-        # new_average = old_average * 0.80 + new_value * 0.20 
+        # new_average = old_average * 0.80 + new_value * 0.20
         if summary.moving_avg_count == 0:
             summary.moving_avg_count += 1
             summary.moving_average = total_count
@@ -495,4 +497,3 @@ class EventManager:
         summary.moving_average = new_average
 
         summary.save()
-
