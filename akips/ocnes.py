@@ -87,7 +87,8 @@ class EventManager:
             #         else:
             #             sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
 
-            # Close unreachables for AKiPS maintenance mode devices, they never clear in AKiPS
+            # A down device may have moved into AKiPS maintenance mode after the fact.
+            # They never clear since AKiPS doesn't poll them. Close the OCNES unreachable.
             Unreachable.objects.filter(status='Open', device__maintenance=True).update(status='Closed',last_refresh=now)
 
             # Remove stale entries
