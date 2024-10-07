@@ -365,8 +365,8 @@ class EventManager:
         ''' Update tier summary for ups on battery '''
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
-        if ups.maintenance is True or ups.notify is False:
-            logger.info(f"Unreachable device {ups} should be excluded from summary")
+        if ups.device.maintenance is True or ups.device.notify is False:
+            logger.info(f"Unreachable device {ups.device} should be excluded from summary")
             return
 
         # Handle blank tier or building names
@@ -411,8 +411,8 @@ class EventManager:
         ''' Update building summary for ups on battery '''
         logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
 
-        if ups.maintenance is True or ups.notify is False:
-            logger.info(f"Unreachable device {ups} should be excluded from summary")
+        if ups.device.maintenance is True or ups.device.notify is False:
+            logger.info(f"Unreachable device {ups.device} should be excluded from summary")
             return
 
         # Handle blank tier or building names
