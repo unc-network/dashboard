@@ -1270,7 +1270,7 @@ def process_webhook_payload(payload):
         # no current processing
         return False
 
-    elif payload['kind'] == 'trap' and not device.maintenance:
+    elif payload['kind'] == 'trap' and device.maintenance is False and device.notify is True:
         # Check for Open duplicates
         duplicates = Trap.objects.filter( 
             device=device, 
