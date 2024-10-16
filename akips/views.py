@@ -1270,32 +1270,37 @@ def process_webhook_payload(payload):
         # no current processing
         return False
 
-    elif payload['kind'] == 'trap' and not device.maintenance:
-        # Check for Open duplicates
-        duplicates = Trap.objects.filter( 
-            device=device, 
-            trap_oid=payload['trap_oid'],
-            oids=json.dumps(payload['oids']),
-            status='Open')
-
-        if duplicates:
-            # Update for duplications
-            logger.info("Trap has repeated")
-            for duplicate in duplicates:
-                duplicate.dup_count += 1
-                duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
-                duplicate.save()
-        else:
-            # Update for unique
-            Trap.objects.create(
-                tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
-                device=device,
-                ipaddr=payload['ipaddr'],
+    elif payload['kind'] == 'trap':
+        # process trap data
+        if device.maintenance is False and device.notify is True:
+            # Check for Open duplicates
+            duplicates = Trap.objects.filter( 
+                device=device, 
                 trap_oid=payload['trap_oid'],
-                uptime=payload['uptime'],
-                oids=json.dumps(payload['oids'])
-            )
-        return True
+                oids=json.dumps(payload['oids']),
+                status='Open')
+
+            if duplicates:
+                # Update for duplications
+                logger.info("Trap has repeated")
+                for duplicate in duplicates:
+                    duplicate.dup_count += 1
+                    duplicate.dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
+                    duplicate.save()
+            else:
+                # Update for unique
+                Trap.objects.create(
+                    tt=datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone()),
+                    device=device,
+                    ipaddr=payload['ipaddr'],
+                    trap_oid=payload['trap_oid'],
+                    uptime=payload['uptime'],
+                    oids=json.dumps(payload['oids'])
+                )
+            return True
+        else:
+            # ignoring this device
+            return True
 
     else:
         logger.warn("Unknown kind value {}".format( str(payload) ))

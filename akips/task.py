@@ -125,6 +125,7 @@ def refresh_akips_devices():
             critical = False
             tier = ''
             bldg = ''
+            notify = True
             for group_name in value:
                 logger.debug("group {} and device {}".format(
                     group_name, device))
@@ -149,11 +150,14 @@ def refresh_akips_devices():
                         device.group = 'default'
                     elif g_match.group('index') == '5':
                         device.group = g_match.group('label')
+                    elif g_match.group('index') == '6':
+                        notify = False
                     # elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
                     #     device.type = 'SERVER'
             device.critical = critical
             device.tier = tier
             device.building_name = bldg
+            device.notify = notify
             device.save()
             logger.debug("Set {} to critical {}, tier {}, and building {}".format(
                 device, critical, tier, bldg))
