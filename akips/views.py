@@ -624,6 +624,45 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
+class SetNotificationView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        device_name = request.GET.get('device_name', None)            # Required
+        notification_mode = request.GET.get('notification_mode', None)  # Required
+        logger.debug("Got {} and {}".format(device_name, notification_mode))
+        if device_name is None or notification_mode is None:
+            raise Http404("Missing device name or notification mode setting")
+
+        # Update local database
+        device = get_object_or_404(Device, name=device_name)
+        #device = Device.objects.get(name=device_name)
+
+        # Do the update
+        result = {}
+        akips = AKIPS()
+        if notification_mode == 'True':
+            device.notify = True
+            result['text'] = akips.clear_group(device_name, '6-do-not-notify')
+        else:
+            device.notify = False
+            result['text'] = akips.assign_group(device_name, '6-do-not-notify')
+        logger.debug(json.dumps(result, indent=4, sort_keys=True))
+        device.save()
+
+        # result = {}
+        # # Get the current device from local database
+        # akips = AKIPS()
+        # result['text'] = akips.set_maintenance_mode(device_name, notification_mode)
+        # logger.debug(json.dumps(result, indent=4, sort_keys=True))
+
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
 class UnreachablesAPI(View):
     ''' API view to export unreachable definitions'''
 
