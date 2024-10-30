@@ -169,6 +169,29 @@ class Summary(models.Model):
     def __str__(self):
         return str(self.name)
 
+# class HibernateWindow(models.Model):
+#     CLOSE_CHOICES = (
+#         ('Auto', 'Auto'),
+#         ('Time', 'Time'),
+#         ('Manual', 'Manual'),
+#     )
+#     STATUS_CHOICES = (
+#         ('Planned', 'Planned'),
+#         ('Open', 'Open'),
+#         ('Closed', 'Closed'),
+#     )
+#     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+#     start = models.DateTimeField(null=True, blank=True)
+#     end = models.DateTimeField(null=True, blank=True)
+#     end_type = models.CharField(max_length=32, choices=CLOSE_CHOICES)
+#     comment = models.CharField(max_length=1024, blank=True)
+#     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+#     created_by = models.CharField(max_length=32)
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return str(self.device)
+
 class HibernateRequest(models.Model):
     TYPE_CHOICES = (
         ('Auto', 'Auto'),
