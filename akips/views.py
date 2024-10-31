@@ -33,6 +33,7 @@ from .forms import IncidentForm, HibernateForm, PreferencesForm
 from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
+from akips.tdx import TDX
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
@@ -485,8 +486,11 @@ class CreateIncidentView(LoginRequiredMixin, View):
         }
         context['form'] = IncidentForm(initial=initial)
 
-        servicenow = ServiceNow()
-        context['recent'] = servicenow.get_recent_incidents()
+        tdx = TDX()
+        tdx.init_session()
+        #tdx.get_applications()
+        #ticket = tdx.get_ticket('64038')
+        context['recent'] = tdx.get_ticket_search()
 
         return render(request, self.template_name, context=context)
 
@@ -513,46 +517,45 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 traps = Trap.objects.filter(id__in=trap_ids)
                 ctx['traps'] = traps
 
-            # Work with ServiceNow Incident
-            servicenow = ServiceNow()
+            # Work with Incident
+            tdx = TDX()
+            tdx.init_session()
             if form.cleaned_data.get('number'):
                 # Get an existing Incident
-                incident = servicenow.associate_incident(
-                    form.cleaned_data.get('number'),
-                    # work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                )
+                incident = tdx.get_ticket(form.cleaned_data.get('number'))
                 if incident:
-                    context['create_message'] = "Incident {} was found.".format(incident.number)
+                    context['create_message'] = "Incident {} was associated.".format(incident['ID'])
             else:
                 # Get a new Incident
-                incident = servicenow.create_incident(
-                    form.cleaned_data.get('assignment_group'),
-                    form.cleaned_data.get('description'),
-                    severity=form.cleaned_data.get('criticality'),
-                    work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                    caller_id=request.user.username
-                )
-                if incident:
-                    context['create_message'] = "Incident {} was created.".format(incident.number)
+                # incident = servicenow.create_incident(
+                #     form.cleaned_data.get('assignment_group'),
+                #     form.cleaned_data.get('description'),
+                #     severity=form.cleaned_data.get('criticality'),
+                #     work_notes=render_to_string('akips/incident_worknote.txt',ctx),
+                #     caller_id=request.user.username
+                # )
+                # if incident:
+                #     context['create_message'] = "Incident {} was created.".format(incident.number)
+                pass
 
             if incident:
                 # Map selected summaries to this incident
                 # context['create_message'] = "Incident {} was created.".format(incident.number)
-                logger.debug("mapping summaries to incident {}".format(incident.number))
+                logger.debug(f"mapping summaries to incident {incident['ID']}")
                 for id in summary_ids:
                     summary = Summary.objects.get(id=id)
                     #summary.incident = incident['number']
-                    summary.sn_incident = incident
+                    summary.tdx_incident = incident['ID']
                     summary.save()
                 for id in trap_ids:
                     trap = Trap.objects.get(id=id)
                     #trap.incident = incident['number']
-                    trap.sn_incident = incident
+                    trap.tdx_incident = incident['ID']
                     trap.save()
-                messages.success(request, "ServiceNow Incident {} was associated.".format(incident.number))
+                messages.success(request, f"Incident {incident['ID']} was associated.")
                 return HttpResponseRedirect(reverse('home'))
             else:
-                messages.error(request, "ServiceNow Incident association failed.")
+                messages.error(request, "Incident association failed.")
 
             # Failed to associate incident
             context['form'] = form
@@ -560,6 +563,10 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
         else:
             # Form is invalid
+            tdx = TDX()
+            tdx.init_session()
+            context['recent'] = tdx.get_ticket_search()
+
             context['form'] = form
         return render(request, self.template_name, context=context)
 
