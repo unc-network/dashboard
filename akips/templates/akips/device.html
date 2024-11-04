@@ -54,10 +54,10 @@
                     <div class="custom-control custom-switch">
                         {% if device.notify %}
                         <input type="checkbox" class="custom-control-input" id="notifySwitch1" data-name="{{ device.name }}"
-                            data-url="{% url 'set_notification' %}" checked>
+                            data-url="{% url 'set_notification' %}" checked disabled>
                         {% else %}
                         <input type="checkbox" class="custom-control-input" id="notifySwitch1" data-name="{{ device.name }}"
-                            data-url="{% url 'set_notification' %}">
+                            data-url="{% url 'set_notification' %}" disabled>
                         {% endif %}
                         <label class="custom-control-label" for="notifySwitch1">Enable Notifications</label>
                     </div>
