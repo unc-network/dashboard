@@ -487,7 +487,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
         context['form'] = IncidentForm(initial=initial)
 
         tdx = TDX()
-        tdx.init_session()
+        # tdx.init_session()
         #tdx.get_applications()
         #ticket = tdx.get_ticket('64038')
         context['recent'] = tdx.get_ticket_search()
@@ -519,7 +519,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
             # Work with Incident
             tdx = TDX()
-            tdx.init_session()
+            # tdx.init_session()
             if form.cleaned_data.get('number'):
                 # Get an existing Incident
                 incident = tdx.get_ticket(form.cleaned_data.get('number'))
@@ -527,16 +527,14 @@ class CreateIncidentView(LoginRequiredMixin, View):
                     context['create_message'] = "Incident {} was associated.".format(incident['ID'])
             else:
                 # Get a new Incident
-                # incident = servicenow.create_incident(
-                #     form.cleaned_data.get('assignment_group'),
-                #     form.cleaned_data.get('description'),
-                #     severity=form.cleaned_data.get('criticality'),
-                #     work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                #     caller_id=request.user.username
-                # )
-                # if incident:
-                #     context['create_message'] = "Incident {} was created.".format(incident.number)
-                pass
+                incident = tdx.create_ticket_flow(
+                    form.cleaned_data.get('assignment_group'),
+                    form.cleaned_data.get('criticality'),
+                    form.cleaned_data.get('description'),
+                    render_to_string('akips/incident_worknote.txt',ctx)
+                )
+                if incident:
+                    context['create_message'] = "Incident {} was created.".format(incident['ID'])
 
             if incident:
                 # Map selected summaries to this incident
@@ -564,7 +562,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
         else:
             # Form is invalid
             tdx = TDX()
-            tdx.init_session()
+            # tdx.init_session()
             context['recent'] = tdx.get_ticket_search()
 
             context['form'] = form

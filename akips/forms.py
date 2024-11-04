@@ -10,18 +10,18 @@ class LoginForm(AuthenticationForm):
 
 ## Form specific list of options
 DEPT_CHOICES = (
-    ('ITS-Net-Deployment', 'Deployment'),
+    ('ITS-Networking-Deployment', 'Deployment'),
     ('ITS-Networking', 'Engineering'),
-    ('ITS-Net-WIFI', 'Wireless'),
-    ('IP-Services', 'IP Services'),
-    ('SOMIT-Networking', 'SoM'),
+    ('ITS-Networking-WIFI', 'Wireless'),
+    ('ITS-Networking-AdvancedServices', 'Advanced Services'),
+    # ('SOMIT-Networking', 'SoM'),
 )
 
 CRITICAL_CHOICES = (
-    ('Critical', 'Critical'),
-    ('High', 'High'),
-    ('Moderate', 'Moderate'),
-    ('Low', 'Low'),
+    ('emergency', 'Emergency'),
+    ('high', 'High'),
+    ('medium', 'Medium'),
+    ('low', 'Low'),
 )
 
 
