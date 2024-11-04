@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class EventManager:
     """ Handle processing for unreachable changes and event summary updates """
+    incident_update_add = {}
 
     def refresh_unreachable(self,mode='poll'):
         """ Update current data for unreachable devices from AKiPS """
@@ -34,8 +35,8 @@ class EventManager:
         else:
             logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
-        # Combine all needed SN updates
-        sn_update_cleared = {}
+        # Combine all needed incident updates
+        incident_update_cleared = {}
 
         akips = AKIPS()
         if mode == 'status':
@@ -77,15 +78,16 @@ class EventManager:
                     time.sleep(sleep_delay)
 
             # Handle unreachables that have cleared and need notifications
-            # cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
-            # for cleared in cleared_unreachables:
-            #     # for summary in cleared.summary_set.all():
-            #     for summary in cleared.summary_set.filter(sn_incident__isnull=False):
-            #         logger.debug("unreachable {} has cleared and was port of summary {}".format(cleared,summary))
-            #         if summary.sn_incident.number in sn_update_cleared:
-            #             sn_update_cleared[ summary.sn_incident.number ].append( cleared )
-            #         else:
-            #             sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
+            cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
+            for cleared in cleared_unreachables:
+                for summary in cleared.summary_set.filter(sn_incident__isnull=False):
+                    logger.info("unreachable {} has cleared and was part of summary {}".format(cleared,summary))
+                    if summary.tdx_incident in incident_update_cleared:
+                        # sn_update_cleared[ summary.sn_incident.number ].append( cleared )
+                        incident_update_cleared[ summary.tdx_incident ].append( cleared )
+                    else:
+                        # sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
+                        incident_update_cleared[ summary.tdx_incident ] = [ cleared ]
 
             # A down device may have moved into AKiPS maintenance mode after the fact.
             # They never clear since AKiPS doesn't poll them. Close the OCNES unreachable.
@@ -94,19 +96,22 @@ class EventManager:
             # Remove stale entries
             Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
-        # logger.info("servicenow cleared {}".format(sn_update_cleared))
-        # for number, u_list in sn_update_cleared.items():
-        #     logger.info("servicenow {} update for cleared {}".format(number,u_list))
-        #     ctx = {
-        #         'type': 'clear',
-        #         'u_list': u_list
-        #     }
-        #     message = render_to_string('akips/incident_status_update.txt',ctx)
-        #     update_incident.delay(number, message)
+        # logger.info("incident cleared {}".format(incident_update_cleared))
+        for number, u_list in incident_update_cleared.items():
+            logger.info("incident {} update for cleared {}".format(number,u_list))
+            ctx = {
+                'type': 'clear',
+                'u_list': u_list
+            }
+            message = render_to_string('akips/incident_status_update.txt',ctx)
+            # update_incident.delay(number, message)
+            logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
 
         finish_time = timezone.now()
         logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
-        return sn_update_cleared
+
+        # return sn_update_cleared
+        return
 
     def refresh_summary(self):
         """ Update the summary data """
@@ -120,8 +125,8 @@ class EventManager:
         else:
             logger.debug("Delaying database by {} seconds".format(sleep_delay))
 
-        # ServiceNow updates
-        sn_update_add = {}
+        # Incident updates
+        self.incident_update_add = {}
 
         # Process all current unreachable records
         unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True).exclude(device__notify=False)
@@ -166,18 +171,20 @@ class EventManager:
         Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
 
         # logger.info("servicenow new {}".format(sn_update_add))
-        # for number, u_list in sn_update_add.items():
-        #     logger.info("servicenow {} update for new unreachables{}".format(number,u_list))
-        #     context = {
-        #         'type': 'new',
-        #         'u_list': u_list
-        #     }
-        #     message = render_to_string('akips/incident_status_update.txt',context)
-        #     update_incident.delay(number, message)
+        for number, u_list in self.incident_update_add.items():
+            logger.info("incident {} update for new unreachables{}".format(number,u_list))
+            context = {
+                'type': 'new',
+                'u_list': u_list
+            }
+            message = render_to_string('akips/incident_status_update.txt',context)
+            # update_incident.delay(number, message)
+            logger.info(f"Updating incident {number} for new unreachables {u_list}")
 
         finish_time = timezone.now()
         logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
-        return sn_update_add
+        # return sn_update_add
+        return
 
     def update_critical(self, now, unreachable):
         ''' Update summary for critical unreachable device '''
@@ -222,6 +229,11 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,c_summary))
             c_summary.unreachables.add(unreachable)
+            if c_summary.tdx_incident:
+                if c_summary.tdx_incident in self.incident_update_add:
+                    self.incident_update_add[c_summary.tdx_incident].append(unreachable)
+                else:
+                    self.incident_update_add[c_summary.tdx_incident] = [unreachable]
 
     def update_tier(self, now, unreachable):
         ''' Update Tier summary for default unreachable network device '''
@@ -269,6 +281,11 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,t_summary))
             t_summary.unreachables.add(unreachable)
+            if t_summary.tdx_incident:
+                if t_summary.tdx_incident in self.incident_update_add:
+                    self.incident_update_add[t_summary.tdx_incident].append(unreachable)
+                else:
+                    self.incident_update_add[t_summary.tdx_incident] = [unreachable]
 
     def update_building(self, now, unreachable):
         ''' Update summary for building of unreachable device '''
@@ -320,6 +337,11 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,b_summary))
             b_summary.unreachables.add(unreachable)
+            if b_summary.tdx_incident:
+                if b_summary.tdx_incident in self.incident_update_add:
+                    self.incident_update_add[b_summary.tdx_incident].append(unreachable)
+                else:
+                    self.incident_update_add[b_summary.tdx_incident] = [unreachable]
 
     def update_special(self, now, unreachable):
         ''' Update summary for non critical and non default unreachable device '''
@@ -360,6 +382,11 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,s_summary))
             s_summary.unreachables.add(unreachable)
+            if s_summary.tdx_incident:
+                if s_summary.tdx_incident in self.incident_update_add:
+                    self.incident_update_add[s_summary.tdx_incident].append(unreachable)
+                else:
+                    self.incident_update_add[s_summary.tdx_incident] = [unreachable]
 
     def update_tier_battery(self, now, ups):
         ''' Update tier summary for ups on battery '''
