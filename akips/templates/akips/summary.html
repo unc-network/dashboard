@@ -80,7 +80,19 @@
                     </tr>
                     <tr>
                         <th>Incident</th>
-                        <td><a href="https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={{ summary.tdx_incident }}" target="_blank">{{ summary.tdx_incident }}</a></td>
+                        <td>
+                            <span class="summary-incident" data-url="{% url 'set_incident' summary.id %}">
+                                {% if summary.tdx_incident %}
+                                    {{ summary.tdx_incident }}
+                                {% else %}
+                                    <i class="fas fa-comment-medical text-primary"></i>
+                                {% endif %}
+                        </td>
+                        <!-- <td>{% if summary.tdx_incident %}
+                            <a href="https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={{ summary.tdx_incident }}" target="_blank">{{ summary.tdx_incident }}</a> 
+                            <span class="small summary-incident" data-url="{% url 'set_incident' summary.id %}"><i class="fas fa-trash text-primary"></i></span>
+                            {% endif %}
+                        </td> -->
                     </tr>
                 </table>
             </div>
@@ -222,9 +234,90 @@
 {% block js %}
 <script type="text/javascript">
     $(document).ready(function () {
+        var csrfToken = getCookie('csrftoken');
+
         // Setup Alerting
         refresh_alerts();
         enable_alert_toggle();
+
+        $(document).on('click', '.summary-incident', function (e) {
+            var that = $(this);
+            if (that.find('input').length > 0) {
+                return;
+            }
+            var incident = $.trim($(this).text());
+            var url = $(this).data("url");
+            // console.log("incident update " + incident);
+
+            $(this).html('');
+            $('<input></input>')
+                .attr({
+                    'type': 'text',
+                    'name': 'incident_text',
+                    'class': 'form-control input-sm txt_incident',
+                    'size': '10',
+                    'value': incident
+                })
+                .appendTo(this);
+            // $('.txt_incident').focus();
+        });
+        $(document).on('keypress','.txt_incident', function(e){
+            if (e.which === 13) {
+                e.preventDefault();
+                var incident = $(this).val();
+                var url = $(this).closest('.summary-incident').data("url");
+                console.log("Calling save incident: " + incident);
+                // console.log("Calling save url: " + url);
+                data = {
+                    'incident': incident
+                };
+                $.ajax({
+                    type: 'post',
+                    url: url,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    data: JSON.stringify(data),
+                    // data: {
+                    //     'incident': incident
+                    // },
+                    dataType: 'json',
+                    contentType: "application/json; charset=utf-8",
+                    success: function(){
+                        console.log("incident updated");
+                    }
+                });
+                if (incident) {
+                    $(this).closest('.summary-incident').html(incident);
+                } else {
+                    $(this).closest('.summary-incident').html('<i class="fas fa-comment-medical text-primary"></i>');
+                }
+            }
+        });
+        $(document).on('blur','.txt_incident', function(){
+            var incident = $(this).val();
+            var url = $(this).closest('.summary-incident').data("url");
+            console.log("Calling save incident: " + incident);
+            // console.log("Calling save url: " + url);
+            $.ajax({
+                type: 'post',
+                url: url,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                data: {
+                    'incident': incident
+                },
+                success: function(){
+                    console.log("incident updated");
+                }
+            });
+            if (incident) {
+                $(this).closest('.summary-incident').html(incident);
+            } else {
+                $(this).closest('.summary-incident').html('<i class="fas fa-comment-medical text-primary"></i>');
+            }
+        });
 
     })
 </script>

@@ -48,7 +48,7 @@ urlpatterns = [
     #path('api/summary/<summary_id>/', views.SummaryAPI.as_view(), name='summary'),
     path('api/summary/<summary_id>/ack', views.AckView.as_view(), name='ack'),
     path('api/summary/<summary_id>/comment', views.SetComment.as_view(), name='set_comment'),
-    # path('api/summary/<summary_id>/incident', views.SetIncident.as_view(), name='set_incident'),
+    path('api/summary/<summary_id>/incident', views.SetIncident.as_view(), name='set_incident'),
 
     # Trap API
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),

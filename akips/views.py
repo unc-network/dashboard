@@ -748,44 +748,28 @@ class SetComment(LoginRequiredMixin, View):
 
         return JsonResponse(response_data)
 
-# class SetIncident(LoginRequiredMixin, View):
-#     ''' API call to set the Incident for a summary '''
-#     pretty_print = True
+class SetIncident(LoginRequiredMixin, View):
+    ''' API call to set (or clear) incident number for a summary '''
+    pretty_print = True
 
-#     def post(self, request, *args, **kwargs):
-#         summary_id = self.kwargs.get('summary_id', None)
-#         incident_number = request.POST.get('incident', '')
-#         logger.debug("Summary {} set incident".format(summary_id))
+    def post(self, request, *args, **kwargs):
+        summary_id = self.kwargs.get('summary_id', None)
+        incident_str = request.POST.get('incident', None)
+        if incident_str:
+            incident = int(incident_str)
+        else:
+            incident = None
+        logger.debug(f"Summary {summary_id} set incident {incident}")
     
-#         # validate summary id first
-#         summary = get_object_or_404(Summary, id=summary_id)
+        response_data = {
+            'success': True,
+            'incident': incident
+        }
+        summary = get_object_or_404(Summary, id=summary_id)
+        summary.tdx_incident = incident
+        summary.save()
 
-#         response_data = {
-#             'success': False
-#         }
-
-#         if incident_number:
-#             # Check ServiceNow data
-#             servicenow = ServiceNow()
-#             incident_list = servicenow.get_incident_by_number(incident_number)
-#             if len(incident_list) == 1:
-#                 incident = incident_list[0]
-#             else:
-#                 incident = None
-
-#         if incident:
-#             # add incident to database if necessary
-#             sn_incident = ServiceNowIncident.objects.get_or_create(
-#                 number=incident['number'],
-#                 sys_id=incident['sys_id'],
-#                 instance=self.instance
-#             )
-#             # associate with summary
-#             summary.incident = sn_incident
-#             summary.save()
-#             response_data['success'] = True
-
-#         return JsonResponse(response_data)
+        return JsonResponse(response_data)
 
 class AckView(LoginRequiredMixin, View):
     ''' API view '''
