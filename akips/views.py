@@ -527,8 +527,8 @@ class CreateIncidentView(LoginRequiredMixin, View):
                     context['create_message'] = "Incident {} was associated.".format(incident['ID'])
             else:
                 # Get a new Incident
-                # incident = tdx.create_ticket_flow(
-                incident = tdx.create_ticket(
+                # incident = tdx.create_ticket(
+                incident = tdx.create_ticket_flow(
                     form.cleaned_data.get('assignment_group'),
                     form.cleaned_data.get('criticality'),
                     form.cleaned_data.get('description'),
