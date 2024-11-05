@@ -15,6 +15,7 @@ from .models import Device, Unreachable, Status, Summary
 from .utils import AKIPS
 #from akips.servicenow import ServiceNow
 #from akips.task import update_incident
+from akips.tdx import TDX
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
@@ -22,6 +23,8 @@ logger = logging.getLogger(__name__)
 class EventManager:
     """ Handle processing for unreachable changes and event summary updates """
     incident_update_add = {}
+    update_incident_tickets = True
+    tdx = TDX()
 
     def refresh_unreachable(self,mode='poll'):
         """ Update current data for unreachable devices from AKiPS """
@@ -96,16 +99,17 @@ class EventManager:
             # Remove stale entries
             Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
-        # logger.info("incident cleared {}".format(incident_update_cleared))
-        for number, u_list in incident_update_cleared.items():
-            logger.info("incident {} update for cleared {}".format(number,u_list))
-            ctx = {
-                'type': 'clear',
-                'u_list': u_list
-            }
-            message = render_to_string('akips/incident_status_update.txt',ctx)
-            # update_incident.delay(number, message)
-            logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
+        if self.update_incident_tickets:
+            # logger.info("incident cleared {}".format(incident_update_cleared))
+            for number, u_list in incident_update_cleared.items():
+                logger.info("incident {} update for cleared {}".format(number,u_list))
+                ctx = {
+                    'type': 'clear',
+                    'u_list': u_list
+                }
+                message = render_to_string('akips/incident_status_update.txt',ctx)
+                self.tdx.update_ticket(number, message)
+                logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
 
         finish_time = timezone.now()
         logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
@@ -170,16 +174,17 @@ class EventManager:
         five_minutes_ago = now - timedelta(minutes=5)
         Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
 
-        # logger.info("servicenow new {}".format(sn_update_add))
-        for number, u_list in self.incident_update_add.items():
-            logger.info("incident {} update for new unreachables{}".format(number,u_list))
-            context = {
-                'type': 'new',
-                'u_list': u_list
-            }
-            message = render_to_string('akips/incident_status_update.txt',context)
-            # update_incident.delay(number, message)
-            logger.info(f"Updating incident {number} for new unreachables {u_list}")
+        if self.update_incident_tickets:
+            # logger.info("servicenow new {}".format(sn_update_add))
+            for number, u_list in self.incident_update_add.items():
+                logger.info("incident {} update for new unreachables{}".format(number,u_list))
+                context = {
+                    'type': 'new',
+                    'u_list': u_list
+                }
+                message = render_to_string('akips/incident_status_update.txt',context)
+                self.tdx.update_ticket(number, message)
+                logger.info(f"Updating incident {number} for new unreachables {u_list}")
 
         finish_time = timezone.now()
         logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))

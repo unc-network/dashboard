@@ -22,7 +22,7 @@ class TDX:
     username = os.getenv('TDX_USERNAME', '')
     password = os.getenv('TDX_PASSWORD', '')
     apikey   = os.getenv('TDX_APIKEY', '')
-    flow_base = 'https://us1.teamdynamix.com/tdapp/app/flow/api/v1/start/uncchapelhill/incident_in_prod/'
+    flow_base = os.getenv('TDX_FLOW_URL', '')
     session = requests.Session()
     token = None
     ticket_app_id = 34
@@ -109,8 +109,8 @@ class TDX:
             logger.error("TDX ticket search failed")
             return None
 
-    # tdx_method("POST", "/api/{appId}/tickets/search")
-    def create_ticket(self):
+    # tdx_method("POST", "/api/{appId}/tickets")
+    def create_ticket(self, group, priority, subject, description):
         ''' create a ticket '''
         if self.token is None:
             self.init_session()
@@ -118,19 +118,40 @@ class TDX:
         response = self.session.post(
             self.base_url + f"/api/{self.ticket_app_id}/tickets",
             json={
-                'TypeID': 0,        # Int32, required
-                'Title': '',        # String, required
-                'AccountID': 0,     # Int32, required
-                'StatusID': 0,      # Int32, required
-                'PriorityID': 0,    # Int32, required
-                'RequesterUid': 0,  # Guid, required
-                'Description': ''   # String
+                'TypeID': 1,        # Int32, required
+                'Title': subject,   # String, required
+                'AccountID': 967,   # Int32, required
+                'StatusID': 1,      # Int32, required
+                'PriorityID': 19,   # Int32, required
+                'RequesterUid': 'bf4b62f1-c860-ef11-991b-83b4b06ae47d',  # Guid, required
+                'Description': description   # String
             },
         )
         if response.ok:
             return response.json()
         else:
             logger.error('TDX create ticket error, response code: %i %s' % (response.status_code, response.reason))
+            return None
+
+    # tdx_method("POST", "/api/{appId}/tickets/{id}/feed")
+    def update_ticket(self, number, comment):
+        ''' update a ticket '''
+        if self.token is None:
+            self.init_session()
+
+        response = self.session.post(
+            self.base_url + f"/api/{self.ticket_app_id}/ticket/{number}/feed",
+            json={
+                'Comments': comment,   # String
+                'IsPrivate': False,
+                'IsRichHtml': False,
+                #'IsCommunication': False,
+            },
+        )
+        if response.ok:
+            return response.json()
+        else:
+            logger.error('TDX update ticket error, response code: %i %s' % (response.status_code, response.reason))
             return None
 
     def create_ticket_flow(self, group, priority, subject, description):
