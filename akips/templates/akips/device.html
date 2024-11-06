@@ -52,14 +52,14 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <div class="custom-control custom-switch">
-                        {% if device.maintenance %}
-                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
-                            data-url="{% url 'set_maintenance' %}" checked>
+                        {% if device.notify %}
+                        <input type="checkbox" class="custom-control-input" id="notifySwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_notification' %}" checked disabled>
                         {% else %}
-                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
-                            data-url="{% url 'set_maintenance' %}">
+                        <input type="checkbox" class="custom-control-input" id="notifySwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_notification' %}" disabled>
                         {% endif %}
-                        <label class="custom-control-label" for="maintSwitch1">AKiPS Maintenance Mode</label>
+                        <label class="custom-control-label" for="notifySwitch1">Enable Notifications</label>
                     </div>
                 </div>
                 {% if device.hibernate %}
@@ -83,7 +83,18 @@
                         <p>Hibernate ended: {{ hibernate.executed }}<br>Comment: {{ hibernate.comment }}</p>
                     {% endfor %}
                 {% endif %}
-                <p>Notify On Device Status: {% if device.notify %}<span class="text-success">Yes</span>{% else %}<span class="text-danger">No</span>{% endif %}</p>
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        {% if device.maintenance %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}" checked>
+                        {% else %}
+                        <input type="checkbox" class="custom-control-input" id="maintSwitch1" data-name="{{ device.name }}"
+                            data-url="{% url 'set_maintenance' %}">
+                        {% endif %}
+                        <label class="custom-control-label" for="maintSwitch1">AKiPS Maintenance (no polling)</label>
+                    </div>
+                </div>
                 <a class="btn btn-primary m-1" href="https://akips.net.unc.edu/dashboard?mode=device;device_list={{ device.name }};time=last1h">View in AKiPS</a></td>
                 {% if device.inventory_url %}
                 <a class="btn btn-primary m-1" href="{{ device.inventory_url }}">View in Inventory</a>
@@ -217,6 +228,18 @@
             } else {
                 console.log("maint checkbox off")
                 $.get(url, { "device_name": name, "maintenance_mode": 'False' })
+            }
+        });
+
+        $('#notifySwitch1').change(function () {
+            var url = $(this).data("url");
+            var name = $(this).data("name");
+            if (this.checked) {
+                console.log("notify checkbox on");
+                $.get(url, { "device_name": name, "notification_mode": 'True' })
+            } else {
+                console.log("notify checkbox off")
+                $.get(url, { "device_name": name, "notification_mode": 'False' })
             }
         });
     });

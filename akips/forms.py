@@ -10,18 +10,18 @@ class LoginForm(AuthenticationForm):
 
 ## Form specific list of options
 DEPT_CHOICES = (
-    ('ITS-Net-Deployment', 'Deployment'),
+    ('ITS-Networking-Deployment', 'Deployment'),
     ('ITS-Networking', 'Engineering'),
-    ('ITS-Net-WIFI', 'Wireless'),
-    ('IP-Services', 'IP Services'),
-    ('SOMIT-Networking', 'SoM'),
+    ('ITS-Networking-WIFI', 'Wireless'),
+    ('ITS-Networking-AdvancedServices', 'Advanced Services'),
+    # ('SOMIT-Networking', 'SoM'),
 )
 
 CRITICAL_CHOICES = (
-    ('Critical', 'Critical'),
-    ('High', 'High'),
-    ('Moderate', 'Moderate'),
-    ('Low', 'Low'),
+    ('emergency', 'Emergency'),
+    ('high', 'High'),
+    ('medium', 'Medium'),
+    ('low', 'Low'),
 )
 
 
@@ -55,19 +55,26 @@ class IncidentForm(forms.Form):
         widget=forms.RadioSelect,
         required=False
     )
-    number = forms.CharField(
+    number = forms.IntegerField(
         label='Incident Number',
-        help_text='i.e. INC000001',
-        max_length=16,
+        help_text='TDX Ticket Number',
+        min_value=1000,
         widget = forms.TextInput(attrs={'class':'form-control col-auto'}),
         required=False
     )
+    # number = forms.CharField(
+    #     label='Incident Number',
+    #     help_text='TDX Ticket Number',
+    #     max_length=16,
+    #     widget = forms.TextInput(attrs={'class':'form-control col-auto'}),
+    #     required=False
+    # )
 
-    def clean_number(self):
-        number = self.cleaned_data['number']
-        if number and not re.match('^INC\d{7}', number, re.IGNORECASE):
-            raise ValidationError("Incident numbers start with INC and include 7 digits")            
-        return number
+    # def clean_number(self):
+    #     number = self.cleaned_data['number']
+    #     if number and not re.match('^\d{5,8}', number, re.IGNORECASE):
+    #         raise ValidationError("Incident numbers start with INC and include 7 digits")            
+    #     return number
 
     def clean(self):
         cleaned_data = super().clean()

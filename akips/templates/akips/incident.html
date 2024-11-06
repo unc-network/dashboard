@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}OCNES Dashboard{% endblock %}
-{% block page_name %}ServiceNow Incident{% endblock %}
+{% block page_name %}Incident Ticket{% endblock %}
 
 {% block content %}
 <form action="" method="post">
@@ -83,10 +83,10 @@
 
 <div class="card card-primary">
     <div class="card-header">
-        <h5 class="card-title">Create Incident</h5>
+        <h5 class="card-title">Create Incident - This section will create a new TDX incident</h5>
     </div>
     <div class="card-body">
-        <p>Complete this form to create a new ServiceNow incident.
+        <p>Complete this form to create a new incident ticket.
             Select a criticality level and the assignment group.
         </p>
 
@@ -141,10 +141,10 @@
 
 <div class="card card-primary m-0">
     <div class="card-header">
-        <h5 class="card-title">Associate Incident</h5>
+        <h5 class="card-title">Associate Incident - This section will use an existing TDX incident.</h5>
     </div>
     <div class="card-body">
-        <p>If a ServiceNow incident already exists, provide the number to make the association.
+        <p>If a incident ticket already exists, provide the number to make the association.
             For convenience, recently created incidents are shown below.
         </p>
         <div class="form-group">
@@ -155,22 +155,28 @@
         <p>{{ form.number.errors }}</p>
 
         <div class="card my-3">
-            <div class="card-header"><strong>Recent Incidents</strong> (click the number)</div>
+            <div class="card-header"><strong>Recent Ops Center Tickets</strong> (click the number)</div>
             <div class="card-body table-responsive p-0">
                 <table class="table table-hover table-sm">
                     <thead>
                         <tr>
-                            <th class="col-2">Number</th>
-                            <th class="col-2">Created</th>
-                            <th class="col-8">Short Description</th>
+                            <th class="col-1">Number</th>
+                            <th class="col-1">Status</th>
+                            <th class="col-3">Created</th>
+                            <th class="col-7">Title</th>
+                            <!-- <th class="col-4">Short Description</th> -->
+                            <!-- <th class="col-2">Requester</th> -->
                         </tr>
                     </thead>
                     <tbody>
                         {% for entry in recent %}
                         <tr>
-                            <td class="text-primary quick-incident">{{ entry.number }}</td>
-                            <td>{{ entry.sys_created_on }}</td>
-                            <td>{{ entry.short_description }}</td>
+                            <td class="text-primary quick-incident">{{ entry.ID }}</td>
+                            <td>{{ entry.StatusName }}</td>
+                            <td>{{ entry.CreatedDate }}</td>
+                            <td>{{ entry.Title }}</td>
+                            <!-- <td>{{ entry.Description }}</td> -->
+                            <!-- <td>{{ entry.RequestorName }}</td> -->
                         </tr>
                         {% endfor %}
                     </tbody>

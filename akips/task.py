@@ -581,25 +581,27 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
             logger.debug(f"Task {self.request.id} obtained refresh unreachable task lock")
             em = EventManager()
 
-            sn_update_cleared = em.refresh_unreachable(mode=mode)
-            for number, u_list in sn_update_cleared.items():
-                logger.info("servicenow {} update for cleared {}".format(number,u_list))
-                ctx = {
-                    'type': 'clear',
-                    'u_list': u_list
-                }
-                message = render_to_string('akips/incident_status_update.txt',ctx)
-                update_incident.delay(number, message)
+            em.refresh_unreachable(mode=mode)
+            # sn_update_cleared = em.refresh_unreachable(mode=mode)
+            # for number, u_list in sn_update_cleared.items():
+            #     logger.info("servicenow {} update for cleared {}".format(number,u_list))
+            #     ctx = {
+            #         'type': 'clear',
+            #         'u_list': u_list
+            #     }
+            #     message = render_to_string('akips/incident_status_update.txt',ctx)
+            #     update_incident.delay(number, message)
 
-            sn_update_add = em.refresh_summary()
-            for number, u_list in sn_update_add.items():
-                logger.info("servicenow {} update for new unreachables{}".format(number,u_list))
-                context = {
-                    'type': 'new',
-                    'u_list': u_list
-                }
-                message = render_to_string('akips/incident_status_update.txt',context)
-                update_incident.delay(number, message)
+            em.refresh_summary()
+            # sn_update_add = em.refresh_summary()
+            # for number, u_list in sn_update_add.items():
+            #     logger.info("servicenow {} update for new unreachables{}".format(number,u_list))
+            #     context = {
+            #         'type': 'new',
+            #         'u_list': u_list
+            #     }
+            #     message = render_to_string('akips/incident_status_update.txt',context)
+            #     update_incident.delay(number, message)
 
         finally:
             logger.debug(f"Task {self.request.id} releasing refresh unreachable task lock")

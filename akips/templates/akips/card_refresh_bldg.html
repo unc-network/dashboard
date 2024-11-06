@@ -81,13 +81,20 @@
                 <td class="text-center akips_trend d-none d-md-table-cell"></td>
             {% endif %}
             <td class="text-center text-primary d-none d-md-table-cell">
-                {% if summary.sn_incident %}
-                <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident.number }}" target="_blank">{{ summary.sn_incident.number }}</a>
-                    {% if summary.sn_incident.active %}
+                {% if summary.tdx_incident %}
+                <a href="https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={{ summary.tdx_incident }}" target="_blank">{{ summary.tdx_incident }}</a>
+                    <!-- {% if summary.tdx_incident.active %}
                         <i class="fas fa-door-open"></i>
                     {% else %}
                         <i class="fas fa-door-closed"></i>
-                    {% endif %}
+                    {% endif %} -->
+                {% elif summary.sn_incident %}
+                <a href="https://{{ summary.sn_incident.instance }}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={{ summary.sn_incident }}" target="_blank">{{ summary.sn_incident }}</a>
+                    <!-- {% if summary.sn_incident.active %}
+                        <i class="fas fa-door-open"></i>
+                    {% else %}
+                        <i class="fas fa-door-closed"></i>
+                    {% endif %} -->
                 {% else %}
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" name="event" value="summary_{{ summary.id }}">

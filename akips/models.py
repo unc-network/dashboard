@@ -94,6 +94,8 @@ class Trap(models.Model):
     cleared_at = models.DateTimeField(null=True, blank=True)
     incident = models.CharField(blank=True, max_length=255)
     sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    # tdx_incident = models.ForeignKey(TDXIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    tdx_incident = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     dup_count = models.IntegerField(default=0)
     dup_last = models.DateTimeField(null=True, blank=True)
@@ -159,6 +161,8 @@ class Summary(models.Model):
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
     incident = models.CharField(blank=True, max_length=255)
     sn_incident = models.ForeignKey(ServiceNowIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    # tdx_incident = models.ForeignKey(TDXIncident, blank=True, null=True, on_delete=models.SET_NULL)
+    tdx_incident = models.IntegerField(null=True, blank=True)
     last_refresh = models.DateTimeField(auto_now_add=True, help_text="Last time the summary data was refreshed")
 
     class Meta:
@@ -168,6 +172,29 @@ class Summary(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+# class HibernateWindow(models.Model):
+#     CLOSE_CHOICES = (
+#         ('Auto', 'Auto'),
+#         ('Time', 'Time'),
+#         ('Manual', 'Manual'),
+#     )
+#     STATUS_CHOICES = (
+#         ('Planned', 'Planned'),
+#         ('Open', 'Open'),
+#         ('Closed', 'Closed'),
+#     )
+#     device = models.ForeignKey(Device, on_delete=models.CASCADE)
+#     start = models.DateTimeField(null=True, blank=True)
+#     end = models.DateTimeField(null=True, blank=True)
+#     end_type = models.CharField(max_length=32, choices=CLOSE_CHOICES)
+#     comment = models.CharField(max_length=1024, blank=True)
+#     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
+#     created_by = models.CharField(max_length=32)
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return str(self.device)
 
 class HibernateRequest(models.Model):
     TYPE_CHOICES = (

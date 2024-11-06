@@ -101,7 +101,7 @@ build-ocnes-image:
   stage: buildimage
   environment: production
   image:
-    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   before_script:
     - echo "Disabling CI/CD default settings"
@@ -121,7 +121,7 @@ build-celery-image:
   stage: buildimage
   environment: production
   image:
-    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   before_script:
     - echo "Disabling CI/CD default settings"

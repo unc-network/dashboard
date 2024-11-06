@@ -110,6 +110,36 @@ class AKIPS:
             return data
         return None
 
+    def assign_group(self, device_name, group_name):
+        ''' Set group for a device '''
+        params = {
+            'function': 'web_manual_grouping',
+            'type': 'device',
+            'mode': 'assign',
+            'group': group_name,
+            'device': device_name
+        }
+        text = self.get(section='/api-script',params=params)
+        if text:
+            logger.info(f"Assigning {device_name} to group {group_name} with result {text}")
+            return text
+        return None
+
+    def clear_group(self, device_name, group_name):
+        ''' Set group for a device '''
+        params = {
+            'function': 'web_manual_grouping',
+            'type': 'device',
+            'mode': 'clear',
+            'group': group_name,
+            'device': device_name
+        }
+        text = self.get(section='/api-script',params=params)
+        if text:
+            logger.info(f"Clearing {device_name} from group {group_name} with result {text}")
+            return text
+        return None
+
     def set_maintenance_mode(self, device_name, mode='True'):
         ''' Set maintenance mode on or off for a device '''
         params = {

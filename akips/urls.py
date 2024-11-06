@@ -34,6 +34,7 @@ urlpatterns = [
     # Device API
     path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
+    path('api/set_notification_mode', views.SetNotificationView.as_view(), name='set_notification'),
 
     # Status API
     path('api/status', views.StatusExportView.as_view(), name='status_export'),
@@ -47,7 +48,7 @@ urlpatterns = [
     #path('api/summary/<summary_id>/', views.SummaryAPI.as_view(), name='summary'),
     path('api/summary/<summary_id>/ack', views.AckView.as_view(), name='ack'),
     path('api/summary/<summary_id>/comment', views.SetComment.as_view(), name='set_comment'),
-    # path('api/summary/<summary_id>/incident', views.SetIncident.as_view(), name='set_incident'),
+    path('api/summary/<summary_id>/incident', views.SetIncident.as_view(), name='set_incident'),
 
     # Trap API
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),

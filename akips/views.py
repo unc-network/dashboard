@@ -33,6 +33,7 @@ from .forms import IncidentForm, HibernateForm, PreferencesForm
 from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
+from akips.tdx import TDX
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
@@ -485,8 +486,11 @@ class CreateIncidentView(LoginRequiredMixin, View):
         }
         context['form'] = IncidentForm(initial=initial)
 
-        servicenow = ServiceNow()
-        context['recent'] = servicenow.get_recent_incidents()
+        tdx = TDX()
+        # tdx.init_session()
+        #tdx.get_applications()
+        #ticket = tdx.get_ticket('64038')
+        context['recent'] = tdx.get_ticket_search()
 
         return render(request, self.template_name, context=context)
 
@@ -513,46 +517,44 @@ class CreateIncidentView(LoginRequiredMixin, View):
                 traps = Trap.objects.filter(id__in=trap_ids)
                 ctx['traps'] = traps
 
-            # Work with ServiceNow Incident
-            servicenow = ServiceNow()
+            # Work with Incident
+            tdx = TDX()
+            # tdx.init_session()
             if form.cleaned_data.get('number'):
                 # Get an existing Incident
-                incident = servicenow.associate_incident(
-                    form.cleaned_data.get('number'),
-                    # work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                )
+                incident = tdx.get_ticket(form.cleaned_data.get('number'))
                 if incident:
-                    context['create_message'] = "Incident {} was found.".format(incident.number)
+                    context['create_message'] = "Incident {} was associated.".format(incident['ID'])
             else:
                 # Get a new Incident
-                incident = servicenow.create_incident(
+                # incident = tdx.create_ticket(
+                incident = tdx.create_ticket_flow(
                     form.cleaned_data.get('assignment_group'),
+                    form.cleaned_data.get('criticality'),
                     form.cleaned_data.get('description'),
-                    severity=form.cleaned_data.get('criticality'),
-                    work_notes=render_to_string('akips/incident_worknote.txt',ctx),
-                    caller_id=request.user.username
+                    render_to_string('akips/incident_worknote.txt',ctx)
                 )
                 if incident:
-                    context['create_message'] = "Incident {} was created.".format(incident.number)
+                    context['create_message'] = "Incident {} was created.".format(incident['ID'])
 
             if incident:
                 # Map selected summaries to this incident
                 # context['create_message'] = "Incident {} was created.".format(incident.number)
-                logger.debug("mapping summaries to incident {}".format(incident.number))
+                logger.debug(f"mapping summaries to incident {incident['ID']}")
                 for id in summary_ids:
                     summary = Summary.objects.get(id=id)
                     #summary.incident = incident['number']
-                    summary.sn_incident = incident
+                    summary.tdx_incident = incident['ID']
                     summary.save()
                 for id in trap_ids:
                     trap = Trap.objects.get(id=id)
                     #trap.incident = incident['number']
-                    trap.sn_incident = incident
+                    trap.tdx_incident = incident['ID']
                     trap.save()
-                messages.success(request, "ServiceNow Incident {} was associated.".format(incident.number))
+                messages.success(request, f"Incident {incident['ID']} was associated.")
                 return HttpResponseRedirect(reverse('home'))
             else:
-                messages.error(request, "ServiceNow Incident association failed.")
+                messages.error(request, "Incident association failed.")
 
             # Failed to associate incident
             context['form'] = form
@@ -560,6 +562,10 @@ class CreateIncidentView(LoginRequiredMixin, View):
 
         else:
             # Form is invalid
+            tdx = TDX()
+            # tdx.init_session()
+            context['recent'] = tdx.get_ticket_search()
+
             context['form'] = form
         return render(request, self.template_name, context=context)
 
@@ -617,6 +623,45 @@ class SetMaintenanceView(LoginRequiredMixin, View):
         akips = AKIPS()
         result['text'] = akips.set_maintenance_mode(device_name, maintenance_mode)
         logger.debug(json.dumps(result, indent=4, sort_keys=True))
+
+        # Return the results
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            return JsonResponse(result)
+
+class SetNotificationView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        device_name = request.GET.get('device_name', None)            # Required
+        notification_mode = request.GET.get('notification_mode', None)  # Required
+        logger.debug("Got {} and {}".format(device_name, notification_mode))
+        if device_name is None or notification_mode is None:
+            raise Http404("Missing device name or notification mode setting")
+
+        # Update local database
+        device = get_object_or_404(Device, name=device_name)
+        #device = Device.objects.get(name=device_name)
+
+        # Do the update
+        result = {}
+        akips = AKIPS()
+        if notification_mode == 'True':
+            device.notify = True
+            result['text'] = akips.clear_group(device_name, '6-do-not-notify')
+        else:
+            device.notify = False
+            result['text'] = akips.assign_group(device_name, '6-do-not-notify')
+        logger.debug(json.dumps(result, indent=4, sort_keys=True))
+        device.save()
+
+        # result = {}
+        # # Get the current device from local database
+        # akips = AKIPS()
+        # result['text'] = akips.set_maintenance_mode(device_name, notification_mode)
+        # logger.debug(json.dumps(result, indent=4, sort_keys=True))
 
         # Return the results
         if self.pretty_print:
@@ -703,44 +748,28 @@ class SetComment(LoginRequiredMixin, View):
 
         return JsonResponse(response_data)
 
-# class SetIncident(LoginRequiredMixin, View):
-#     ''' API call to set the Incident for a summary '''
-#     pretty_print = True
+class SetIncident(LoginRequiredMixin, View):
+    ''' API call to set (or clear) incident number for a summary '''
+    pretty_print = True
 
-#     def post(self, request, *args, **kwargs):
-#         summary_id = self.kwargs.get('summary_id', None)
-#         incident_number = request.POST.get('incident', '')
-#         logger.debug("Summary {} set incident".format(summary_id))
+    def post(self, request, *args, **kwargs):
+        summary_id = self.kwargs.get('summary_id', None)
+        incident_str = request.POST.get('incident', None)
+        if incident_str:
+            incident = int(incident_str)
+        else:
+            incident = None
+        logger.debug(f"Summary {summary_id} set incident {incident}")
     
-#         # validate summary id first
-#         summary = get_object_or_404(Summary, id=summary_id)
+        response_data = {
+            'success': True,
+            'incident': incident
+        }
+        summary = get_object_or_404(Summary, id=summary_id)
+        summary.tdx_incident = incident
+        summary.save()
 
-#         response_data = {
-#             'success': False
-#         }
-
-#         if incident_number:
-#             # Check ServiceNow data
-#             servicenow = ServiceNow()
-#             incident_list = servicenow.get_incident_by_number(incident_number)
-#             if len(incident_list) == 1:
-#                 incident = incident_list[0]
-#             else:
-#                 incident = None
-
-#         if incident:
-#             # add incident to database if necessary
-#             sn_incident = ServiceNowIncident.objects.get_or_create(
-#                 number=incident['number'],
-#                 sys_id=incident['sys_id'],
-#                 instance=self.instance
-#             )
-#             # associate with summary
-#             summary.incident = sn_incident
-#             summary.save()
-#             response_data['success'] = True
-
-#         return JsonResponse(response_data)
+        return JsonResponse(response_data)
 
 class AckView(LoginRequiredMixin, View):
     ''' API view '''
