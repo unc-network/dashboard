@@ -96,6 +96,20 @@ class EventManager:
             # They never clear since AKiPS doesn't poll them. Close the OCNES unreachable.
             Unreachable.objects.filter(status='Open', device__maintenance=True).update(status='Closed',last_refresh=now)
 
+            # Handle unreachables with disabled notifications
+            # Unreachable.objects.filter(status='Open', device__notify=False).summary_set.clear()
+            ignored_unreachables = Unreachable.objects.filter(status='Open', device__notify=False, last_refresh=now)
+            for ignored in ignored_unreachables:
+                logger.debug(f"unreachable {ignored} has notifications disabled, removing from all summaries")
+                ignored.summary_set.clear()
+
+            # Handle unreachables that have moved to hibernate mode
+            # Unreachable.objects.filter(status='Open', device__hibernate=True).summary_set.clear()
+            hibernated_unreachables = Unreachable.objects.filter(status='Open', device__hibernate=True, last_refresh=now)
+            for hibernated in hibernated_unreachables:
+                logger.debug(f"unreachable {hibernated} has been set to hibernate, removing from all summaries")
+                hibernated.summary_set.clear()
+
             # Remove stale entries
             Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
