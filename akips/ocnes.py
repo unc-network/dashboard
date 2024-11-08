@@ -98,14 +98,14 @@ class EventManager:
 
             # Handle unreachables with disabled notifications
             # Unreachable.objects.filter(status='Open', device__notify=False).summary_set.clear()
-            ignored_unreachables = Unreachable.objects.filter(status='Open', device__notify=False, last_refresh=now)
+            ignored_unreachables = Unreachable.objects.filter(status='Open', device__notify=False)
             for ignored in ignored_unreachables:
                 logger.debug(f"unreachable {ignored} has notifications disabled, removing from all summaries")
                 ignored.summary_set.clear()
 
             # Handle unreachables that have moved to hibernate mode
             # Unreachable.objects.filter(status='Open', device__hibernate=True).summary_set.clear()
-            hibernated_unreachables = Unreachable.objects.filter(status='Open', device__hibernate=True, last_refresh=now)
+            hibernated_unreachables = Unreachable.objects.filter(status='Open', device__hibernate=True)
             for hibernated in hibernated_unreachables:
                 logger.debug(f"unreachable {hibernated} has been set to hibernate, removing from all summaries")
                 hibernated.summary_set.clear()
