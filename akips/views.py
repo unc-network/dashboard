@@ -230,7 +230,7 @@ class TrapCard(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-dup_last')
+            status='Open').order_by('-dup_last','-tt')
             # status='Open').order_by('-tt')
             # status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
@@ -327,7 +327,7 @@ class RecentTrapsView(LoginRequiredMixin, View):
         date_from = timezone.now() - timezone.timedelta(days=1)
         # traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
         # traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
-        traps = Trap.objects.filter( dup_last__gte=date_from ).order_by('-dup_last')
+        traps = Trap.objects.filter( dup_last__gte=date_from ).order_by('-dup_last','-tt')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
