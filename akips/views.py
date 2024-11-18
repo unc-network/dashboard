@@ -500,7 +500,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
         form = IncidentForm(request.POST)
         if form.is_valid():
             ctx = {
-                'server_name': "https://ocnes.cloudapps.unc.edu"
+                'server_name': "https://ocnes.netapps.unc.edu"
             }
 
             # Get the summaries
