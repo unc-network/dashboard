@@ -326,7 +326,8 @@ class RecentTrapsView(LoginRequiredMixin, View):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
         # traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
-        traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
+        # traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
+        traps = Trap.objects.filter( dup_last__gte=date_from ).order_by('-dup_last')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
