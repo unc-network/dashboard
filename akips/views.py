@@ -230,7 +230,8 @@ class TrapCard(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-tt')
+            status='Open').order_by('-dup_last')
+            # status='Open').order_by('-tt')
             # status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
 
@@ -1324,7 +1325,9 @@ def process_webhook_payload(payload):
                     ipaddr=payload['ipaddr'],
                     trap_oid=payload['trap_oid'],
                     uptime=payload['uptime'],
-                    oids=json.dumps(payload['oids'])
+                    oids=json.dumps(payload['oids']),
+                    dup_count = 0,
+                    dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
                 )
             return True
         else:
