@@ -230,7 +230,8 @@ class TrapCard(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
         context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-tt')
+            status='Open').order_by('-dup_last','-tt')
+            # status='Open').order_by('-tt')
             # status='Open').order_by('-tt')[:50]
         return render(request, self.template_name, context=context)
 
@@ -325,7 +326,8 @@ class RecentTrapsView(LoginRequiredMixin, View):
         context = {}
         date_from = timezone.now() - timezone.timedelta(days=1)
         # traps = Trap.objects.filter( tt__gte=date_from, status='Closed' ).order_by('-tt')
-        traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
+        # traps = Trap.objects.filter( tt__gte=date_from ).order_by('-tt')
+        traps = Trap.objects.filter( dup_last__gte=date_from ).order_by('-dup_last','-tt')
         context['traps'] = traps
         return render(request, self.template_name, context=context)
 
@@ -500,7 +502,7 @@ class CreateIncidentView(LoginRequiredMixin, View):
         form = IncidentForm(request.POST)
         if form.is_valid():
             ctx = {
-                'server_name': "https://ocnes.cloudapps.unc.edu"
+                'server_name': "https://ocnes.netapps.unc.edu"
             }
 
             # Get the summaries
@@ -1324,7 +1326,9 @@ def process_webhook_payload(payload):
                     ipaddr=payload['ipaddr'],
                     trap_oid=payload['trap_oid'],
                     uptime=payload['uptime'],
-                    oids=json.dumps(payload['oids'])
+                    oids=json.dumps(payload['oids']),
+                    dup_count = 0,
+                    dup_last = datetime.fromtimestamp(int(payload['tt']), tz=timezone.get_current_timezone())
                 )
             return True
         else:
