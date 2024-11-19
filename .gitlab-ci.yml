@@ -132,12 +132,12 @@ build-celery-image:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-  only:
-    changes:
-      - Dockerfile.Celery-image
-      - requirements.txt
-      - project/celery.py
-      - project/settings.py
+  # only:
+  #   changes:
+  #     - Dockerfile.Celery-image
+  #     - requirements.txt
+  #     - project/celery.py
+  #     - project/settings.py
 
 ###############################################################################
 # Stage 4:  Tag OCNES image as latest.
@@ -184,12 +184,12 @@ tag-latest-build-celery:
     - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
     - echo "Tagging Celery image as latest..."
     - crane tag "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
-  only:
-    changes:
-      - Dockerfile.Celery-image
-      - requirements.txt
-      - project/celery.py
-      - project/settings.py
+  # only:
+  #   changes:
+  #     - Dockerfile.Celery-image
+  #     - requirements.txt
+  #     - project/celery.py
+  #     - project/settings.py
 
 
 # References:
