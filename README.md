@@ -18,7 +18,7 @@ This project was initially designed to run under OpenShift.
 
 It also runs under Docker, refer to [Docker Readme](Docker.md).
 
-Most recently work has been to build a K3s setup.
+Most recently work has been to build a K3s setup..
 
 ## Contributing
 
