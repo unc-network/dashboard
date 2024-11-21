@@ -107,21 +107,20 @@ build-ocnes-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - echo "________________________________________"
-    - echo "List all variables available to script"
-    - export
-    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "config.json:"
-    - cat /kaniko/.docker/config.json
-    - echo "________________________________________"
+    # - echo "________________________________________"
+    # - echo "List all variables available to script"
+    # - export
+    # - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    # - echo "config.json:"
+    # - cat /kaniko/.docker/config.json
+    # - echo "________________________________________"
     - echo "Building OCNES image..."
     - /kaniko/executor
       --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
       --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-    - sleep 600
   # rules:
   #   - if: $CI_COMMIT_TAG
 
@@ -137,21 +136,20 @@ build-celery-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - echo "________________________________________"
-    - echo "List all variables available to script"
-    - export
-    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "config.json:"
-    - cat /kaniko/.docker/config.json
-    - echo "________________________________________"
+    # - echo "________________________________________"
+    # - echo "List all variables available to script"
+    # - export
+    # - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    # - echo "config.json:"
+    # - cat /kaniko/.docker/config.json
+    # - echo "________________________________________"
     - echo "Building Celery image..."
     - /kaniko/executor
       --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-    - sleep 600
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
