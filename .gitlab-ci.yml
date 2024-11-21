@@ -4,7 +4,7 @@
 ###############################################################################
 stages:
   - build
-  - test
+  # - test
   - buildimage
   - tagimage
 
@@ -51,8 +51,9 @@ default:
   # Pick zero or more services to be used on all builds.
   # Only needed when using a docker container to run your tests in.
   # Check out: https://docs.gitlab.com/ee/ci/services/index.html
-  services:
-    - postgres:15
+  # services:
+  #   - postgres:15
+
   #
   # This folder is cached between builds
   # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
@@ -71,6 +72,8 @@ default:
 ###############################################################################
 migrations:
   stage: build
+  services:
+    - postgres:15
   script:
     - python3 manage.py createcachetable
     - python3 manage.py makemigrations
@@ -78,18 +81,19 @@ migrations:
     - python3 manage.py migrate
     - python3 manage.py collectstatic
     - python3 manage.py check
+    - python3 manage.py test
 
 ###############################################################################
 # Stage 2:  Test the app
 ###############################################################################
-django-tests:
-  stage: test
-  script:
-    # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
-    # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
-    # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
-    # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
-    - python3 manage.py test
+# django-tests:
+#   stage: test
+#   script:
+#     # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+#     # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+#     # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+#     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+#     - python3 manage.py test
 
 
 # NOTE:  If the previous stages all succeeded, then it is time to build the images to run in the cluster
@@ -117,7 +121,6 @@ build-ocnes-image:
     # - echo "________________________________________"
     - echo "Building OCNES image..."
     - /kaniko/executor
-      --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
       --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
@@ -146,7 +149,6 @@ build-celery-image:
     # - echo "________________________________________"
     - echo "Building Celery image..."
     - /kaniko/executor
-      --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
