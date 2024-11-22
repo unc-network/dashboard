@@ -118,7 +118,7 @@ build-ocnes-image:
     # - echo "config.json:"
     # - cat /kaniko/.docker/config.json
     # - echo "________________________________________"
-    - echo "Building OCNES image..."
+    - echo "Building OCNES image and pushing to registry..."
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
@@ -146,7 +146,7 @@ build-celery-image:
     # - echo "config.json:"
     # - cat /kaniko/.docker/config.json
     # - echo "________________________________________"
-    - echo "Building Celery image..."
+    - echo "Building Celery image and pushing to registry..."
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
