@@ -11,8 +11,8 @@ stages:
 ###############################################################################
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
-    - if: $CI_COMMIT_BRANCH == "main"
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+    # - if: $CI_COMMIT_BRANCH == "main"
     ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
 
 ###############################################################################
