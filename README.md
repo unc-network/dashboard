@@ -1,5 +1,5 @@
-OCNES
-=======
+# OCNES
+
 Operations Center Network Event Summary (OCNES) provides a dashboard view of network health. It is built on top of the [AKiPS Network Monitoring Software](http://akips.com) network monitoring platform, which provides all polling and status data.
 
 ![Screenshot of OCNES UI](akips/static/akips/img/dashboard.png "OCNES UI")
@@ -22,10 +22,12 @@ Most recently work has been to build a K3s setup.
 
 ## Contributing
 
-Contributions are welcome.  The project has been in-house for a while but we recently published the repository to facilitate collaboration with other higher education institutions utilizing AKiPS.  Interested developers can contact William Whitaker at will.whitaker@unc.edu.
+Contributions are welcome.  The project has been in-house for a while but we recently published the repository to facilitate collaboration with other higher education institutions utilizing AKiPS.  
 
---- 
-UNC Chapel Hill   
-ITS Networking   
-https://github.com/unc-network   
-https://sc.its.unc.edu/network (campus only)   
+[CONTRIBUTING.md](https://github.com/unc-network/dashboard/blob/develop/CONTRIBUTING.md)
+
+---
+UNC Chapel Hill
+ITS Networking
+https://github.com/unc-network
+https://sc.its.unc.edu/network (campus only)
