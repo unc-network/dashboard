@@ -14,7 +14,7 @@ DEPT_CHOICES = (
     ('ITS-Networking', 'Engineering'),
     ('ITS-Networking-WIFI', 'Wireless'),
     ('ITS-Networking-AdvancedServices', 'Advanced Services'),
-    # ('SOMIT-Networking', 'SoM'),
+    ('SOMIT-Networking', 'SoM Networking'),
 )
 
 CRITICAL_CHOICES = (
