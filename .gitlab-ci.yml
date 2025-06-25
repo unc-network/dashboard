@@ -4,17 +4,18 @@
 ###############################################################################
 stages:
   - build
-  - test
+  # - test
   - buildimage
   - tagimage
 
+
 ###############################################################################
-workflow:
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-#     - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
+# workflow:
+#   rules:
+    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
     # - if: $CI_COMMIT_BRANCH == "main"
     ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
+
 
 ###############################################################################
 # Define variables needed by the various jobs
@@ -51,8 +52,9 @@ default:
   # Pick zero or more services to be used on all builds.
   # Only needed when using a docker container to run your tests in.
   # Check out: https://docs.gitlab.com/ee/ci/services/index.html
-  services:
-    - postgres:15
+  # services:
+  #   - postgres:15
+
   #
   # This folder is cached between builds
   # http://docs.gitlab.com/ee/ci/yaml/README.html#cache
@@ -67,10 +69,12 @@ default:
     - pip3 install --user -r requirements.txt
 
 ###############################################################################
-# Stage 1:  Build the app
+# Stage 1:  Build and test the app
 ###############################################################################
 migrations:
   stage: build
+  services:
+    - postgres:15
   script:
     - python3 manage.py createcachetable
     - python3 manage.py makemigrations
@@ -78,25 +82,26 @@ migrations:
     - python3 manage.py migrate
     - python3 manage.py collectstatic
     - python3 manage.py check
+    - python3 manage.py test
 
 ###############################################################################
 # Stage 2:  Test the app
 ###############################################################################
-django-tests:
-  stage: test
-  script:
-    # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
-    # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
-    # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
-    # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
-    - python3 manage.py test
+# django-tests:
+#   stage: test
+#   script:
+#     # The following is from Django + MySQL example template; leaving 'til I figure out what I need to do here
+#     # The MYSQL user only gets permissions for MYSQL_DB, so Django can't create a test database.
+#     # - echo "GRANT ALL on *.* to '${MYSQL_USER}';"| mysql -u root --password="${MYSQL_ROOT_PASSWORD}" -h mysql
+#     # use python3 explicitly. see https://wiki.ubuntu.com/Python/3
+#     - python3 manage.py test
 
 
 # NOTE:  If the previous stages all succeeded, then it is time to build the images to run in the cluster
 
 
 ###############################################################################
-# Stage 3:  Create OCNES image
+# Stage 3:  Create OCNES image and push to GitLab Container Registry
 ###############################################################################
 build-ocnes-image:
   stage: buildimage
@@ -107,26 +112,24 @@ build-ocnes-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - echo "________________________________________"
-    - echo "List all variables available to script"
-    - export
-    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "config.json:"
-    - cat /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "Building OCNES image..."
+    # - echo "________________________________________"
+    # - echo "List all variables available to script"
+    # - export
+    # - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    # - echo "config.json:"
+    # - cat /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    - echo "Building OCNES image and pushing to registry..."
     - /kaniko/executor
-      --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
       --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-    - sleep 600
   # rules:
   #   - if: $CI_COMMIT_TAG
 
 ###############################################################################
-# Stage 3:  Create Celery image
+# Stage 3:  Create Celery image and push to GitLab Container Registry
 ###############################################################################
 build-celery-image:
   stage: buildimage
@@ -137,21 +140,19 @@ build-celery-image:
   before_script:
     - echo "Disabling CI/CD default settings"
   script:
-    - echo "________________________________________"
-    - echo "List all variables available to script"
-    - export
-    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "config.json:"
-    - cat /kaniko/.docker/config.json
-    - echo "________________________________________"
-    - echo "Building Celery image..."
+    # - echo "________________________________________"
+    # - echo "List all variables available to script"
+    # - export
+    # - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},\"$(echo -n $CI_DEPENDENCY_PROXY_SERVER | awk -F[:] '{print $1}')\":{\"auth\":\"$(printf "%s:%s" ${CI_DEPENDENCY_PROXY_USER} "${CI_DEPENDENCY_PROXY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    # - echo "config.json:"
+    # - cat /kaniko/.docker/config.json
+    # - echo "________________________________________"
+    - echo "Building Celery image and pushing to registry..."
     - /kaniko/executor
-      --verbosity=debug
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
       --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-    - sleep 600
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
@@ -160,11 +161,12 @@ build-celery-image:
   #     - project/settings.py
 
 ###############################################################################
-# Stage 4:  Tag OCNES image as latest.
-#           This should trigger K3s to pull images and build new containers
-#           in the develop branch.
+# Stage 4:  Tag OCNES image as latest IF this is the main branch.
+#           This should trigger K3s to pull images and build new containers.
 ###############################################################################
 tag-latest-build-ocnes:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   stage: tagimage
   environment: production
   image:
@@ -183,11 +185,12 @@ tag-latest-build-ocnes:
     - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
 
 ###############################################################################
-# Stage 4:  Tag Celery image as latest.
-#           This should trigger K3s to pull images and build new containers
-#           in the develop branch.
+# Stage 4:  Tag Celery image as latest IF this is the main branch.
+#           This should trigger K3s to pull images and build new containers.
 ###############################################################################
 tag-latest-build-celery:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   stage: tagimage
   environment: production
   image:
