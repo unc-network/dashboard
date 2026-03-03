@@ -370,7 +370,7 @@ def refresh_inventory():
             logger.debug("Updating device {}".format(device))
             if 'hierarchy' in device and device['hierarchy']:
                 hierarchy = device['hierarchy']
-                if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD']:
+                if device['hierarchy'] in ['TIER1', 'BES', 'EDGE', 'SPINE', 'POD', 'DATACENTER']:
                     device_type = 'SWITCH'
                 else:
                     device_type = device['hierarchy']
