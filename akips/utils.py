@@ -458,8 +458,12 @@ class Inventory:
         }
         logger.debug("WAPI GET %s" % (self.inventory_url))
         logger.debug("WAPI GET params: " + pprint.pformat(params))
-        # GET requests have 2 args: URL, HEADERS
-        r = self.session.get(self.inventory_url, headers=headers, params=params, verify=False)
+        try:
+            # GET requests have 2 args: URL, HEADERS
+            r = self.session.get(self.inventory_url, headers=headers, params=params, verify=False)
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            logger.error("Inventory API request failed with exception: {}".format(e))
+            return None
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
