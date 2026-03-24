@@ -24,6 +24,32 @@ from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
 logger = logging.getLogger(__name__)
 
 
+# Cache keys used by dashboard cards and chart data.
+# Explicitly clear them at the end of refresh_unreachable because parts of
+# that workflow use bulk updates and m2m operations that do not emit post_save.
+DASHBOARD_CACHE_KEYS = [
+    'crit_card_data',
+    'tier_card_data',
+    'bldg_card_data',
+    'spec_card_data',
+    'trap_card_data',
+    'crit_card_json_data',
+    'bldg_card_json_data',
+    'spec_card_json_data',
+    'trap_card_json_data',
+    'chart_data',
+]
+
+
+def invalidate_dashboard_cache(reason=''):
+    for key in DASHBOARD_CACHE_KEYS:
+        cache.delete(key)
+    if reason:
+        logger.debug("Dashboard caches invalidated: %s", reason)
+    else:
+        logger.debug("Dashboard caches invalidated")
+
+
 @shared_task
 def example_task():
     """
@@ -604,6 +630,7 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
             #     update_incident.delay(number, message)
 
         finally:
+            invalidate_dashboard_cache(reason=f"refresh_unreachable task {self.request.id}")
             logger.debug(f"Task {self.request.id} releasing refresh unreachable task lock")
             cache.delete(lock_id)
     else:
