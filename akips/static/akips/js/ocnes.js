@@ -117,6 +117,17 @@ function alert_user() {
 }
 
 function enable_alert_toggle() {
+    // Initialize from user profile API so templates do not need to query profile directly.
+    var toggle = $('#alert-toggle');
+    var url = toggle.data('url');
+    if (toggle.length && url) {
+        $.get(url, function (data) {
+            if (typeof data.alert_enabled !== 'undefined') {
+                toggle.prop('checked', !!data.alert_enabled);
+            }
+        });
+    }
+
     // Configure the user preference switch
     $(document).on('change', 'input.alert-toggle', function () {
         var url = $(this).data("url");

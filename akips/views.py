@@ -1430,24 +1430,32 @@ class SetUserProfileView(LoginRequiredMixin, View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
-        logger.debug("Preference update for {}")
+        logger.debug("Preference update for %s", request.user.username)
         alert_enabled = request.GET.get('alert_enabled', None)
         voice_enabled = request.GET.get('voice_enabled', None)
 
         user = request.user
+        changed = False
         if alert_enabled is not None:
             if alert_enabled == 'False':
                 user.profile.alert_enabled = False
             else:
                 user.profile.alert_enabled = True
+            changed = True
         if voice_enabled is not None:
             if voice_enabled == 'False':
                 user.profile.voice_enabled = False
             else:
                 user.profile.voice_enabled = True
-        user.save()
+            changed = True
 
-        result = {"voice_enabled": user.profile.voice_enabled }
+        if changed:
+            user.save()
+
+        result = {
+            "alert_enabled": user.profile.alert_enabled,
+            "voice_enabled": user.profile.voice_enabled,
+        }
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})

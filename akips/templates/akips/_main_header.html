@@ -81,7 +81,7 @@
             <li class="nav-item">
                 <div class="navbar-text custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input alert-toggle" id="alert-toggle" 
-                        data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}" {% if request.user.profile.alert_enabled %}checked{% endif %}>
+                        data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}" checked>
                     <label class="custom-control-label" for="alert-toggle"><i class="fas fa-volume-up"></i></label>
                 </div>
             </li>
@@ -122,6 +122,11 @@
                 </li>
             {% endif %}
             {% endblock user_info %}
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
+                    <i id="theme-toggle-icon" class="fas fa-adjust"></i>
+                </a>
+            </li>
             {% endblock header_dropdowns %}
         </ul>
     </ul>
