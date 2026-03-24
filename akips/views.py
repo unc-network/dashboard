@@ -178,7 +178,7 @@ class UserPreferences(LoginRequiredMixin, View):
             user.profile.alert_enabled = form.cleaned_data.get('alert_enabled')
             user.profile.voice_enabled = form.cleaned_data.get('voice_enabled')
             user.save()
-            messages.success(request, "{}'s preferences were saved".format(user.username))
+            messages.success(request, "{}'s preferences were saved.".format(user.username))
         else:
             pass
 
@@ -670,9 +670,9 @@ class HibernateView(LoginRequiredMixin, View):
                     }
                 )
                 if created:
-                    messages.success(request, "Hibernation request created for device {}".format( device.name ))
+                    messages.success(request, "Hibernation request created for device {}.".format( device.name ))
                 elif hibernate_request:
-                    messages.success(request, "Hibernation request updated for device {}".format( device.name ))
+                    messages.success(request, "Hibernation request updated for device {}.".format( device.name ))
 
                 # Update local device record
                 device.hibernate = True
