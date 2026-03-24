@@ -15,6 +15,7 @@ import sys
 from datetime import timedelta
 import ldap
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+from project.__version__ import VERSION
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,6 +92,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                           'akips.context_processors.app_version',
             ],
         },
     },
