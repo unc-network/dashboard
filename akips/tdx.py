@@ -139,8 +139,16 @@ class TDX:
         if self.token is None:
             self.init_session()
 
+        update_url = self.base_url + f"/api/{self.ticket_app_id}/ticket/{number}/feed"
+        logger.info(
+            "TDX update attempt: ticket=%s app_id=%s comment_len=%s",
+            number,
+            self.ticket_app_id,
+            len(comment or ''),
+        )
+
         response = self.session.post(
-            self.base_url + f"/api/{self.ticket_app_id}/ticket/{number}/feed",
+            update_url,
             json={
                 'Comments': comment,   # String
                 'IsPrivate': False,
@@ -149,9 +157,20 @@ class TDX:
             },
         )
         if response.ok:
+            logger.info(
+                "TDX update success: ticket=%s status=%s",
+                number,
+                response.status_code,
+            )
             return response.json()
         else:
-            logger.error('TDX update ticket error, response code: %i %s' % (response.status_code, response.reason))
+            logger.error(
+                "TDX update failed: ticket=%s status=%s reason=%s body=%s",
+                number,
+                response.status_code,
+                response.reason,
+                (response.text or '')[:500],
+            )
             return None
 
     def create_ticket_flow(self, group, priority, subject, description):

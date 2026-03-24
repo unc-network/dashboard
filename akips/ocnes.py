@@ -222,6 +222,10 @@ class EventManager:
 
             t_after_cleanup = time.perf_counter()
 
+        tdx_attempted = []
+        tdx_succeeded = []
+        tdx_failed = []
+
         if self.update_incident_tickets:
             # logger.info("incident cleared {}".format(incident_update_cleared))
             for number, u_list in incident_update_cleared.items():
@@ -231,21 +235,40 @@ class EventManager:
                     'u_list': u_list
                 }
                 message = render_to_string('akips/incident_status_update.txt',ctx)
-                self.tdx.update_ticket(number, message)
-                logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
+                tdx_attempted.append(str(number))
+                result = self.tdx.update_ticket(number, message)
+                if result is None:
+                    tdx_failed.append(str(number))
+                    logger.warning(
+                        "TDX incident update failed for cleared unreachable set: ticket=%s unreachable_count=%s",
+                        number,
+                        len(u_list),
+                    )
+                else:
+                    tdx_succeeded.append(str(number))
+                    logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
 
-            t_after_incident_updates = time.perf_counter()
+        t_after_incident_updates = time.perf_counter()
 
-            logger.info(
-                "AKIPS unreachable timing: setup=%.3fs fetch_akips=%.3fs upsert_unreachables=%.3fs scan_cleared=%.3fs cleanup=%.3fs incident_updates=%.3fs total=%.3fs",
-                t_after_setup - t_start,
-                t_after_fetch - t_after_setup,
-                t_after_upsert - t_after_fetch,
-                t_after_cleared_scan - t_after_upsert,
-                t_after_cleanup - t_after_cleared_scan,
-                t_after_incident_updates - t_after_cleanup,
-                t_after_incident_updates - t_start,
-            )
+        logger.info(
+            "TDX update summary (refresh_unreachable): attempted=%s succeeded=%s failed=%s attempted_ids=%s failed_ids=%s",
+            len(tdx_attempted),
+            len(tdx_succeeded),
+            len(tdx_failed),
+            ",".join(sorted(set(tdx_attempted))) if tdx_attempted else "none",
+            ",".join(sorted(set(tdx_failed))) if tdx_failed else "none",
+        )
+
+        logger.info(
+            "AKIPS unreachable timing: setup=%.3fs fetch_akips=%.3fs upsert_unreachables=%.3fs scan_cleared=%.3fs cleanup=%.3fs incident_updates=%.3fs total=%.3fs",
+            t_after_setup - t_start,
+            t_after_fetch - t_after_setup,
+            t_after_upsert - t_after_fetch,
+            t_after_cleared_scan - t_after_upsert,
+            t_after_cleanup - t_after_cleared_scan,
+            t_after_incident_updates - t_after_cleanup,
+            t_after_incident_updates - t_start,
+        )
 
         finish_time = timezone.now()
         logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
@@ -349,6 +372,10 @@ class EventManager:
         Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
         t_after_close_stale = time.perf_counter()
 
+        tdx_attempted = []
+        tdx_succeeded = []
+        tdx_failed = []
+
         if self.update_incident_tickets:
             # logger.info("servicenow new {}".format(sn_update_add))
             for number, u_list in self.incident_update_add.items():
@@ -358,9 +385,28 @@ class EventManager:
                     'u_list': u_list
                 }
                 message = render_to_string('akips/incident_status_update.txt',context)
-                self.tdx.update_ticket(number, message)
-                logger.info(f"Updating incident {number} for new unreachables {u_list}")
+                tdx_attempted.append(str(number))
+                result = self.tdx.update_ticket(number, message)
+                if result is None:
+                    tdx_failed.append(str(number))
+                    logger.warning(
+                        "TDX incident update failed for new unreachable set: ticket=%s unreachable_count=%s",
+                        number,
+                        len(u_list),
+                    )
+                else:
+                    tdx_succeeded.append(str(number))
+                    logger.info(f"Updating incident {number} for new unreachables {u_list}")
         t_after_incident_updates = time.perf_counter()
+
+        logger.info(
+            "TDX update summary (refresh_summary): attempted=%s succeeded=%s failed=%s attempted_ids=%s failed_ids=%s",
+            len(tdx_attempted),
+            len(tdx_succeeded),
+            len(tdx_failed),
+            ",".join(sorted(set(tdx_attempted))) if tdx_attempted else "none",
+            ",".join(sorted(set(tdx_failed))) if tdx_failed else "none",
+        )
 
         logger.info(
             "AKIPS summary timing: setup=%.3fs query_unreachables=%.3fs process_unreachables=%.3fs process_battery=%.3fs precompute_counts=%.3fs update_summaries=%.3fs close_stale=%.3fs incident_updates=%.3fs total=%.3fs",
