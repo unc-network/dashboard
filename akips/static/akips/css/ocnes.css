@@ -561,6 +561,7 @@
             color: #ffffff !important;
         }
 
+        .btn.btn-primary,
         .btn.btn-primary.btn-sm {
             background: linear-gradient(180deg, #158ec2 0%, #007fae 100%) !important;
             border: 1px solid #066b94 !important;
@@ -570,6 +571,8 @@
             box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset, 0 1px 3px rgba(19, 41, 75, 0.18);
         }
 
+        .btn.btn-primary:hover,
+        .btn.btn-primary:focus,
         .btn.btn-primary.btn-sm:hover,
         .btn.btn-primary.btn-sm:focus {
             background: linear-gradient(180deg, #0f7dab 0%, #006d96 100%) !important;
@@ -579,6 +582,7 @@
             transform: translateY(-1px);
         }
 
+        .btn.btn-primary:active,
         .btn.btn-primary.btn-sm:active {
             transform: translateY(0);
             box-shadow: 0 1px 2px rgba(19, 41, 75, 0.22);
@@ -719,6 +723,7 @@
             box-shadow: 0 12px 28px rgba(5, 12, 22, 0.55);
         }
 
+        body.theme-dark .btn.btn-primary,
         body.theme-dark .btn.btn-primary.btn-sm {
             background: linear-gradient(180deg, #4a89bd 0%, #2e6f9f 100%) !important;
             border-color: #6aa2d2 !important;
@@ -726,6 +731,8 @@
             box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 2px 5px rgba(5, 12, 22, 0.45);
         }
 
+        body.theme-dark .btn.btn-primary:hover,
+        body.theme-dark .btn.btn-primary:focus,
         body.theme-dark .btn.btn-primary.btn-sm:hover,
         body.theme-dark .btn.btn-primary.btn-sm:focus {
             background: linear-gradient(180deg, #5a97c8 0%, #397aac 100%) !important;

@@ -153,7 +153,7 @@
     .bldg-controls {
         display: inline-flex;
         gap: 0.25rem;
-        margin-right: 0.55rem;
+        margin-left: 0.55rem;
         vertical-align: middle;
     }
     .bldg-controls .btn {
@@ -384,8 +384,8 @@
 
     <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
         <div class="card-header py-2 ops-card-header">
-            <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span></h3>
-            <div class="card-tools card-meta"><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span>Refreshed <span id="bldg_card_updated">--:--:--</span></div>
+            <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span></h3>
+            <div class="card-tools card-meta">Refreshed <span id="bldg_card_updated">--:--:--</span></div>
         </div>
         <div class="card-body table-responsive p-0">
         </div>
@@ -423,6 +423,37 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
+    function getChartThemeOptions() {
+        var isDark = $('body').hasClass('theme-dark');
+        return {
+            legendColor: isDark ? '#eef6ff' : '#2f3b47',
+            tickColor: isDark ? '#eef6ff' : '#2f3b47',
+            gridColor: isDark ? 'rgba(163, 188, 217, 0.18)' : 'rgba(47, 59, 71, 0.12)'
+        };
+    }
+
+    function applyChartTheme(barChart) {
+        var theme = getChartThemeOptions();
+        barChart.options.legend.labels = barChart.options.legend.labels || {};
+        barChart.options.legend.labels.fontColor = theme.legendColor;
+
+        barChart.options.scales.xAxes[0].gridLines.color = theme.gridColor;
+        barChart.options.scales.xAxes[0].ticks = barChart.options.scales.xAxes[0].ticks || {};
+        barChart.options.scales.xAxes[0].ticks.fontColor = theme.tickColor;
+
+        barChart.options.scales.yAxes[0].gridLines.color = theme.gridColor;
+        barChart.options.scales.yAxes[0].ticks = barChart.options.scales.yAxes[0].ticks || {};
+        barChart.options.scales.yAxes[0].ticks.fontColor = theme.tickColor;
+    }
+
+    function syncChartThemeNow() {
+        if (!window.dashboardChart) {
+            return;
+        }
+        applyChartTheme(window.dashboardChart);
+        window.dashboardChart.update();
+    }
+
     function setup_chart() {
         /* ChartJS
         * -------
@@ -500,6 +531,9 @@
             options: barChartOptions
         })
 
+        applyChartTheme(barChart);
+        barChart.update();
+
         refresh_chart(barChart);
         return barChart;
     }
@@ -511,6 +545,7 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
+                applyChartTheme(barChart);
                 barChart.data.labels = result['chart_labels'];
                 barChart.data.datasets[0].data = result['chart_event_data'];
                 barChart.data.datasets[1].data = result['chart_trap_data'];
@@ -1173,6 +1208,19 @@
         refresh_cards();
         enable_alert_toggle();
         var chart = setup_chart();
+        window.dashboardChart = chart;
+
+        if (window.MutationObserver) {
+            var bodyClassObserver = new MutationObserver(function (mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    if (mutations[i].attributeName === 'class') {
+                        syncChartThemeNow();
+                        break;
+                    }
+                }
+            });
+            bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        }
 
         // Update the refresh counter
         var max_remaining = refresh_seconds;
