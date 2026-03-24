@@ -1,18 +1,20 @@
 <footer class="main-footer">
+    <div class="container">
         <div class="float-right d-none d-sm-block">
-        {% block footer_right %}
-            <b>Version</b> {% block version %}{{ app_version }}{% endblock %}
+            {% block footer_right %}
+                <b>Version</b> {% block version %}{{ app_version }}{% endblock %}
+            {% endblock %}
+        </div>
+
+        {% block footer_left %}
+        {% block legal %}
+        <strong>Copyright &copy; {% now "Y" %}{% if not site %}.{% endif %}
+            {% if site %}
+                <a href="http://{{ site.domain }}">{{ site.name }}</a>
+            {% endif %}
+        </strong> All rights
+        reserved.
+        {% endblock %}
         {% endblock %}
     </div>
-
-    {% block footer_left %}
-    {% block legal %}
-    <strong>Copyright &copy; {% now "Y" %}{% if not site %}.{% endif %}
-        {% if site %}
-            <a href="http://{{ site.domain }}">{{ site.name }}</a>
-        {% endif %}
-    </strong> All rights
-    reserved.
-    {% endblock %}
-    {% endblock %}
 </footer>
