@@ -6,6 +6,7 @@ from secrets import compare_digest
 import math
 
 from django.conf import settings
+from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
@@ -185,55 +186,117 @@ class UserPreferences(LoginRequiredMixin, View):
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_crit.html'
+    cache_key = 'crit_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
         context['summaries'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class TierCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_tier.html'
+    cache_key = 'tier_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
         context['summaries'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class BuildingCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_bldg.html'
+    cache_key = 'bldg_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
-        #context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
         types = ['Distribution', 'Building']
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_special.html'
+    cache_key = 'spec_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
         types = ['Specialty']
         context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 class TrapCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_trap.html'
+    cache_key = 'trap_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
         context['traps'] = Trap.objects.filter(
             status='Open').order_by('-dup_last','-tt')
-            # status='Open').order_by('-tt')
-            # status='Open').order_by('-tt')[:50]
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class UnreachableView(LoginRequiredMixin, View):
@@ -1083,17 +1146,27 @@ class ChartDataView(LoginRequiredMixin, View):
     pretty_print = True
     hours = 2
     period_minutes = 5
+    cache_key = 'chart_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_result = cache.get(self.cache_key)
+        if cached_result is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            if self.pretty_print:
+                return JsonResponse(cached_result, json_dumps_params={'indent': 4})
+            else:
+                return JsonResponse(cached_result)
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         now = timezone.now()
         oldest = now - timedelta(hours=self.hours)
 
         # Define graph time periods
         max_label = self.round_dt_down(now, timedelta(minutes= self.period_minutes ))
         min_label = max_label - timedelta(hours=self.hours)
-        # keyList = [ timezone.localtime(dt).strftime('%-I:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
-        #logger.debug("time stamps {}".format(keyList))
 
         # Initialize the graph time periods
         event_data = {}
@@ -1108,7 +1181,6 @@ class ChartDataView(LoginRequiredMixin, View):
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
         for unreachable in unreachables:
             slot = self.round_dt_down( unreachable.event_start, timedelta(minutes= self.period_minutes) ) 
-            # this_label = timezone.localtime(slot).strftime('%-I:%M')
             this_label = timezone.localtime(slot).strftime('%H:%M')
             event_data[this_label] += 1
 
@@ -1116,7 +1188,6 @@ class ChartDataView(LoginRequiredMixin, View):
         traps = Trap.objects.filter(tt__gte=min_label).order_by('tt')
         for trap in traps:
             slot = self.round_dt_down( trap.tt, timedelta(minutes= self.period_minutes) ) 
-            # this_label = timezone.localtime(slot).strftime('%-I:%M')
             this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
@@ -1130,9 +1201,6 @@ class ChartDataView(LoginRequiredMixin, View):
             this_label = timezone.localtime(slot).strftime('%H:%M')
             battery_data[this_label] += 1
 
-        #logger.debug("periods {}".format(event_data.keys()))
-        #logger.debug("event values {}".format(event_data.values()))
-        #logger.debug("trap values {}".format(trap_data.values()))
         result = {
             'chart_labels': list( event_data.keys() ),
             'chart_event_data': list( event_data.values() ),
@@ -1147,6 +1215,9 @@ class ChartDataView(LoginRequiredMixin, View):
             result['above_max_unreachable'] = True
         else:
             result['above_max_unreachable'] = False
+
+        # Store in cache
+        cache.set(self.cache_key, result, self.cache_timeout)
 
         # Return the results
         if self.pretty_print:
