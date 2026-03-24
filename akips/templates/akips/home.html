@@ -38,6 +38,25 @@
     .event-card .table-responsive {
         overflow-x: auto;
     }
+    .event-card .card-body {
+        position: relative;
+    }
+    .event-card .card-body .refresh-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        z-index: 3;
+        pointer-events: none;
+    }
+    body.theme-dark .event-card .card-body .refresh-overlay {
+        background: rgba(15, 27, 46, 0.28);
+    }
     .event-card .table,
     #chart .card-body,
     .ops-status-strip .card-body {
@@ -718,7 +737,7 @@
     }
 
     function refresh_cards() {
-        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+        var overlay = '<div class="overlay refresh-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
         var cardsUrl = $('#myForm').data('cards-url');
         var signatures = window.dashboardCardSignatures || {};
         window.dashboardCardSignatures = signatures;
@@ -799,7 +818,7 @@
                     var body = $(this).find('.card-body');
                     var previous = body.data('previous-html') || '';
                     body.html(previous);
-                    body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
+                    body.append('<div class="overlay refresh-overlay text-danger">Failed to get update: ' + error + '</div>');
                 });
             },
             complete: function () {
