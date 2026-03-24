@@ -1,5 +1,7 @@
 // Basic functions for the OCNES site.
 
+const OCNES_VOICE_SETTINGS_KEY = 'ocnes_voice';
+
 // Get the token to support AJAX POST
 // function getCookie(name) {
 //     var cookieValue = null;
@@ -49,6 +51,60 @@ function deleteCookie(cname) {
     document.cookie = cname + "= ;" + expires + ";path=/";
 }
 
+// Voice settings are stored in localStorage, with cookie fallback for migration.
+function getVoiceSettingsRaw() {
+    try {
+        var local = window.localStorage.getItem(OCNES_VOICE_SETTINGS_KEY);
+        if (local) {
+            return local;
+        }
+    } catch (e) {
+        // Ignore storage access errors
+    }
+
+    var legacyCookie = getCookie(OCNES_VOICE_SETTINGS_KEY);
+    if (legacyCookie) {
+        try {
+            window.localStorage.setItem(OCNES_VOICE_SETTINGS_KEY, legacyCookie);
+        } catch (e) {
+            // Ignore storage access errors
+        }
+        deleteCookie(OCNES_VOICE_SETTINGS_KEY);
+        return legacyCookie;
+    }
+
+    return "";
+}
+
+function getVoiceSettings() {
+    var speech_json = getVoiceSettingsRaw();
+    if (!speech_json) {
+        return null;
+    }
+    try {
+        return JSON.parse(speech_json);
+    } catch (e) {
+        return null;
+    }
+}
+
+function setVoiceSettings(speech) {
+    try {
+        window.localStorage.setItem(OCNES_VOICE_SETTINGS_KEY, JSON.stringify(speech));
+    } catch (e) {
+        // Ignore storage access errors
+    }
+}
+
+function clearVoiceSettings() {
+    try {
+        window.localStorage.removeItem(OCNES_VOICE_SETTINGS_KEY);
+    } catch (e) {
+        // Ignore storage access errors
+    }
+    deleteCookie(OCNES_VOICE_SETTINGS_KEY);
+}
+
 function refresh_alerts() {
     // Periodically check for user alerts.
     var refresh_seconds = 30000;
@@ -87,11 +143,10 @@ function alert_user() {
                 if ( data.voice_enabled ) {
                     var msg = new SpeechSynthesisUtterance(long_msg);
                     // console.log("total voices " + voices.length);
-                    var speech_json = getCookie('ocnes_voice');
-                    if (speech_json) {
-                        // Get user preferences from cookie
-                        var speech = JSON.parse(speech_json);
-                        console.log("Using cookie setting for voice " + speech.voice + " with rate " + speech.rate + " and pitch " + speech.pitch);
+                    var speech = getVoiceSettings();
+                    if (speech) {
+                        // Get user preferences from local storage
+                        console.log("Using saved voice setting for voice " + speech.voice + " with rate " + speech.rate + " and pitch " + speech.pitch);
                         msg.rate = speech.rate;
                         msg.pitch = speech.pitch;
                         msg.voice = voices.filter(function(voice) { return voice.name == speech.voice; })[0];
