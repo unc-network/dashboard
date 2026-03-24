@@ -64,6 +64,7 @@ def invalidate_unreachable_cache(sender, instance, created=False, **kwargs):
 def invalidate_trap_cache(sender, instance, created=False, **kwargs):
     """Clear trap and chart caches when Trap is updated"""
     cache.delete(CACHE_KEYS['trap_card'])
+    cache.delete(CACHE_KEYS['trap_card_json'])
     invalidate_chart_cache()
     if created:
         logger.debug(f"Trap {instance.id} created - caches invalidated")
