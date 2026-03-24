@@ -7,8 +7,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta name="description" content="OCNES dashboard for AKiPS" />
+        <meta name="description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
     <meta name="author" content="devops@office.unc.edu" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="OCNES Dashboard" />
+        <meta property="og:description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
+        <meta property="og:site_name" content="OCNES Dashboard" />
+        <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" />
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'akips/img/dashboard.png' %}" />
+        <meta property="og:image:alt" content="OCNES dashboard preview" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="OCNES Dashboard" />
+        <meta name="twitter:description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'akips/img/dashboard.png' %}" />
     {% endblock %}
 
     {% block title_outer %}
