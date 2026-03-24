@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Count
 from django.utils import timezone
 from django.template.loader import render_to_string
 
@@ -25,6 +26,91 @@ class EventManager:
     incident_update_add = {}
     update_incident_tickets = True
     tdx = TDX()
+
+    def _record_unreachable_for_incident(self, summary, unreachable):
+        """Track new unreachable associations for incident update messages."""
+        if summary.tdx_incident:
+            if summary.tdx_incident in self.incident_update_add:
+                self.incident_update_add[summary.tdx_incident].append(unreachable)
+            else:
+                self.incident_update_add[summary.tdx_incident] = [unreachable]
+
+    def _build_summary_count_data(self, summary_ids):
+        """Return per-summary open device counts by type and total."""
+        counts = {
+            summary_id: {
+                'SWITCH': 0,
+                'AP': 0,
+                'UPS': 0,
+                'UNKNOWN': 0,
+                'TOTAL': 0,
+            }
+            for summary_id in summary_ids
+        }
+        if not summary_ids:
+            return counts
+
+        through_model = Summary.unreachables.through
+        base_qs = through_model.objects.filter(
+            summary_id__in=summary_ids,
+            unreachable__status='Open',
+            unreachable__device__maintenance=False,
+        )
+
+        type_rows = base_qs.values('summary_id', 'unreachable__device__type').annotate(
+            device_count=Count('unreachable__device_id', distinct=True)
+        )
+        for row in type_rows:
+            summary_id = row['summary_id']
+            device_type = row['unreachable__device__type']
+            bucket = device_type if device_type in ['SWITCH', 'AP', 'UPS'] else 'UNKNOWN'
+            counts[summary_id][bucket] += row['device_count']
+
+        total_rows = base_qs.values('summary_id').annotate(
+            device_count=Count('unreachable__device_id', distinct=True)
+        )
+        for row in total_rows:
+            counts[row['summary_id']]['TOTAL'] = row['device_count']
+
+        return counts
+
+    def _build_summary_capacity_data(self):
+        """Return precomputed max device and UPS battery counts keyed by summary name."""
+        tier_max_count = {
+            row['tier']: row['total']
+            for row in Device.objects.values('tier').annotate(total=Count('id'))
+        }
+        building_max_count = {
+            row['building_name']: row['total']
+            for row in Device.objects.values('building_name').annotate(total=Count('id'))
+        }
+        specialty_max_count = {
+            row['group']: row['total']
+            for row in Device.objects.values('group').annotate(total=Count('id'))
+        }
+
+        tier_ups_battery = {
+            row['device__tier']: row['total']
+            for row in Status.objects.filter(
+                attribute='UPS-MIB.upsOutputSource',
+                value='battery',
+            ).values('device__tier').annotate(total=Count('id'))
+        }
+        building_ups_battery = {
+            row['device__building_name']: row['total']
+            for row in Status.objects.filter(
+                attribute='UPS-MIB.upsOutputSource',
+                value='battery',
+            ).values('device__building_name').annotate(total=Count('id'))
+        }
+
+        return {
+            'tier_max_count': tier_max_count,
+            'building_max_count': building_max_count,
+            'specialty_max_count': specialty_max_count,
+            'tier_ups_battery': tier_ups_battery,
+            'building_ups_battery': building_ups_battery,
+        }
 
     def refresh_unreachable(self,mode='poll'):
         """ Update current data for unreachable devices from AKiPS """
@@ -135,6 +221,7 @@ class EventManager:
         """ Update the summary data """
         logger.info("AKIPS summary refresh starting")
         now = timezone.now()
+        t_start = time.perf_counter()
         sleep_delay = 0
 
         if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
@@ -145,13 +232,30 @@ class EventManager:
 
         # Incident updates
         self.incident_update_add = {}
+        t_after_setup = time.perf_counter()
 
         # Process all current unreachable records
-        unreachables = Unreachable.objects.filter(status='Open', device__maintenance=False).exclude(device__hibernate=True).exclude(device__notify=False)
+        unreachables = Unreachable.objects.filter(
+            status='Open',
+            device__maintenance=False,
+        ).exclude(
+            device__hibernate=True,
+        ).exclude(
+            device__notify=False,
+        ).select_related('device')
 
-        if settings.MAX_UNREACHABLE and len(unreachables) >= settings.MAX_UNREACHABLE:
+        unreachable_count = unreachables.count()
+        t_after_unreachable_query = time.perf_counter()
+
+        if settings.MAX_UNREACHABLE and unreachable_count >= settings.MAX_UNREACHABLE:
             # Something may be wrong, stop processing summaries
-            logger.error(f"AKiPS is showing an excessive amount of devices down and summary updates are being halted.  {len(unreachables)} vs max allowed {settings.MAX_UNREACHABLE}")
+            logger.error(f"AKiPS is showing an excessive amount of devices down and summary updates are being halted.  {unreachable_count} vs max allowed {settings.MAX_UNREACHABLE}")
+            logger.info(
+                "AKIPS summary timing (aborted): setup=%.3fs query_unreachables=%.3fs total=%.3fs",
+                t_after_setup - t_start,
+                t_after_unreachable_query - t_after_setup,
+                time.perf_counter() - t_start,
+            )
             finish_time = timezone.now()
             logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
             return None
@@ -169,24 +273,45 @@ class EventManager:
                 # Handle Special device groupings
                 self.update_special(now, unreachable)
             time.sleep(sleep_delay)
+            t_after_unreachable_processing = time.perf_counter()
 
         # Process all ups on battery
-        ups_on_battery = Status.objects.filter(attribute='UPS-MIB.upsOutputSource',value='battery',device__maintenance=False).exclude(device__hibernate=True).exclude(device__notify=False)
+        ups_on_battery = Status.objects.filter(
+            attribute='UPS-MIB.upsOutputSource',
+            value='battery',
+            device__maintenance=False,
+        ).exclude(
+            device__hibernate=True,
+        ).exclude(
+            device__notify=False,
+        ).select_related('device')
         for ups in ups_on_battery:
             logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
             self.update_tier_battery(now, ups)
             self.update_building_battery(now, ups)
+        t_after_battery_processing = time.perf_counter()
 
-        # Calculate summary counts
-        summaries = Summary.objects.filter(status='Open')
+        # Calculate summary counts using precomputed aggregates to reduce query volume
+        summaries = list(Summary.objects.filter(status='Open'))
+        summary_ids = [summary.id for summary in summaries]
+        summary_count_data = self._build_summary_count_data(summary_ids)
+        summary_capacity_data = self._build_summary_capacity_data()
+        t_after_summary_precompute = time.perf_counter()
         for summary in summaries:
-            self.update_summary_count(now, summary)
+            self.update_summary_count(
+                now,
+                summary,
+                summary_count_data.get(summary.id),
+                summary_capacity_data,
+            )
             time.sleep(sleep_delay)
+        t_after_summary_updates = time.perf_counter()
 
         # Close building type events open with no down devices
         #Summary.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
         five_minutes_ago = now - timedelta(minutes=5)
         Summary.objects.filter(status='Open').exclude(last_refresh__gte=five_minutes_ago).update(status='Closed')
+        t_after_close_stale = time.perf_counter()
 
         if self.update_incident_tickets:
             # logger.info("servicenow new {}".format(sn_update_add))
@@ -199,6 +324,20 @@ class EventManager:
                 message = render_to_string('akips/incident_status_update.txt',context)
                 self.tdx.update_ticket(number, message)
                 logger.info(f"Updating incident {number} for new unreachables {u_list}")
+        t_after_incident_updates = time.perf_counter()
+
+        logger.info(
+            "AKIPS summary timing: setup=%.3fs query_unreachables=%.3fs process_unreachables=%.3fs process_battery=%.3fs precompute_counts=%.3fs update_summaries=%.3fs close_stale=%.3fs incident_updates=%.3fs total=%.3fs",
+            t_after_setup - t_start,
+            t_after_unreachable_query - t_after_setup,
+            t_after_unreachable_processing - t_after_unreachable_query,
+            t_after_battery_processing - t_after_unreachable_processing,
+            t_after_summary_precompute - t_after_battery_processing,
+            t_after_summary_updates - t_after_summary_precompute,
+            t_after_close_stale - t_after_summary_updates,
+            t_after_incident_updates - t_after_close_stale,
+            t_after_incident_updates - t_start,
+        )
 
         finish_time = timezone.now()
         logger.info("AKIPS summary refresh runtime {}".format(finish_time - now))
@@ -248,11 +387,7 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,c_summary))
             c_summary.unreachables.add(unreachable)
-            if c_summary.tdx_incident:
-                if c_summary.tdx_incident in self.incident_update_add:
-                    self.incident_update_add[c_summary.tdx_incident].append(unreachable)
-                else:
-                    self.incident_update_add[c_summary.tdx_incident] = [unreachable]
+            self._record_unreachable_for_incident(c_summary, unreachable)
 
     def update_tier(self, now, unreachable):
         ''' Update Tier summary for default unreachable network device '''
@@ -300,11 +435,7 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,t_summary))
             t_summary.unreachables.add(unreachable)
-            if t_summary.tdx_incident:
-                if t_summary.tdx_incident in self.incident_update_add:
-                    self.incident_update_add[t_summary.tdx_incident].append(unreachable)
-                else:
-                    self.incident_update_add[t_summary.tdx_incident] = [unreachable]
+            self._record_unreachable_for_incident(t_summary, unreachable)
 
     def update_building(self, now, unreachable):
         ''' Update summary for building of unreachable device '''
@@ -356,11 +487,7 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,b_summary))
             b_summary.unreachables.add(unreachable)
-            if b_summary.tdx_incident:
-                if b_summary.tdx_incident in self.incident_update_add:
-                    self.incident_update_add[b_summary.tdx_incident].append(unreachable)
-                else:
-                    self.incident_update_add[b_summary.tdx_incident] = [unreachable]
+            self._record_unreachable_for_incident(b_summary, unreachable)
 
     def update_special(self, now, unreachable):
         ''' Update summary for non critical and non default unreachable device '''
@@ -401,11 +528,7 @@ class EventManager:
         else:
             logger.debug("Unreachable {} is new to summary {}".format(unreachable,s_summary))
             s_summary.unreachables.add(unreachable)
-            if s_summary.tdx_incident:
-                if s_summary.tdx_incident in self.incident_update_add:
-                    self.incident_update_add[s_summary.tdx_incident].append(unreachable)
-                else:
-                    self.incident_update_add[s_summary.tdx_incident] = [unreachable]
+            self._record_unreachable_for_incident(s_summary, unreachable)
 
     def update_tier_battery(self, now, ups):
         ''' Update tier summary for ups on battery '''
@@ -503,40 +626,45 @@ class EventManager:
             b_summary.save()
         b_summary.batteries.add(ups)
 
-    def update_summary_count(self, now, summary):
+    def update_summary_count(self, now, summary, count_data=None, summary_capacity_data=None):
         ''' Calculate overall summary stats '''
         logger.debug("Updating counts on {}".format(summary))
 
-        count = {
-            'SWITCH': {},
-            'AP': {},
-            'UPS': {},
-            'UNKNOWN': {},
-            'TOTAL': {},
+        count_data = count_data or {
+            'SWITCH': 0,
+            'AP': 0,
+            'UPS': 0,
+            'UNKNOWN': 0,
+            'TOTAL': 0,
         }
-        unreachables = summary.unreachables.filter(status='Open')
-        for unreachable in unreachables:
-            if unreachable.device.maintenance is False:
-                if unreachable.device.type in ['SWITCH', 'AP', 'UPS']:
-                    count[unreachable.device.type][unreachable.device.name] = True
-                else:
-                    count['UNKNOWN'][unreachable.device.name] = True
-                count['TOTAL'][unreachable.device.name] = True
-        logger.debug("Counts {} are {}".format(summary.name, count))
+        summary_capacity_data = summary_capacity_data or {
+            'tier_max_count': {},
+            'building_max_count': {},
+            'specialty_max_count': {},
+            'tier_ups_battery': {},
+            'building_ups_battery': {},
+        }
+        tier_max_count = summary_capacity_data['tier_max_count']
+        building_max_count = summary_capacity_data['building_max_count']
+        specialty_max_count = summary_capacity_data['specialty_max_count']
+        tier_ups_battery = summary_capacity_data['tier_ups_battery']
+        building_ups_battery = summary_capacity_data['building_ups_battery']
+
+        logger.debug("Counts {} are {}".format(summary.name, count_data))
 
         if summary.type == 'Distribution':
-            summary.max_count = Device.objects.filter(tier=summary.name).count()
-            summary.ups_battery = Status.objects.filter(device__tier=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
+            summary.max_count = tier_max_count.get(summary.name, 0)
+            summary.ups_battery = tier_ups_battery.get(summary.name, 0)
         elif summary.type == 'Building':
-            summary.max_count = Device.objects.filter(building_name=summary.name).count()
-            summary.ups_battery = Status.objects.filter(device__building_name=summary.name,attribute='UPS-MIB.upsOutputSource',value='battery').count()
-        elif summary.type == 'Special':
-            summary.max_count = Device.objects.filter(group=summary.name).count()
+            summary.max_count = building_max_count.get(summary.name, 0)
+            summary.ups_battery = building_ups_battery.get(summary.name, 0)
+        elif summary.type == 'Specialty':
+            summary.max_count = specialty_max_count.get(summary.name, 0)
 
-        summary.switch_count = len(count['SWITCH'].keys())
-        summary.ap_count = len(count['AP'].keys())
-        summary.ups_count = len(count['UPS'].keys())
-        total_count = len(count['TOTAL'].keys())
+        summary.switch_count = count_data['SWITCH']
+        summary.ap_count = count_data['AP']
+        summary.ups_count = count_data['UPS']
+        total_count = count_data['TOTAL']
         if summary.max_count == 0:
             percent_down = 0
         else:
