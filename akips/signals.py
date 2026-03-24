@@ -18,6 +18,10 @@ CACHE_KEYS = {
     'bldg_card': 'bldg_card_data',
     'spec_card': 'spec_card_data',
     'trap_card': 'trap_card_data',
+    'crit_card_json': 'crit_card_json_data',
+    'bldg_card_json': 'bldg_card_json_data',
+    'spec_card_json': 'spec_card_json_data',
+    'trap_card_json': 'trap_card_json_data',
     'chart_data': 'chart_data',
 }
 

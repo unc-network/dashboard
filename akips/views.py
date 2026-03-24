@@ -1,6 +1,7 @@
 import logging
 import json
 import re
+import hashlib
 from datetime import datetime, timedelta
 from secrets import compare_digest
 import math
@@ -188,27 +189,172 @@ CARD_REFRESH_CONFIG = {
     'crit_card': {
         'template_name': 'akips/card_refresh_crit.html',
         'cache_key': 'crit_card_data',
-        'queryset': lambda: Summary.objects.filter(type='Critical', status='Open').order_by('name'),
+        'data_cache_key': 'crit_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type='Critical', status='Open').select_related('sn_incident').prefetch_related('unreachables__device').order_by('name'),
         'context_key': 'summaries',
     },
     'bldg_card': {
         'template_name': 'akips/card_refresh_bldg.html',
         'cache_key': 'bldg_card_data',
-        'queryset': lambda: Summary.objects.filter(type__in=['Distribution', 'Building'], status='Open').order_by('tier', '-type', 'name'),
+        'data_cache_key': 'bldg_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Distribution', 'Building'], status='Open').select_related('sn_incident').order_by('tier', '-type', 'name'),
         'context_key': 'summaries',
     },
     'spec_card': {
         'template_name': 'akips/card_refresh_special.html',
         'cache_key': 'spec_card_data',
-        'queryset': lambda: Summary.objects.filter(type__in=['Specialty'], status='Open').order_by('name'),
+        'data_cache_key': 'spec_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Specialty'], status='Open').select_related('sn_incident').order_by('name'),
         'context_key': 'summaries',
     },
     'trap_card': {
         'template_name': 'akips/card_refresh_trap.html',
         'cache_key': 'trap_card_data',
-        'queryset': lambda: Trap.objects.filter(status='Open').order_by('-dup_last', '-tt'),
+        'data_cache_key': 'trap_card_json_data',
+        'queryset': lambda: Trap.objects.filter(status='Open').select_related('device', 'sn_incident').order_by('-dup_last', '-tt'),
         'context_key': 'traps',
     },
+}
+
+
+def _fmt_dt(value):
+    if not value:
+        return ''
+    return timezone.localtime(value).strftime('%m-%d %H:%M:%S')
+
+
+def _summary_incident(summary):
+    if summary.tdx_incident:
+        return {
+            'id': str(summary.tdx_incident),
+            'url': f"https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={summary.tdx_incident}",
+        }
+    if summary.sn_incident:
+        sn_number = str(summary.sn_incident)
+        return {
+            'id': sn_number,
+            'url': f"https://{summary.sn_incident.instance}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={sn_number}",
+        }
+    return None
+
+
+def _serialize_summary_base(summary):
+    return {
+        'id': summary.id,
+        'summary_url': reverse('summary', args=[summary.id]),
+        'ack_url': reverse('ack', args=[summary.id]),
+        'comment_url': reverse('set_comment', args=[summary.id]),
+        'ack': summary.ack,
+        'ack_by': summary.ack_by or '',
+        'ack_at': _fmt_dt(summary.ack_at),
+        'comment': summary.comment or '',
+        'last_event': _fmt_dt(summary.last_event),
+        'trend': summary.trend or '',
+        'incident': _summary_incident(summary),
+    }
+
+
+def _serialize_crit_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        first_unreachable = summary.unreachables.all().first()
+        device = first_unreachable.device if first_unreachable else None
+        row.update({
+            'device_name': device.sysName if device else summary.name,
+            'device_ip4addr': device.ip4addr if device else '',
+            'device_descr': device.sysDescr if device else '',
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+    }
+
+
+def _serialize_bldg_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        row.update({
+            'type': summary.type,
+            'name': summary.name,
+            'switch_count': summary.switch_count,
+            'ap_count': summary.ap_count,
+            'ups_count': summary.ups_count,
+            'ups_battery': summary.ups_battery,
+            'percent_down': round((summary.percent_down or 0) * 100),
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+        'empty_message': 'Tier 1 and Building events are currently clear',
+    }
+
+
+def _serialize_spec_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        row.update({
+            'name': summary.name,
+            'total_count': summary.total_count,
+            'percent_down': round((summary.percent_down or 0) * 100),
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+    }
+
+
+def _trap_incident(trap):
+    if trap.tdx_incident:
+        return {
+            'id': str(trap.tdx_incident),
+            'url': f"https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={trap.tdx_incident}",
+        }
+    if trap.sn_incident:
+        sn_number = str(trap.sn_incident)
+        return {
+            'id': sn_number,
+            'url': f"https://{trap.sn_incident.instance}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={sn_number}",
+        }
+    return None
+
+
+def _serialize_trap_data(traps):
+    rows = []
+    for trap in traps[:30]:
+        rows.append({
+            'id': trap.id,
+            'ack': trap.ack,
+            'ack_by': trap.ack_by or '',
+            'ack_at': _fmt_dt(trap.ack_at),
+            'ack_url': reverse('ack_trap', args=[trap.id]),
+            'device_name': trap.device.sysName,
+            'device_url': reverse('device', args=[trap.device.name]),
+            'trap_oid': trap.trap_oid,
+            'trap_url': reverse('trap', args=[trap.id]),
+            'dup_count': trap.dup_count,
+            'dup_last_iso': trap.dup_last.isoformat() if trap.dup_last else '',
+            'last_event': _fmt_dt(trap.dup_last or trap.tt),
+            'incident': _trap_incident(trap),
+            'clear_url': reverse('clear_trap', args=[trap.id]),
+        })
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+        'total_open': len(traps),
+    }
+
+
+CARD_SERIALIZERS = {
+    'crit_card': _serialize_crit_data,
+    'bldg_card': _serialize_bldg_data,
+    'spec_card': _serialize_spec_data,
+    'trap_card': _serialize_trap_data,
 }
 
 
@@ -229,14 +375,31 @@ def render_card_fragment(card_id, cache_timeout=60):
     return html
 
 
+def get_card_data(card_id, cache_timeout=60):
+    """Return one dashboard card data payload with cache reuse."""
+    config = CARD_REFRESH_CONFIG[card_id]
+    cached_data = cache.get(config['data_cache_key'])
+    if cached_data is not None:
+        logger.debug(f"Cache HIT for {config['data_cache_key']}")
+        return cached_data
+
+    logger.debug(f"Cache MISS for {config['data_cache_key']}")
+    data = CARD_SERIALIZERS[card_id](list(config['queryset']()))
+    cache.set(config['data_cache_key'], data, cache_timeout)
+    return data
+
+
 class DashboardCardsView(LoginRequiredMixin, View):
-    ''' Return all dashboard cards in one request '''
+    ''' Return all dashboard cards as JSON in one request '''
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
-        result = {'cards': {}}
+        result = {'cards': {}, 'signatures': {}}
         for card_id in CARD_REFRESH_CONFIG:
-            result['cards'][card_id] = render_card_fragment(card_id)
+            card_data = get_card_data(card_id)
+            result['cards'][card_id] = card_data
+            card_json = json.dumps(card_data, sort_keys=True, default=str)
+            result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
 
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})

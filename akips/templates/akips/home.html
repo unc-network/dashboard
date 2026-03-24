@@ -202,9 +202,193 @@
             }
         });
     }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderTrendCell(trend) {
+        if (trend === 'New' || trend === 'Increasing') {
+            return '<td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="' + escapeHtml(trend) + '"></i></td>';
+        }
+        if (trend === 'Decreasing') {
+            return '<td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-down" title="Decreasing"></i></td>';
+        }
+        if (trend === 'Recovered') {
+            return '<td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up" title="Recovered"></i></td>';
+        }
+        return '<td class="text-center akips_trend d-none d-md-table-cell"></td>';
+    }
+
+    function renderIncidentCell(incident, eventValue, extraClass) {
+        var klass = extraClass || '';
+        if (incident && incident.url && incident.id) {
+            return '<td class="text-center text-primary ' + klass + '"><a href="' + escapeHtml(incident.url) + '" target="_blank">' + escapeHtml(incident.id) + '</a></td>';
+        }
+        return '<td class="text-center text-primary ' + klass + '"><div class="form-check"><input type="checkbox" class="form-check-input" name="event" value="' + escapeHtml(eventValue) + '"></div></td>';
+    }
+
+    function renderSummaryComment(row) {
+        if (row.comment) {
+            return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><br>' + escapeHtml(row.comment) + '</span>';
+        }
+        return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><i class="fas fa-comment-medical text-primary"></i></span>';
+    }
+
+    function renderCritCard(card) {
+        var rows = card.rows || [];
+        var html = '<table class="table table-hover table-sm"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th>Last Event</th><th>Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            html += '<tr>' +
+                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
+                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.device_name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td>' + escapeHtml(row.device_ip4addr) + '</td>' +
+                '<td><span class="d-inline-block text-truncate" style="max-width: 200px">' + escapeHtml(row.device_descr) + '</span></td>' +
+                '<td>' + escapeHtml(row.last_event) + '</td>' +
+                renderTrendCell(row.trend) +
+                renderIncidentCell(row.incident, 'summary_' + row.id, '') +
+                '</tr>';
+        }
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderBldgCard(card) {
+        var rows = card.rows || [];
+        var html = '<table class="table table-hover table-sm"><thead><tr><th>Ack</th><th>Tier1 / Building</th><th class="d-none d-md-table-cell">Switch</th><th class="d-none d-md-table-cell">AP</th><th class="d-none d-md-table-cell">UPS</th><th class="d-none d-md-table-cell">% Affected</th><th>Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var isDistribution = row.type === 'Distribution';
+            var trClass = isDistribution ? ' class="bg-light"' : '';
+            var ackCell = '<td></td>';
+            if (!isDistribution) {
+                var ackChecked = row.ack ? ' checked' : '';
+                var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+                ackCell = '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+
+            var nameIcon = isDistribution ? '<i class="fas fa-caret-down"></i>' : '<i class="fas fa-building"></i>';
+            var upsBatteryIcon = row.ups_battery > 0 ? ' <i class="fas fa-battery-three-quarters text-danger"></i>' : '';
+            var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
+
+            html += '<tr' + trClass + '>' +
+                ackCell +
+                '<td><span class="' + (isDistribution ? 'font-weight-bold' : '') + ' mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + nameIcon + ' ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td class="d-none d-md-table-cell">' + escapeHtml(row.switch_count) + '</td>' +
+                '<td class="d-none d-md-table-cell">' + escapeHtml(row.ap_count) + '</td>' +
+                '<td class="d-none d-md-table-cell">' + escapeHtml(row.ups_count) + upsBatteryIcon + '</td>' +
+                '<td class="d-none d-md-table-cell">' + percentLabel + '</td>' +
+                '<td>' + escapeHtml(row.last_event) + '</td>' +
+                renderTrendCell(row.trend) +
+                renderIncidentCell(row.incident, 'summary_' + row.id, 'd-none d-md-table-cell') +
+                '</tr>';
+        }
+
+        if (!rows.length) {
+            html += '<tr><td colspan="10" class="text-center">' + escapeHtml(card.empty_message || 'Tier 1 and Building events are currently clear') + '</td></tr>';
+        }
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderSpecCard(card) {
+        var rows = card.rows || [];
+        var html = '<table class="table table-hover table-sm"><thead><tr><th>Ack</th><th>Special Grouping</th><th>All</th><th>% Affected</th><th>Last Event</th><th>Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
+            html += '<tr>' +
+                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
+                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-building"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td>' + escapeHtml(row.total_count) + '</td>' +
+                '<td>' + percentLabel + '</td>' +
+                '<td>' + escapeHtml(row.last_event) + '</td>' +
+                renderTrendCell(row.trend) +
+                renderIncidentCell(row.incident, 'summary_' + row.id, '') +
+                '</tr>';
+        }
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderTrapCard(card) {
+        var rows = card.rows || [];
+        var html = '<table class="table table-hover table-sm m-0"><thead><tr><th>Ack</th><th>Device</th><th>Trap</th><th>Last</th><th>Incident</th><th>Clear</th></tr></thead><tbody>';
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            var dupBadge = '';
+            if (row.dup_count > 0) {
+                dupBadge = '<span class="float-right badge bg-primary dup-data" data-last="' + escapeHtml(row.dup_last_iso) + '">' + escapeHtml(row.dup_count) + ' dup</span>';
+            }
+            html += '<tr>' +
+                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
+                '<td><a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a></td>' +
+                '<td><a href="' + escapeHtml(row.trap_url) + '">' + escapeHtml(row.trap_oid) + '</a>' + dupBadge + '</td>' +
+                '<td>' + escapeHtml(row.last_event) + '</td>' +
+                renderIncidentCell(row.incident, 'trap_' + row.id, '') +
+                '<td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button></td>' +
+                '</tr>';
+        }
+        html += '</tbody></table>';
+        if (card.total_open > 30) {
+            html += "<p class=\"text-center\">Only displaying 30 of the most recent " + escapeHtml(card.total_open) + " open traps. <a href=\"{% url 'recent_traps' %}\">View all traps.</a></p>";
+        }
+        return html;
+    }
+
+    function renderCardHtml(cardId, card) {
+        if (cardId === 'crit_card') {
+            return renderCritCard(card);
+        }
+        if (cardId === 'bldg_card') {
+            return renderBldgCard(card);
+        }
+        if (cardId === 'spec_card') {
+            return renderSpecCard(card);
+        }
+        if (cardId === 'trap_card') {
+            return renderTrapCard(card);
+        }
+        return '';
+    }
+
     function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
         var cardsUrl = $('#myForm').data('cards-url');
+        var signatures = window.dashboardCardSignatures || {};
+        window.dashboardCardSignatures = signatures;
+        var cardSignatureDebug = false;
+        var changedCards = [];
+
+        // Enable debug logging with either:
+        // 1) URL param: ?cardSigDebug=1
+        // 2) localStorage: dashboardCardSignatureDebug=1
+        if (window.location.search.indexOf('cardSigDebug=1') !== -1) {
+            cardSignatureDebug = true;
+        }
+        try {
+            if (window.localStorage && window.localStorage.getItem('dashboardCardSignatureDebug') === '1') {
+                cardSignatureDebug = true;
+            }
+        } catch (e) {
+            // Ignore localStorage access errors
+        }
 
         // Close any open popovers before refreshing the display
         $(".popover").popover('hide');
@@ -222,19 +406,33 @@
             data: {},
             success: function (result) {
                 var cards = result['cards'] || {};
+                var newSignatures = result['signatures'] || {};
                 $('.event-card').each(function () {
                     var id = this.id;
                     var body = $(this).find('.card-body');
-                    var html = cards[id] || '';
-                    body.html(html);
+                    var card = cards[id] || { rows: [], has_rows: false };
+                    var signature = newSignatures[id] || '';
 
-                    var len = $('#' + id + ' tr').length;
-                    if (len < 2) {
-                        $('#' + id).hide();
-                    } else {
+                    if (signatures[id] !== signature) {
+                        body.html(renderCardHtml(id, card));
+                        changedCards.push(id);
+                        signatures[id] = signature;
+                    }
+
+                    if (id === 'bldg_card' || card.has_rows) {
                         $('#' + id).show();
+                    } else {
+                        $('#' + id).hide();
                     }
                 });
+
+                if (cardSignatureDebug) {
+                    if (changedCards.length > 0) {
+                        console.log('Dashboard card signatures changed:', changedCards.join(', '));
+                    } else {
+                        console.log('Dashboard card signatures unchanged');
+                    }
+                }
 
                 refresh_duplicates();
             },
@@ -248,6 +446,7 @@
             },
             complete: function () {
                 $('.event-card .card-body').each(function () {
+                    $(this).find('.overlay').remove();
                     $(this).removeData('previous-html');
                 });
             }
