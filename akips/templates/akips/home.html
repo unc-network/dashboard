@@ -96,6 +96,38 @@
         position: static;
         margin: 0;
     }
+    .event-card .bldg-parent-row {
+        background: #edf3f9;
+    }
+    .event-card .bldg-parent-row td {
+        font-weight: 700;
+    }
+    .event-card .bldg-group-toggle {
+        border: 0;
+        background: transparent;
+        color: #0f5f8d;
+        padding: 0 0.25rem 0 0;
+        cursor: pointer;
+    }
+    .event-card .bldg-group-toggle:focus {
+        outline: none;
+    }
+    .event-card .bldg-child-name {
+        display: inline-flex;
+        align-items: center;
+        padding-left: 1.15rem;
+        margin-right: 0.5rem;
+        position: relative;
+    }
+    .event-card .bldg-child-name:before {
+        content: '';
+        position: absolute;
+        left: 0.45rem;
+        top: 50%;
+        width: 0.45rem;
+        border-top: 1px solid var(--oc-border);
+        transform: translateY(-50%);
+    }
     .num-col {
         text-align: right;
         font-variant-numeric: tabular-nums;
@@ -117,6 +149,26 @@
     .ops-card-header .card-tools {
         margin-right: 0 !important;
         padding-right: 0.35rem;
+    }
+    .bldg-controls {
+        display: inline-flex;
+        gap: 0.25rem;
+        margin-right: 0.55rem;
+        vertical-align: middle;
+    }
+    .bldg-controls .btn {
+        line-height: 1;
+        padding: 0.14rem 0.36rem;
+        font-size: 0.72rem;
+        border-radius: 999px;
+        border-color: rgba(255, 255, 255, 0.92) !important;
+        color: #f7fcff !important;
+        background: rgba(10, 43, 65, 0.22) !important;
+    }
+    .bldg-controls .btn:hover,
+    .bldg-controls .btn:focus {
+        background: rgba(10, 43, 65, 0.34) !important;
+        color: #ffffff !important;
     }
     .header-action-buttons {
         display: flex;
@@ -222,9 +274,24 @@
         color: #74263a;
         border-color: #ffbdcb;
     }
+    body.theme-dark .bldg-controls .btn {
+        border-color: rgba(228, 242, 255, 0.9) !important;
+        color: #eef6ff !important;
+        background: rgba(17, 35, 58, 0.3) !important;
+    }
+    body.theme-dark .bldg-controls .btn:hover,
+    body.theme-dark .bldg-controls .btn:focus {
+        background: rgba(17, 35, 58, 0.45) !important;
+    }
     body.theme-dark .event-card tr.bg-light {
         background: #223042 !important;
         color: #dce8f5;
+    }
+    body.theme-dark .event-card .bldg-parent-row {
+        background: #25364a;
+    }
+    body.theme-dark .event-card .bldg-group-toggle {
+        color: #8fc7f0;
     }
     body.theme-dark .event-card td.bg-danger.akips_trend {
         background: #6a3a45 !important;
@@ -318,7 +385,7 @@
     <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
         <div class="card-header py-2 ops-card-header">
             <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span></h3>
-            <div class="card-tools card-meta">Refreshed <span id="bldg_card_updated">--:--:--</span></div>
+            <div class="card-tools card-meta"><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span>Refreshed <span id="bldg_card_updated">--:--:--</span></div>
         </div>
         <div class="card-body table-responsive p-0">
         </div>
@@ -561,11 +628,14 @@
 
     function renderBldgCard(card) {
         var rows = card.rows || [];
+        var allExpanded = window.bldgHierarchyExpanded !== false;
         var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        var currentGroup = '';
+        var groupCounter = 0;
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var isDistribution = row.type === 'Distribution';
-            var trClass = isDistribution ? ' class="bg-light"' : '';
+            var trClass = '';
             var ackCell = '<td></td>';
             if (!isDistribution) {
                 var ackChecked = row.ack ? ' checked' : '';
@@ -573,20 +643,37 @@
                 ackCell = '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
             }
 
-            var nameIcon = isDistribution ? '<i class="fas fa-caret-down"></i>' : '<i class="fas fa-building"></i>';
             var upsBatteryIcon = row.ups_battery > 0 ? ' <i class="fas fa-battery-three-quarters text-danger"></i>' : '';
             var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
+            var trendCell = renderTrendCell(row.trend);
+            var incidentCell = renderIncidentCell(row.incident, 'summary_' + row.id, 'd-none d-md-table-cell');
+            var nameCell = '';
+
+            if (isDistribution) {
+                groupCounter += 1;
+                currentGroup = 'bldg-group-' + groupCounter;
+                trClass = ' class="bldg-parent-row" data-group="' + currentGroup + '"';
+                nameCell = '<td><button type="button" class="bldg-group-toggle" data-group="' + currentGroup + '" aria-expanded="' + (allExpanded ? 'true' : 'false') + '" title="' + (allExpanded ? 'Collapse section' : 'Expand section') + '"><i class="fas ' + (allExpanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-layer-group"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
+                trendCell = '<td class="d-none d-md-table-cell"></td>';
+                incidentCell = '<td class="text-center d-none d-md-table-cell"></td>';
+            } else {
+                trClass = currentGroup ? ' class="bldg-child-row bldg-child-of-' + currentGroup + '"' : '';
+                if (!allExpanded) {
+                    trClass = trClass.replace('"', '" style="display:none"');
+                }
+                nameCell = '<td><span class="bldg-child-name"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
+            }
 
             html += '<tr' + trClass + '>' +
                 ackCell +
-                '<td><span class="' + (isDistribution ? 'font-weight-bold' : '') + ' mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + nameIcon + ' ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                nameCell +
                 '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.switch_count) + '</td>' +
                 '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.ap_count) + '</td>' +
                 '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.ups_count) + upsBatteryIcon + '</td>' +
                 '<td class="d-none d-md-table-cell num-col">' + percentLabel + '</td>' +
                 '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
-                renderTrendCell(row.trend) +
-                renderIncidentCell(row.incident, 'summary_' + row.id, 'd-none d-md-table-cell') +
+                trendCell +
+                incidentCell +
                 '</tr>';
         }
 
@@ -596,6 +683,19 @@
 
         html += '</tbody></table>';
         return html;
+    }
+
+    function setBldgGroupsExpanded(expanded) {
+        window.bldgHierarchyExpanded = expanded;
+        $('#bldg_card .bldg-group-toggle').each(function () {
+            $(this)
+                .attr('aria-expanded', expanded ? 'true' : 'false')
+                .attr('title', expanded ? 'Collapse section' : 'Expand section')
+                .find('i')
+                .toggleClass('fa-chevron-down', expanded)
+                .toggleClass('fa-chevron-right', !expanded);
+        });
+        $('#bldg_card .bldg-child-row').toggle(expanded);
     }
 
     function renderSpecCard(card) {
@@ -949,6 +1049,28 @@
             tr.fadeOut(400, function () {
                 tr.remove();
             });
+        });
+
+        // Collapse/expand hierarchy groups in Tier / Building card
+        $(document).on('click', '.bldg-group-toggle', function (e) {
+            e.preventDefault();
+            var group = $(this).data('group');
+            var expanded = $(this).attr('aria-expanded') === 'true';
+            var nextExpanded = !expanded;
+            $(this).attr('aria-expanded', nextExpanded ? 'true' : 'false');
+            $(this).attr('title', nextExpanded ? 'Collapse section' : 'Expand section');
+            $(this).find('i').toggleClass('fa-chevron-down', nextExpanded).toggleClass('fa-chevron-right', !nextExpanded);
+            $('.bldg-child-of-' + group).toggle(nextExpanded);
+        });
+
+        $('#bldg-expand-all').on('click', function (e) {
+            e.preventDefault();
+            setBldgGroupsExpanded(true);
+        });
+
+        $('#bldg-collapse-all').on('click', function (e) {
+            e.preventDefault();
+            setBldgGroupsExpanded(false);
         });
 
         // Bind to the document so dynamically added content will still work
