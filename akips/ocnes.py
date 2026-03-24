@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.utils import timezone
 from django.template.loader import render_to_string
 
@@ -116,6 +116,7 @@ class EventManager:
         """ Update current data for unreachable devices from AKiPS """
         logger.info("AKIPS unreachable refresh starting")
         now = timezone.now()
+        t_start = time.perf_counter()
         sleep_delay = 0
 
         if settings.OPENSHIFT_NAMESPACE == 'LOCAL':
@@ -126,19 +127,33 @@ class EventManager:
 
         # Combine all needed incident updates
         incident_update_cleared = {}
+        t_after_setup = time.perf_counter()
 
         akips = AKIPS()
         if mode == 'status':
             unreachables = akips.get_unreachable_status()
         else:
             unreachables = akips.get_unreachable()
-        logger.debug("unreachables: {}".format( len(unreachables) ))
+
+        unreachable_items = unreachables or {}
+        logger.debug("unreachables: {}".format(len(unreachable_items)))
+        t_after_fetch = time.perf_counter()
+
+        t_after_upsert = t_after_fetch
+        t_after_cleared_scan = t_after_fetch
+        t_after_cleanup = t_after_fetch
+
         if unreachables:
+            incoming_device_names = [entry.get('name') for entry in unreachable_items.values() if entry.get('name')]
+            device_map = {
+                device.name: device
+                for device in Device.objects.filter(name__in=incoming_device_names)
+            }
+
             for k, v in unreachables.items():
                 logger.debug("{}".format(v['name']))
-                try:
-                    device = Device.objects.get(name=v['name'])
-                except Device.DoesNotExist:
+                device = device_map.get(v['name'])
+                if not device:
                     logger.warning("Attempting to create unreachable data for unknown device {}".format(v['name']))
                     continue
 
@@ -166,10 +181,14 @@ class EventManager:
                     )
                     time.sleep(sleep_delay)
 
+            t_after_upsert = time.perf_counter()
+
             # Handle unreachables that have cleared and need notifications
-            cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now)
+            cleared_unreachables = Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).prefetch_related(
+                Prefetch('summary_set', queryset=Summary.objects.filter(sn_incident__isnull=False))
+            )
             for cleared in cleared_unreachables:
-                for summary in cleared.summary_set.filter(sn_incident__isnull=False):
+                for summary in cleared.summary_set.all():
                     logger.info("unreachable {} has cleared and was part of summary {}".format(cleared,summary))
                     if summary.tdx_incident in incident_update_cleared:
                         # sn_update_cleared[ summary.sn_incident.number ].append( cleared )
@@ -177,6 +196,8 @@ class EventManager:
                     else:
                         # sn_update_cleared[ summary.sn_incident.number ] = [ cleared ]
                         incident_update_cleared[ summary.tdx_incident ] = [ cleared ]
+
+            t_after_cleared_scan = time.perf_counter()
 
             # A down device may have moved into AKiPS maintenance mode after the fact.
             # They never clear since AKiPS doesn't poll them. Close the OCNES unreachable.
@@ -199,6 +220,8 @@ class EventManager:
             # Remove stale entries
             Unreachable.objects.filter(status='Open').exclude(last_refresh__gte=now).update(status='Closed')
 
+            t_after_cleanup = time.perf_counter()
+
         if self.update_incident_tickets:
             # logger.info("incident cleared {}".format(incident_update_cleared))
             for number, u_list in incident_update_cleared.items():
@@ -210,6 +233,19 @@ class EventManager:
                 message = render_to_string('akips/incident_status_update.txt',ctx)
                 self.tdx.update_ticket(number, message)
                 logger.info(f"Updating incident {number} for cleared unreachables {u_list}")
+
+            t_after_incident_updates = time.perf_counter()
+
+            logger.info(
+                "AKIPS unreachable timing: setup=%.3fs fetch_akips=%.3fs upsert_unreachables=%.3fs scan_cleared=%.3fs cleanup=%.3fs incident_updates=%.3fs total=%.3fs",
+                t_after_setup - t_start,
+                t_after_fetch - t_after_setup,
+                t_after_upsert - t_after_fetch,
+                t_after_cleared_scan - t_after_upsert,
+                t_after_cleanup - t_after_cleared_scan,
+                t_after_incident_updates - t_after_cleanup,
+                t_after_incident_updates - t_start,
+            )
 
         finish_time = timezone.now()
         logger.info("AKIPS unreachable refresh runtime {}".format(finish_time - now))
