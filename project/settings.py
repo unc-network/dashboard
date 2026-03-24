@@ -117,11 +117,16 @@ DATABASES = {
 # https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-# Django's cache framework
+# Django cache framework
+# Keep cache traffic separate from Celery broker traffic by using
+# a dedicated Redis DB/index for Django cache (default /1).
+DJANGO_CACHE_URL = os.getenv('DJANGO_CACHE_URL', 'redis://127.0.0.1:6379/1')
+DJANGO_CACHE_KEY_PREFIX = os.getenv('DJANGO_CACHE_KEY_PREFIX', 'dashboard')
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'my_cache_table',
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': DJANGO_CACHE_URL,
+        'KEY_PREFIX': DJANGO_CACHE_KEY_PREFIX,
     }
 }
 
@@ -310,6 +315,7 @@ ADMINS = [
 GROUPER_PREFIX='unc:app:its:net:routerproxy'
 
 # CELERY related settings
+# Keep Celery broker on its own Redis DB/index (default /0).
 BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0') 
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'

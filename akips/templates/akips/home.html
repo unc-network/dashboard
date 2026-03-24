@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="get" id="myForm" action="{% url 'create_incident' %}">
+<form method="get" id="myForm" action="{% url 'create_incident' %}" data-cards-url="{% url 'dashboard_cards' %}">
     <div id="chart" class="card">
         <div class="card-header">
             <h3 class="card-title">New Event Trends</h3>
@@ -204,41 +204,53 @@
     }
     function refresh_cards() {
         var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
-        var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
+        var cardsUrl = $('#myForm').data('cards-url');
 
         // Close any open popovers before refreshing the display
         $(".popover").popover('hide');
 
-        $('.event-card').each(function (index) {
-            var id = this.id;
-            $('#' + id ).show();
-            var url = $(this).data("url");
-            var body = $(this).find(".card-body");
-            var body_clone = body.clone();
+        $('.event-card').each(function () {
+            var body = $(this).find('.card-body');
+            body.data('previous-html', body.html());
             body.append(overlay);
+        });
 
-            $.ajax({
-                type: "GET",
-                url: url,
-                dataType: "html",
-                data: {},
-                success: function (result, status, xhr) {
-                    body.html(result);
+        $.ajax({
+            type: 'GET',
+            url: cardsUrl,
+            dataType: 'json',
+            data: {},
+            success: function (result) {
+                var cards = result['cards'] || {};
+                $('.event-card').each(function () {
+                    var id = this.id;
+                    var body = $(this).find('.card-body');
+                    var html = cards[id] || '';
+                    body.html(html);
+
                     var len = $('#' + id + ' tr').length;
-                    //console.log("Table " + id + " row count " + len);
-                    if ( len < 2 ) {
-                        $('#' + id ).hide();
-                        // body.append(water);
+                    if (len < 2) {
+                        $('#' + id).hide();
+                    } else {
+                        $('#' + id).show();
                     }
-                    if (id == "trap_card") {
-                        refresh_duplicates();
-                    }
-                },
-                error: function (xhr, status, error) {
-                    body.replaceWith(body_clone);
+                });
+
+                refresh_duplicates();
+            },
+            error: function (xhr, status, error) {
+                $('.event-card').each(function () {
+                    var body = $(this).find('.card-body');
+                    var previous = body.data('previous-html') || '';
+                    body.html(previous);
                     body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
-                }
-            });
+                });
+            },
+            complete: function () {
+                $('.event-card .card-body').each(function () {
+                    $(this).removeData('previous-html');
+                });
+            }
         });
 
         // voice_alert();

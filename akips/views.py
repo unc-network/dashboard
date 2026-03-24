@@ -183,6 +183,65 @@ class UserPreferences(LoginRequiredMixin, View):
 
         return render(request, self.template_name, context=context)
 
+
+CARD_REFRESH_CONFIG = {
+    'crit_card': {
+        'template_name': 'akips/card_refresh_crit.html',
+        'cache_key': 'crit_card_data',
+        'queryset': lambda: Summary.objects.filter(type='Critical', status='Open').order_by('name'),
+        'context_key': 'summaries',
+    },
+    'bldg_card': {
+        'template_name': 'akips/card_refresh_bldg.html',
+        'cache_key': 'bldg_card_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Distribution', 'Building'], status='Open').order_by('tier', '-type', 'name'),
+        'context_key': 'summaries',
+    },
+    'spec_card': {
+        'template_name': 'akips/card_refresh_special.html',
+        'cache_key': 'spec_card_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Specialty'], status='Open').order_by('name'),
+        'context_key': 'summaries',
+    },
+    'trap_card': {
+        'template_name': 'akips/card_refresh_trap.html',
+        'cache_key': 'trap_card_data',
+        'queryset': lambda: Trap.objects.filter(status='Open').order_by('-dup_last', '-tt'),
+        'context_key': 'traps',
+    },
+}
+
+
+def render_card_fragment(card_id, cache_timeout=60):
+    """Render one dashboard card fragment with cache reuse."""
+    config = CARD_REFRESH_CONFIG[card_id]
+    cached_html = cache.get(config['cache_key'])
+    if cached_html is not None:
+        logger.debug(f"Cache HIT for {config['cache_key']}")
+        return cached_html
+
+    logger.debug(f"Cache MISS for {config['cache_key']}")
+    context = {
+        config['context_key']: config['queryset'](),
+    }
+    html = render_to_string(config['template_name'], context)
+    cache.set(config['cache_key'], html, cache_timeout)
+    return html
+
+
+class DashboardCardsView(LoginRequiredMixin, View):
+    ''' Return all dashboard cards in one request '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        result = {'cards': {}}
+        for card_id in CARD_REFRESH_CONFIG:
+            result['cards'][card_id] = render_card_fragment(card_id)
+
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        return JsonResponse(result)
+
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_crit.html'
@@ -190,19 +249,7 @@ class CritCard(LoginRequiredMixin, View):
     cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        # Try to get from cache first
-        cached_html = cache.get(self.cache_key)
-        if cached_html is not None:
-            logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
-
-        logger.debug(f"Cache MISS for {self.cache_key}")
-        context = {}
-        context['summaries'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
-        html = render_to_string(self.template_name, context)
-        
-        # Store in cache
-        cache.set(self.cache_key, html, self.cache_timeout)
+        html = render_card_fragment('crit_card', cache_timeout=self.cache_timeout)
         return HttpResponse(html, content_type='text/html')
 
 
@@ -236,20 +283,7 @@ class BuildingCard(LoginRequiredMixin, View):
     cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        # Try to get from cache first
-        cached_html = cache.get(self.cache_key)
-        if cached_html is not None:
-            logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
-
-        logger.debug(f"Cache MISS for {self.cache_key}")
-        context = {}
-        types = ['Distribution', 'Building']
-        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
-        html = render_to_string(self.template_name, context)
-        
-        # Store in cache
-        cache.set(self.cache_key, html, self.cache_timeout)
+        html = render_card_fragment('bldg_card', cache_timeout=self.cache_timeout)
         return HttpResponse(html, content_type='text/html')
 
 class SpecialtyCard(LoginRequiredMixin, View):
@@ -259,20 +293,7 @@ class SpecialtyCard(LoginRequiredMixin, View):
     cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        # Try to get from cache first
-        cached_html = cache.get(self.cache_key)
-        if cached_html is not None:
-            logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
-
-        logger.debug(f"Cache MISS for {self.cache_key}")
-        context = {}
-        types = ['Specialty']
-        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
-        html = render_to_string(self.template_name, context)
-        
-        # Store in cache
-        cache.set(self.cache_key, html, self.cache_timeout)
+        html = render_card_fragment('spec_card', cache_timeout=self.cache_timeout)
         return HttpResponse(html, content_type='text/html')
 
 class TrapCard(LoginRequiredMixin, View):
@@ -282,20 +303,7 @@ class TrapCard(LoginRequiredMixin, View):
     cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        # Try to get from cache first
-        cached_html = cache.get(self.cache_key)
-        if cached_html is not None:
-            logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
-
-        logger.debug(f"Cache MISS for {self.cache_key}")
-        context = {}
-        context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-dup_last','-tt')
-        html = render_to_string(self.template_name, context)
-        
-        # Store in cache
-        cache.set(self.cache_key, html, self.cache_timeout)
+        html = render_card_fragment('trap_card', cache_timeout=self.cache_timeout)
         return HttpResponse(html, content_type='text/html')
 
 

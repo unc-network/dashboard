@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 # Cache key constants
 CACHE_KEYS = {
     'crit_card': 'crit_card_data',
+    'tier_card': 'tier_card_data',
     'bldg_card': 'bldg_card_data',
     'spec_card': 'spec_card_data',
     'trap_card': 'trap_card_data',

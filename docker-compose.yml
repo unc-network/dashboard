@@ -95,7 +95,6 @@ services:
       - |
         echo "Migrating the database before starting the server..."
         python manage.py migrate
-        python manage.py createcachetable
         python manage.py collectstatic --noinput
         # Start Gunicorn processes
         echo "Starting Gunicorn..."
