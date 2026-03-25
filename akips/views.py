@@ -20,8 +20,8 @@ from django.template.loader import render_to_string
 from django.contrib import messages
 from django.utils import timezone
 
-#from django.db.models import Count
-#from django.db.models.functions import TruncHour
+from django.db.models import Count
+from django.db.models.functions import TruncHour
 
 #from django.utils.decorators import method_decorator
 from django.db.transaction import atomic, non_atomic_requests
@@ -83,6 +83,9 @@ class About(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        now = timezone.now()
+        since_24h = now - timedelta(hours=24)
+        since_7d = now - timedelta(days=7)
 
         try:
             last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
@@ -96,6 +99,96 @@ class About(LoginRequiredMixin, View):
             last_device_sync = None
         context['last_akips_sync'] = last_device_sync
 
+        def get_task_duration(task):
+            if not task or not task.date_created or not task.date_done:
+                return 'In progress'
+            return pretty_duration((task.date_done - task.date_created).total_seconds())
+
+        context['last_akips_sync_duration'] = get_task_duration(last_device_sync)
+        context['last_inventory_sync_duration'] = get_task_duration(last_inventory_sync)
+
+        data_points = [
+            last_device_sync.date_done if last_device_sync and last_device_sync.date_done else None,
+            last_inventory_sync.date_done if last_inventory_sync and last_inventory_sync.date_done else None,
+        ]
+        latest_data_point = max([d for d in data_points if d is not None], default=None)
+        if latest_data_point:
+            freshness_seconds = max((now - latest_data_point).total_seconds(), 0)
+            context['data_freshness'] = pretty_duration(freshness_seconds)
+            if freshness_seconds <= 1800:
+                context['freshness_level'] = 'success'
+                context['freshness_label'] = 'Fresh'
+            elif freshness_seconds <= 7200:
+                context['freshness_level'] = 'warning'
+                context['freshness_label'] = 'Aging'
+            else:
+                context['freshness_level'] = 'danger'
+                context['freshness_label'] = 'Stale'
+            context['last_data_update'] = latest_data_point
+        else:
+            context['data_freshness'] = 'Unknown'
+            context['freshness_level'] = 'secondary'
+            context['freshness_label'] = 'Unknown'
+            context['last_data_update'] = None
+
+        context['device_total'] = Device.objects.count()
+        context['device_active'] = Device.objects.filter(maintenance=False, hibernate=False).count()
+        context['open_unreachables'] = Unreachable.objects.filter(status='Open').count()
+        context['open_traps'] = Trap.objects.filter(status='Open').count()
+        context['open_summaries'] = Summary.objects.filter(status='Open').count()
+
+        unreachable_24h = Unreachable.objects.filter(event_start__gte=since_24h).count()
+        trap_24h = Trap.objects.filter(created_at__gte=since_24h).count()
+        unreachable_7d = Unreachable.objects.filter(event_start__gte=since_7d).count()
+        trap_7d = Trap.objects.filter(created_at__gte=since_7d).count()
+
+        context['unreachable_24h'] = unreachable_24h
+        context['trap_24h'] = trap_24h
+        context['events_processed_24h'] = unreachable_24h + trap_24h
+        context['unreachable_7d'] = unreachable_7d
+        context['trap_7d'] = trap_7d
+        context['events_processed_7d'] = unreachable_7d + trap_7d
+
+        chart_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
+        unreachable_hourly = {
+            row['hour']: row['total']
+            for row in (
+                Unreachable.objects.filter(event_start__gte=chart_start)
+                .annotate(hour=TruncHour('event_start'))
+                .values('hour')
+                .annotate(total=Count('id'))
+                .order_by('hour')
+            )
+        }
+        trap_hourly = {
+            row['hour']: row['total']
+            for row in (
+                Trap.objects.filter(created_at__gte=chart_start)
+                .annotate(hour=TruncHour('created_at'))
+                .values('hour')
+                .annotate(total=Count('id'))
+                .order_by('hour')
+            )
+        }
+        chart_hours = [chart_start + timedelta(hours=offset) for offset in range(24)]
+        context['events_24h_labels'] = [hour.strftime('%H:%M') for hour in chart_hours]
+        context['events_24h_totals'] = [unreachable_hourly.get(hour, 0) + trap_hourly.get(hour, 0) for hour in chart_hours]
+
+        context['top_buildings'] = (
+            Unreachable.objects.filter(status='Open')
+            .exclude(device__building_name='')
+            .values('device__building_name')
+            .annotate(total=Count('id'))
+            .order_by('-total')[:5]
+        )
+        context['top_tiers'] = (
+            Unreachable.objects.filter(status='Open')
+            .exclude(device__tier='')
+            .values('device__tier')
+            .annotate(total=Count('id'))
+            .order_by('-total')[:5]
+        )
+
         return render(request, self.template_name, context=context)
 
 class Devices(LoginRequiredMixin, View):
@@ -104,6 +197,7 @@ class Devices(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        context['search'] = request.GET.get('search', '').strip()
 
         # list = ['SWITCH','AP','UPS','ROUTER']
         # devices = Device.objects.exclude(type__in=list)

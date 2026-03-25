@@ -8,47 +8,292 @@
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
 {% endblock %}
 
-{% block content %}
- <div class="card">
-    <div class="card-body table-responsive">
-        <p>Operations Center Network Event Summary (OCNES) provides a dashboard view of network health.
-            It is built on top of the <a href="https://www.akips.com/">AKiPS</a> network monitoring platform, which provides all polling and status data.
-        </p>
+{% block extra_head %}
+<script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
+<style>
+    .about-hero p {
+        max-width: 72rem;
+    }
+    .about-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem 0.75rem;
+    }
+    .about-kpi {
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px rgba(18, 24, 32, 0.1);
+        min-height: 8.25rem;
+        margin-bottom: 0.9rem;
+    }
+    .about-kpi .inner h3 {
+        font-size: 1.8rem;
+        line-height: 1.1;
+        margin-bottom: 0.2rem;
+    }
+    .about-kpi .inner p {
+        font-weight: 650;
+        letter-spacing: 0.01em;
+        margin-bottom: 0.1rem;
+    }
+    .about-kpi .kpi-subtitle {
+        display: block;
+        font-size: 0.72rem;
+        line-height: 1.25;
+        opacity: 0.9;
+    }
+    .about-kpi .icon {
+        opacity: 0.25;
+    }
+    .about-panel .card-header {
+        border-bottom: 1px solid var(--oc-border);
+        padding-top: 0.55rem;
+        padding-bottom: 0.55rem;
+    }
+    .about-panel .table th,
+    .about-panel .table td {
+        vertical-align: middle;
+    }
+    .about-sparkline-wrap {
+        height: 140px;
+        border-top: 1px solid var(--oc-border);
+    }
+    body.theme-dark .about-kpi {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+    body.theme-dark .about-kpi .icon {
+        opacity: 0.2;
+    }
+</style>
+{% endblock %}
 
-        <table class="table table-hover table-responsive table-sm">
-            <tr>
-                <th>Current Status</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Status</th>
-            </tr>
-            <tr>
-                <td>Last AKiPS device sync</td>
-                {% if last_akips_sync %}
-                <td>{{ last_akips_sync.date_created }}</td>
-                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_akips_sync.date_done }}{% endif %}</td>
-                <td>{{ last_akips_sync.status }}</td>
-                {% else %}
-                <td></td>
-                <td></td>
-                <td>None</td>
-                {% endif %}
-            </tr>
-            <tr>
-                <td>Last Inventory device sync</td>
-                {% if last_inventory_sync %}
-                <td>{{ last_inventory_sync.date_created }}</td>
-                <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_inventory_sync.date_done }}{% endif %}</td>
-                <td>{{ last_inventory_sync.status }}</td>
-                {% else %}
-                <td></td>
-                <td></td>
-                <td>None</td>
-                {% endif %}
-            </tr>
-        </table>
+{% block content %}
+<div class="card about-hero">
+    <div class="card-body">
+        <p class="mb-1">
+            Operations Center Network Event Summary (OCNES) provides a real-time dashboard view of network health.
+            It is built on top of the <a href="https://www.akips.com/">AKiPS</a> monitoring platform, which provides polling and status telemetry.
+        </p>
+        <small class="text-muted">Processed events below are counted as new unreachable events and newly received traps.</small>
+        <div class="about-meta mt-2">
+            <span class="badge badge-{{ freshness_level }}">{{ freshness_label }}</span>
+            <span class="text-muted">Data freshness: {{ data_freshness }}</span>
+            {% if last_data_update %}
+            <span class="text-muted">Last update: {{ last_data_update }}</span>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-info about-kpi">
+            <div class="inner">
+                <h3>{{ device_total }}</h3>
+                <p>Total Devices</p>
+                <small class="kpi-subtitle">All AKiPS inventory records</small>
+            </div>
+            <div class="icon"><i class="fas fa-network-wired"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-primary about-kpi">
+            <div class="inner">
+                <h3>{{ device_active }}</h3>
+                <p>Actively Monitored</p>
+                <small class="kpi-subtitle">Excludes maintenance and hibernate</small>
+            </div>
+            <div class="icon"><i class="fas fa-heartbeat"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-danger about-kpi">
+            <div class="inner">
+                <h3>{{ open_unreachables }}</h3>
+                <p>Open Unreachables</p>
+                <small class="kpi-subtitle">Current down-state device events</small>
+            </div>
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-warning about-kpi">
+            <div class="inner">
+                <h3>{{ open_traps }}</h3>
+                <p>Open Traps</p>
+                <small class="kpi-subtitle">Uncleared trap notifications</small>
+            </div>
+            <div class="icon"><i class="fas fa-bell"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-success about-kpi">
+            <div class="inner">
+                <h3>{{ open_summaries }}</h3>
+                <p>Open Summaries</p>
+                <small class="kpi-subtitle">Active event focus groups</small>
+            </div>
+            <div class="icon"><i class="fas fa-layer-group"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="small-box bg-secondary about-kpi">
+            <div class="inner">
+                <h3>{{ events_processed_24h }}</h3>
+                <p>Events (24h)</p>
+                <small class="kpi-subtitle">New unreachables and traps in window</small>
+            </div>
+            <div class="icon"><i class="fas fa-chart-line"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card about-panel">
+            <div class="card-header">
+                <h3 class="card-title">Recent Processing Throughput</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Window</th>
+                            <th class="text-right">Unreachable Events</th>
+                            <th class="text-right">Trap Events</th>
+                            <th class="text-right">Total Processed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Last 24 Hours</td>
+                            <td class="text-right">{{ unreachable_24h }}</td>
+                            <td class="text-right">{{ trap_24h }}</td>
+                            <td class="text-right font-weight-bold">{{ events_processed_24h }}</td>
+                        </tr>
+                        <tr>
+                            <td>Last 7 Days</td>
+                            <td class="text-right">{{ unreachable_7d }}</td>
+                            <td class="text-right">{{ trap_7d }}</td>
+                            <td class="text-right font-weight-bold">{{ events_processed_7d }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body pt-2 about-sparkline-wrap">
+                <canvas id="aboutEventsSparkline" height="70" aria-label="Events processed in the last 24 hours" role="img"></canvas>
+            </div>
+        </div>
+
+        <div class="card about-panel">
+            <div class="card-header">
+                <h3 class="card-title">Data Pipeline Status</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Current Status</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Last AKiPS Device Sync</td>
+                            {% if last_akips_sync %}
+                            <td>{{ last_akips_sync.date_created }}</td>
+                            <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_akips_sync.date_done }}{% else %}In progress{% endif %}</td>
+                            <td>{{ last_akips_sync_duration }}</td>
+                            <td>
+                                <span class="badge {% if last_akips_sync.status == 'SUCCESS' %}badge-success{% elif last_akips_sync.status == 'STARTED' or last_akips_sync.status == 'PENDING' %}badge-warning{% else %}badge-danger{% endif %}">{{ last_akips_sync.status }}</span>
+                            </td>
+                            {% else %}
+                            <td colspan="4">No runs recorded</td>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <td>Last Inventory Device Sync</td>
+                            {% if last_inventory_sync %}
+                            <td>{{ last_inventory_sync.date_created }}</td>
+                            <td>{% if last_inventory_sync.status != 'STARTED' %}{{ last_inventory_sync.date_done }}{% else %}In progress{% endif %}</td>
+                            <td>{{ last_inventory_sync_duration }}</td>
+                            <td>
+                                <span class="badge {% if last_inventory_sync.status == 'SUCCESS' %}badge-success{% elif last_inventory_sync.status == 'STARTED' or last_inventory_sync.status == 'PENDING' %}badge-warning{% else %}badge-danger{% endif %}">{{ last_inventory_sync.status }}</span>
+                            </td>
+                            {% else %}
+                            <td colspan="4">No runs recorded</td>
+                            {% endif %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card about-panel">
+            <div class="card-header">
+                <h3 class="card-title">Top Buildings (Open Unreachables)</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Building</th>
+                            <th class="text-right">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in top_buildings %}
+                        <tr>
+                            <td><a href="{% url 'devices' %}?search={{ row.device__building_name|urlencode }}">{{ row.device__building_name }}</a></td>
+                            <td class="text-right">{{ row.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2">No open building alerts</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card about-panel">
+            <div class="card-header">
+                <h3 class="card-title">Top Tiers (Open Unreachables)</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th class="text-right">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in top_tiers %}
+                        <tr>
+                            <td><a href="{% url 'devices' %}?search={{ row.device__tier|urlencode }}">{{ row.device__tier }}</a></td>
+                            <td class="text-right">{{ row.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2">No open tier alerts</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ events_24h_labels|json_script:"about-events-labels" }}
+{{ events_24h_totals|json_script:"about-events-totals" }}
 
 {% endblock %}
 
@@ -58,6 +303,80 @@
         // Setup Alerting
         refresh_alerts();
         enable_alert_toggle();
+
+        var labels = JSON.parse(document.getElementById('about-events-labels').textContent || '[]');
+        var totals = JSON.parse(document.getElementById('about-events-totals').textContent || '[]');
+        var aboutChart = null;
+
+        function getChartTheme() {
+            var isDark = $('body').hasClass('theme-dark');
+            return {
+                lineColor: isDark ? '#8fc7f0' : '#007fae',
+                fillColor: isDark ? 'rgba(143, 199, 240, 0.18)' : 'rgba(0, 127, 174, 0.16)',
+                tickColor: isDark ? '#cfe2f5' : '#314154',
+                gridColor: isDark ? 'rgba(167, 194, 222, 0.2)' : 'rgba(40, 70, 105, 0.12)'
+            };
+        }
+
+        var ctx = document.getElementById('aboutEventsSparkline');
+        if (ctx && labels.length && totals.length) {
+            var theme = getChartTheme();
+            aboutChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Events per hour',
+                        data: totals,
+                        borderColor: theme.lineColor,
+                        backgroundColor: theme.fillColor,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.35,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { display: false },
+                    tooltips: { mode: 'index', intersect: false },
+                    scales: {
+                        xAxes: [{
+                            gridLines: { color: theme.gridColor },
+                            ticks: { fontColor: theme.tickColor, maxTicksLimit: 8 }
+                        }],
+                        yAxes: [{
+                            gridLines: { color: theme.gridColor },
+                            ticks: { fontColor: theme.tickColor, beginAtZero: true, precision: 0 }
+                        }]
+                    }
+                }
+            });
+        }
+
+        if (window.MutationObserver) {
+            var bodyEl = document.body;
+            var observer = new MutationObserver(function (mutations) {
+                if (!aboutChart) {
+                    return;
+                }
+                for (var i = 0; i < mutations.length; i++) {
+                    if (mutations[i].attributeName === 'class') {
+                        var nextTheme = getChartTheme();
+                        aboutChart.data.datasets[0].borderColor = nextTheme.lineColor;
+                        aboutChart.data.datasets[0].backgroundColor = nextTheme.fillColor;
+                        aboutChart.options.scales.xAxes[0].gridLines.color = nextTheme.gridColor;
+                        aboutChart.options.scales.xAxes[0].ticks.fontColor = nextTheme.tickColor;
+                        aboutChart.options.scales.yAxes[0].gridLines.color = nextTheme.gridColor;
+                        aboutChart.options.scales.yAxes[0].ticks.fontColor = nextTheme.tickColor;
+                        aboutChart.update();
+                        break;
+                    }
+                }
+            });
+            observer.observe(bodyEl, { attributes: true, attributeFilter: ['class'] });
+        }
     })
 </script>
 {% endblock js %}

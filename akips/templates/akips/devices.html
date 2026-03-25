@@ -11,6 +11,9 @@
 <div class="card">
     <div class="card-body">
         <p>Below you will find data for all devices learned from the AKiPS device inventory.</p>
+        {% if search %}
+        <p class="text-muted mb-2">Filtered by search term: <span class="font-weight-bold">{{ search }}</span></p>
+        {% endif %}
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
@@ -69,6 +72,7 @@
           "responsive": true, "lengthChange": false, "autoWidth": false,
           "buttons": ["copy", "csv", "excel", "pdf", "print"],
           "pageLength": 25,
+                    "search": {"search": "{{ search|escapejs }}"},
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
     })
