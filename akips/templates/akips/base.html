@@ -41,6 +41,25 @@
 <body class="hold-transition {% block body_class %}{% block bodyclass %}layout-top-nav{% endblock %}{% endblock %}">
 <script type="text/javascript">
     (function () {
+        function resolveSystemTheme() {
+            var hour = new Date().getHours();
+            var isNight = (hour >= 19 || hour < 7);
+            try {
+                if (window.matchMedia) {
+                    var media = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (media && media.media !== 'not all') {
+                        // In system mode, honor dark preference and also force dark overnight.
+                        return (media.matches || isNight) ? 'dark' : 'light';
+                    }
+                }
+            } catch (e) {
+                // Ignore matchMedia access errors
+            }
+
+            // Fallback: use local time when system preference is unavailable.
+            return isNight ? 'dark' : 'light';
+        }
+
         var mode = 'system';
         try {
             var stored = window.localStorage.getItem('ocnesThemeMode');
@@ -53,7 +72,7 @@
 
         var resolved = mode;
         if (mode === 'system') {
-            resolved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            resolved = resolveSystemTheme();
         }
 
         document.body.classList.add('theme-' + resolved);
@@ -128,7 +147,22 @@
         var MODES = ['light', 'dark', 'system'];
 
         function getSystemTheme() {
-            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            var hour = new Date().getHours();
+            var isNight = (hour >= 19 || hour < 7);
+            try {
+                if (window.matchMedia) {
+                    var media = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (media && media.media !== 'not all') {
+                        // In system mode, honor dark preference and also force dark overnight.
+                        return (media.matches || isNight) ? 'dark' : 'light';
+                    }
+                }
+            } catch (e) {
+                // Ignore matchMedia access errors
+            }
+
+            // Fallback: use local time when system preference is unavailable.
+            return isNight ? 'dark' : 'light';
         }
 
         function getStoredMode() {
@@ -151,14 +185,21 @@
             }
         }
 
-        function updateThemeToggleUi(mode) {
+        function updateThemeToggleUi(mode, resolved) {
             var icon = document.getElementById('theme-toggle-icon');
             var link = document.getElementById('theme-toggle');
             if (!icon || !link) {
                 return;
             }
+            var resolvedMode = resolved || (mode === 'system' ? getSystemTheme() : mode);
+            var modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
+            var resolvedLabel = resolvedMode.charAt(0).toUpperCase() + resolvedMode.slice(1);
             icon.className = 'fas ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
-            link.setAttribute('title', 'Theme: ' + mode.charAt(0).toUpperCase() + mode.slice(1) + ' (click to cycle Light, Dark, System)');
+            if (mode === 'system') {
+                link.setAttribute('title', 'Theme: ' + modeLabel + ' -> ' + resolvedLabel + ' (click to cycle Light, Dark, System)');
+            } else {
+                link.setAttribute('title', 'Theme: ' + modeLabel + ' (click to cycle Light, Dark, System)');
+            }
         }
 
         function applyTheme(mode) {
@@ -166,7 +207,8 @@
             document.body.classList.remove('theme-light', 'theme-dark');
             document.body.classList.add('theme-' + resolved);
             document.body.setAttribute('data-theme-mode', mode);
-            updateThemeToggleUi(mode);
+            document.body.setAttribute('data-theme-resolved', resolved);
+            updateThemeToggleUi(mode, resolved);
         }
 
         function cycleThemeMode() {
@@ -190,12 +232,18 @@
 
             if (window.matchMedia) {
                 var media = window.matchMedia('(prefers-color-scheme: dark)');
-                media.addEventListener('change', function () {
+                var onThemeChange = function () {
                     var mode = document.body.getAttribute('data-theme-mode') || 'system';
                     if (mode === 'system') {
                         applyTheme('system');
                     }
-                });
+                };
+
+                if (typeof media.addEventListener === 'function') {
+                    media.addEventListener('change', onThemeChange);
+                } else if (typeof media.addListener === 'function') {
+                    media.addListener(onThemeChange);
+                }
             }
         }
 
