@@ -47,6 +47,10 @@
     .event-card .card-body {
         position: relative;
     }
+    #trap_card .card-body {
+        max-height: 520px;
+        overflow-y: auto;
+    }
     .event-card .card-body .refresh-overlay {
         position: absolute;
         top: 0;
@@ -798,9 +802,6 @@
                 '</tr>';
         }
         html += '</tbody></table>';
-        if (card.total_open > 30) {
-            html += "<p class=\"text-center\">Only displaying 30 of the most recent " + escapeHtml(card.total_open) + " open traps. <a href=\"{% url 'recent_traps' %}\">View all traps.</a></p>";
-        }
         return html;
     }
 

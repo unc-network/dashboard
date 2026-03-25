@@ -480,7 +480,7 @@ def _trap_incident(trap):
 
 def _serialize_trap_data(traps):
     rows = []
-    for trap in traps[:30]:
+    for trap in traps:
         rows.append({
             'id': trap.id,
             'ack': trap.ack,
