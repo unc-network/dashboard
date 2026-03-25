@@ -444,27 +444,97 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
+    function isChartMobile() {
+        return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function getChartPalette() {
+        var isDark = $('body').hasClass('theme-dark');
+        if (isDark) {
+            return {
+                unreachable: { fill: 'rgba(98, 175, 221, 0.72)', border: 'rgba(132, 198, 236, 0.95)', recentFill: 'rgba(122, 197, 241, 0.92)', recentBorder: 'rgba(174, 223, 249, 0.98)' },
+                trap: { fill: 'rgba(145, 159, 178, 0.55)', border: 'rgba(173, 185, 201, 0.92)', recentFill: 'rgba(164, 178, 196, 0.82)', recentBorder: 'rgba(196, 208, 223, 0.96)' },
+                battery: { fill: 'rgba(216, 126, 118, 0.74)', border: 'rgba(232, 154, 146, 0.95)', recentFill: 'rgba(234, 145, 137, 0.94)', recentBorder: 'rgba(247, 181, 174, 0.98)' },
+                total: { line: 'rgba(255, 230, 140, 0.95)', recentLine: 'rgba(255, 241, 180, 0.98)' }
+            };
+        }
+        return {
+            unreachable: { fill: 'rgba(32, 124, 181, 0.78)', border: 'rgba(24, 100, 150, 0.95)', recentFill: 'rgba(26, 145, 211, 0.92)', recentBorder: 'rgba(17, 112, 164, 0.98)' },
+            trap: { fill: 'rgba(162, 172, 186, 0.58)', border: 'rgba(131, 145, 163, 0.9)', recentFill: 'rgba(145, 159, 178, 0.8)', recentBorder: 'rgba(116, 132, 151, 0.94)' },
+            battery: { fill: 'rgba(198, 101, 95, 0.78)', border: 'rgba(165, 74, 69, 0.94)', recentFill: 'rgba(219, 117, 111, 0.92)', recentBorder: 'rgba(185, 87, 82, 0.97)' },
+            total: { line: 'rgba(240, 174, 38, 0.95)', recentLine: 'rgba(255, 154, 39, 0.98)' }
+        };
+    }
+
+    function buildSeriesColors(pointCount, baseColor, recentColor) {
+        var colors = [];
+        for (var i = 0; i < pointCount; i++) {
+            colors.push(i === pointCount - 1 ? recentColor : baseColor);
+        }
+        return colors;
+    }
+
+    function buildPointRadius(pointCount, baseRadius, recentRadius) {
+        var radii = [];
+        for (var i = 0; i < pointCount; i++) {
+            radii.push(i === pointCount - 1 ? recentRadius : baseRadius);
+        }
+        return radii;
+    }
+
+    function buildTotalSeries(eventData, trapData, batteryData) {
+        var maxLen = Math.max(eventData.length, trapData.length, batteryData.length);
+        var totals = [];
+        for (var i = 0; i < maxLen; i++) {
+            totals.push((eventData[i] || 0) + (trapData[i] || 0) + (batteryData[i] || 0));
+        }
+        return totals;
+    }
+
     function getChartThemeOptions() {
         var isDark = $('body').hasClass('theme-dark');
         return {
             legendColor: isDark ? '#eef6ff' : '#2f3b47',
-            tickColor: isDark ? '#eef6ff' : '#2f3b47',
-            gridColor: isDark ? 'rgba(163, 188, 217, 0.18)' : 'rgba(47, 59, 71, 0.12)'
+            tickColor: isDark ? '#d8e6f5' : '#324252',
+            gridColor: isDark ? 'rgba(163, 188, 217, 0.16)' : 'rgba(47, 59, 71, 0.1)',
+            zeroLineColor: isDark ? 'rgba(192, 214, 236, 0.38)' : 'rgba(47, 59, 71, 0.26)',
+            tooltipBg: isDark ? 'rgba(19, 32, 52, 0.95)' : 'rgba(20, 38, 59, 0.95)',
+            tooltipTitle: '#f4f9ff',
+            tooltipBody: '#ddeaf7'
         };
     }
 
     function applyChartTheme(barChart) {
         var theme = getChartThemeOptions();
+        barChart.options.legend.position = isChartMobile() ? 'bottom' : 'right';
         barChart.options.legend.labels = barChart.options.legend.labels || {};
         barChart.options.legend.labels.fontColor = theme.legendColor;
+        barChart.options.legend.labels.fontSize = isChartMobile() ? 11 : 13;
+        barChart.options.legend.labels.boxWidth = isChartMobile() ? 10 : 12;
+        barChart.options.legend.labels.padding = isChartMobile() ? 12 : 16;
 
         barChart.options.scales.xAxes[0].gridLines.color = theme.gridColor;
         barChart.options.scales.xAxes[0].ticks = barChart.options.scales.xAxes[0].ticks || {};
         barChart.options.scales.xAxes[0].ticks.fontColor = theme.tickColor;
+        barChart.options.scales.xAxes[0].ticks.maxRotation = isChartMobile() ? 0 : 40;
+        barChart.options.scales.xAxes[0].ticks.minRotation = 0;
+        barChart.options.scales.xAxes[0].ticks.callback = function (value, index, values) {
+            var isLast = index === values.length - 1;
+            var step = isChartMobile() ? 3 : 2;
+            return (index % step === 0 || isLast) ? value : '';
+        };
 
         barChart.options.scales.yAxes[0].gridLines.color = theme.gridColor;
+        barChart.options.scales.yAxes[0].gridLines.zeroLineColor = theme.zeroLineColor;
         barChart.options.scales.yAxes[0].ticks = barChart.options.scales.yAxes[0].ticks || {};
         barChart.options.scales.yAxes[0].ticks.fontColor = theme.tickColor;
+        barChart.options.scales.yAxes[0].ticks.maxTicksLimit = isChartMobile() ? 4 : 6;
+
+        barChart.options.tooltips = barChart.options.tooltips || {};
+        barChart.options.tooltips.backgroundColor = theme.tooltipBg;
+        barChart.options.tooltips.titleFontColor = theme.tooltipTitle;
+        barChart.options.tooltips.bodyFontColor = theme.tooltipBody;
+        barChart.options.tooltips.footerFontColor = theme.tooltipTitle;
     }
 
     function syncChartThemeNow() {
@@ -483,13 +553,15 @@
     
         // Bar Chart
         var barChartCanvas = $('#barChart').get(0).getContext('2d');
+        var palette = getChartPalette();
         var barChartData = {
             labels  : [],
             datasets: [
             {
                 label               : 'Unreachable',
-                backgroundColor     : 'rgba(60,141,188,0.9)',
-                borderColor         : 'rgba(60,141,188,0.8)',
+            backgroundColor     : palette.unreachable.fill,
+            borderColor         : palette.unreachable.border,
+            borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : '#3b8bba',
                 pointStrokeColor    : 'rgba(60,141,188,1)',
@@ -499,8 +571,9 @@
             },
             {
                 label               : 'Trap',
-                backgroundColor     : 'rgba(210,214,222,1)',
-                borderColor         : 'rgba(210,214,222,1)',
+                backgroundColor     : palette.trap.fill,
+                borderColor         : palette.trap.border,
+                borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : 'rgba(210, 214, 222, 1)',
                 pointStrokeColor    : '#c1c7d1',
@@ -510,14 +583,30 @@
             },
             {
                 label               : 'Battery',
-                backgroundColor     : 'rgba(204,112,113,0.9)',
-                borderColor         : 'rgba(204,112,113,0.8)',
+                backgroundColor     : palette.battery.fill,
+                borderColor         : palette.battery.border,
+                borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : 'rgba(204,112,113,1)',
                 pointStrokeColor    : '#c1c7d1',
                 pointHighlightFill  : '#fff',
                 pointHighlightStroke: 'rgba(204,112,113,1)',
                 data                : []
+            },
+            {
+                type                : 'line',
+                label               : 'Total',
+                data                : [],
+                backgroundColor     : 'rgba(0,0,0,0)',
+                borderColor         : palette.total.line,
+                borderWidth         : 2,
+                pointBackgroundColor: palette.total.line,
+                pointBorderColor    : '#ffffff',
+                pointBorderWidth    : 1,
+                pointRadius         : 2,
+                pointHoverRadius    : 4,
+                lineTension         : 0.18,
+                fill                : false
             }
             ]
         }
@@ -526,21 +615,53 @@
             maintainAspectRatio : false,
             response : true,
             legend: {
-                position: 'right',
+                position: isChartMobile() ? 'bottom' : 'right',
                 display: true,
+                labels: {
+                    usePointStyle: true,
+                }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    footer: function (tooltipItems) {
+                        var total = 0;
+                        for (var i = 0; i < tooltipItems.length; i++) {
+                            var item = tooltipItems[i];
+                            var ds = item.datasetIndex;
+                            if (barChartData.datasets[ds] && barChartData.datasets[ds].label === 'Total') {
+                                continue;
+                            }
+                            total += item.yLabel || 0;
+                        }
+                        return 'Total: ' + total;
+                    }
+                }
+            },
+            hover: {
+                mode: 'index',
+                intersect: false,
             },
             datasetFill : false,
             scales: {
                 xAxes: [{
-                    gridLines : { display : true },
+                    gridLines : {
+                        display : true,
+                        drawBorder: false,
+                    },
                     stacked: true
                 }],
                 yAxes: [{
                     // type: 'logarithmic',
-                    gridLines : { display : true },
+                    gridLines : {
+                        display : true,
+                        drawBorder: false,
+                    },
                     stacked: true,
                     ticks: {
-                        min: 0
+                        min: 0,
+                        precision: 0,
                     }
                 }]
             }
@@ -566,20 +687,38 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
+                var palette = getChartPalette();
                 applyChartTheme(barChart);
                 barChart.data.labels = result['chart_labels'];
                 barChart.data.datasets[0].data = result['chart_event_data'];
                 barChart.data.datasets[1].data = result['chart_trap_data'];
                 barChart.data.datasets[2].data = result['chart_battery_data'];
+                barChart.data.datasets[3].data = buildTotalSeries(
+                    barChart.data.datasets[0].data || [],
+                    barChart.data.datasets[1].data || [],
+                    barChart.data.datasets[2].data || []
+                );
+
+                var pointCount = barChart.data.labels.length;
+                barChart.data.datasets[0].backgroundColor = buildSeriesColors(pointCount, palette.unreachable.fill, palette.unreachable.recentFill);
+                barChart.data.datasets[0].borderColor = buildSeriesColors(pointCount, palette.unreachable.border, palette.unreachable.recentBorder);
+                barChart.data.datasets[1].backgroundColor = buildSeriesColors(pointCount, palette.trap.fill, palette.trap.recentFill);
+                barChart.data.datasets[1].borderColor = buildSeriesColors(pointCount, palette.trap.border, palette.trap.recentBorder);
+                barChart.data.datasets[2].backgroundColor = buildSeriesColors(pointCount, palette.battery.fill, palette.battery.recentFill);
+                barChart.data.datasets[2].borderColor = buildSeriesColors(pointCount, palette.battery.border, palette.battery.recentBorder);
+                barChart.data.datasets[3].borderColor = buildSeriesColors(pointCount, palette.total.line, palette.total.recentLine);
+                barChart.data.datasets[3].pointBackgroundColor = buildSeriesColors(pointCount, palette.total.line, palette.total.recentLine);
+                barChart.data.datasets[3].pointRadius = buildPointRadius(pointCount, 1.5, 3.2);
+
                 barChart.update();
 
                 var chartTotal = 0;
                 var evt = result['chart_event_data'] || [];
                 var trp = result['chart_trap_data'] || [];
                 var bat = result['chart_battery_data'] || [];
-                if (evt.length || trp.length || bat.length) {
-                    var i = Math.max(evt.length, trp.length, bat.length) - 1;
-                    chartTotal = (evt[i] || 0) + (trp[i] || 0) + (bat[i] || 0);
+                var totalSeries = barChart.data.datasets[3].data || [];
+                if (totalSeries.length) {
+                    chartTotal = totalSeries[totalSeries.length - 1] || 0;
                 }
                 $('#chart_event_count').text(chartTotal);
                 $('#chart_updated').text(formatClock(new Date()));
