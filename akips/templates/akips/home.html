@@ -345,7 +345,6 @@
     </div>
     <div class="col-sm-auto text-right header-action-buttons">
         <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
-        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm" data-url="{% url 'clear_trap_all' %}">Clear All Traps</button>
         <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
     </div>
 </div> 
@@ -424,7 +423,7 @@
 
     <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
         <div class="card-header py-2 ops-card-header">
-            <h3 class="card-title">Open Traps <span class="badge badge-info" id="trap_card_count">0</span></h3>
+            <h3 class="card-title">Open Traps <span class="badge badge-info" id="trap_card_count">0</span><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="clear_all_traps" data-url="{% url 'clear_trap_all' %}">Clear all</button></span></h3>
             <div class="card-tools card-meta">Refreshed <span id="trap_card_updated">--:--:--</span></div>
         </div>
         <div class="card-body table-responsive p-0">
