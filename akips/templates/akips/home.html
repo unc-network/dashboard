@@ -357,6 +357,7 @@
         <div class="card-body py-2 d-flex align-items-center justify-content-between flex-wrap">
             <div>
                 <span class="ops-chip ops-chip-neutral">Data Age: <span id="ops-data-age">unknown</span></span>
+                <span class="ops-chip ops-chip-warn" id="ops-simulate-chip" style="display:none">SIMULATE MODE</span>
                 <span class="ops-chip ops-chip-critical" id="ops-crit-chip" style="display:none">Crit: <span id="ops-crit-count">0</span></span>
                 <span class="ops-chip ops-chip-switch" id="ops-bldg-switch-chip" style="display:none">SW: <span id="ops-bldg-switch-count">0</span></span>
                 <span class="ops-chip ops-chip-ap" id="ops-bldg-ap-chip" style="display:none">AP: <span id="ops-bldg-ap-count">0</span></span>
@@ -928,6 +929,7 @@
         var cardSignatureDebug = false;
         var changedCards = [];
         var trapPage = window.trapCardPage || 1;
+        var simulateMode = window.dashboardSimulateMode === true;
 
         // Enable debug logging with either:
         // 1) URL param: ?cardSigDebug=1
@@ -956,7 +958,10 @@
             type: 'GET',
             url: cardsUrl,
             dataType: 'json',
-            data: { trap_page: trapPage },
+            data: {
+                trap_page: trapPage,
+                simulate: simulateMode ? 1 : 0
+            },
             success: function (result) {
                 var cards = result['cards'] || {};
                 var newSignatures = result['signatures'] || {};
@@ -1029,6 +1034,8 @@
         var refresh_seconds = 30;
         var auto_refresh = true;
         window.trapCardPage = 1;
+        window.dashboardSimulateMode = (window.location.search.indexOf('simulate=1') !== -1);
+        $('#ops-simulate-chip').toggle(window.dashboardSimulateMode);
 
         var csrfToken = getCookie('csrftoken');
 
@@ -1126,6 +1133,17 @@
         // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Acknowledgement actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                this.checked = !this.checked;
+                return;
+            }
             var url = $(this).data("url");
             if (this.checked) {
                 console.log("ack checkbox on");
@@ -1139,6 +1157,17 @@
         // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for traps
         $(document).on('change', 'input.ack-trap', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Acknowledgement actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                this.checked = !this.checked;
+                return;
+            }
             var url = $(this).data("url");
             if (this.checked) {
                 console.log("ack checkbox on");
@@ -1152,6 +1181,16 @@
         // Bind to the document so dynamically added content will still work
         // Configure the Clear Trap button for traps
         $(document).on('click', 'button.trap-clear', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Clear actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                return;
+            }
             //$(this).prop('disabled', true);
             var tr = $(this).closest('tr');
             var url = $(this).data("url");
@@ -1206,6 +1245,16 @@
         // Configure the Clear All Traps button for traps
         // $(document).on('click', 'button.clear_all_traps', function () {
         $('#clear_all_traps').click(function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Clear-all is disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                return;
+            }
             var btn = $(this);
             var url = btn.data("url");
             btn.prop('disabled', true);

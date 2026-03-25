@@ -530,6 +530,206 @@ CARD_SERIALIZERS = {
 }
 
 
+def _as_bool(value):
+    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _simulate_dashboard_cards(trap_page=1, trap_page_size=50):
+    crit_rows = [
+        {
+            'id': 90001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': 'Intermittent uplink packet loss',
+            'last_event': '03-25 09:08:12',
+            'trend': 'Flat',
+            'incident': None,
+            'device_name': 'CORE-SW-01',
+            'device_ip4addr': '10.42.0.10',
+            'device_descr': 'Core switch aggregation pair',
+        },
+        {
+            'id': 90002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'devops',
+            'ack_at': '03-25 09:10:01',
+            'comment': '',
+            'last_event': '03-25 09:12:44',
+            'trend': 'Increasing',
+            'incident': {
+                'id': 'INC0012345',
+                'url': '#',
+            },
+            'device_name': 'DIST-BLDG-ALPHA',
+            'device_ip4addr': '10.42.3.17',
+            'device_descr': 'Distribution switch stack',
+        },
+    ]
+
+    bldg_rows = [
+        {
+            'id': 91001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': '',
+            'last_event': '03-25 09:11:05',
+            'trend': '',
+            'incident': None,
+            'type': 'Distribution',
+            'name': 'Tier 1 North',
+            'switch_count': 0,
+            'ap_count': 0,
+            'ups_count': 0,
+            'ups_battery': 0,
+            'percent_down': 0,
+        },
+        {
+            'id': 91002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': 'Power event in MDF',
+            'last_event': '03-25 09:12:20',
+            'trend': 'Increasing',
+            'incident': None,
+            'type': 'Building',
+            'name': 'Bldg-Alpha',
+            'switch_count': 4,
+            'ap_count': 26,
+            'ups_count': 2,
+            'ups_battery': 1,
+            'percent_down': 18,
+        },
+        {
+            'id': 91003,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'noc',
+            'ack_at': '03-25 09:13:00',
+            'comment': '',
+            'last_event': '03-25 09:13:45',
+            'trend': 'Flat',
+            'incident': {
+                'id': 'INC0012346',
+                'url': '#',
+            },
+            'type': 'Building',
+            'name': 'Bldg-Beta',
+            'switch_count': 1,
+            'ap_count': 7,
+            'ups_count': 0,
+            'ups_battery': 0,
+            'percent_down': 7,
+        },
+    ]
+
+    spec_rows = [
+        {
+            'id': 92001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': '',
+            'last_event': '03-25 09:14:02',
+            'trend': 'Increasing',
+            'incident': None,
+            'name': 'Research Labs',
+            'total_count': 33,
+            'percent_down': 12,
+        },
+        {
+            'id': 92002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'devops',
+            'ack_at': '03-25 09:13:31',
+            'comment': 'Planned maintenance overlap',
+            'last_event': '03-25 09:14:15',
+            'trend': 'Flat',
+            'incident': {
+                'id': 'INC0012347',
+                'url': '#',
+            },
+            'name': 'Clinical IoT',
+            'total_count': 14,
+            'percent_down': 9,
+        },
+    ]
+
+    total_traps = 125
+    total_pages = max(1, math.ceil(total_traps / trap_page_size))
+    trap_page = min(max(trap_page, 1), total_pages)
+    start = (trap_page - 1) * trap_page_size
+    end = min(start + trap_page_size, total_traps)
+    trap_rows = []
+    for idx in range(start, end):
+        trap_id = 93000 + idx + 1
+        octet = 10 + (idx % 200)
+        trap_rows.append({
+            'id': trap_id,
+            'ack': (idx % 4 == 0),
+            'ack_by': 'noc' if idx % 4 == 0 else '',
+            'ack_at': '03-25 09:12:55' if idx % 4 == 0 else '',
+            'ack_url': '#',
+            'device_name': f'EDGE-SW-{idx + 1:03d}',
+            'device_url': '#',
+            'trap_oid': 'IF-MIB.ifOperStatus',
+            'trap_url': '#',
+            'dup_count': idx % 5,
+            'dup_last_iso': '2026-03-25T09:14:00-04:00',
+            'last_event': '03-25 09:14:00',
+            'incident': None,
+            'clear_url': '#',
+        })
+
+    return {
+        'crit_card': {
+            'rows': crit_rows,
+            'has_rows': True,
+        },
+        'bldg_card': {
+            'rows': bldg_rows,
+            'has_rows': True,
+            'empty_message': 'Tier 1 and Building events are currently clear',
+        },
+        'spec_card': {
+            'rows': spec_rows,
+            'has_rows': True,
+        },
+        'trap_card': {
+            'rows': trap_rows,
+            'has_rows': len(trap_rows) > 0,
+            'total_open': total_traps,
+            'page': trap_page,
+            'page_size': trap_page_size,
+            'total_pages': total_pages,
+            'has_prev': trap_page > 1,
+            'has_next': trap_page < total_pages,
+        },
+    }
+
+
 def render_card_fragment(card_id, cache_timeout=60):
     """Render one dashboard card fragment with cache reuse."""
     config = CARD_REFRESH_CONFIG[card_id]
@@ -584,6 +784,17 @@ class DashboardCardsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         trap_page = max(self._parse_int(request.GET.get('trap_page'), 1), 1)
         trap_page_size = 50
+        simulate = _as_bool(request.GET.get('simulate', '0')) and request.user.is_staff
+
+        if simulate:
+            cards = _simulate_dashboard_cards(trap_page=trap_page, trap_page_size=trap_page_size)
+            result = {'cards': cards, 'signatures': {}}
+            for card_id, card_data in cards.items():
+                card_json = json.dumps(card_data, sort_keys=True, default=str)
+                result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
+            if self.pretty_print:
+                return JsonResponse(result, json_dumps_params={'indent': 4})
+            return JsonResponse(result)
 
         result = {'cards': {}, 'signatures': {}}
         for card_id in CARD_REFRESH_CONFIG:
