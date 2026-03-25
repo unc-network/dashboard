@@ -497,6 +497,10 @@
                 <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
                 <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
             </div>
+            {% else %}
+            <a href="{% url 'home' %}" class="ops-chip ops-chip-neutral" title="Return to dashboard" style="text-decoration:none; line-height:1">
+                <i class="fas fa-th-large"></i>
+            </a>
             {% endif %}
         </div>
     </div>
