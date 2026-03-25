@@ -3,6 +3,10 @@
 {% load auth_extras %}
 
 {% block title %}OCNES Dashboard{% endblock %}
+{% block bodyclass %}layout-top-nav{% if hud_mode %} hud-mode{% endif %}{% endblock %}
+{% block nav_header %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
+{% block nav_footer %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
+{% block content_header %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
 {% block extra_head%}
 <!-- <meta http-equiv="refresh" content="30"> -->
 <style>
@@ -332,10 +336,103 @@
         padding: 0.2rem 0.35rem;
         font-size: 0.88rem;
     }
+    body.hud-mode .content {
+        padding-top: 0.35rem;
+    }
+    body.hud-mode .content .container {
+        max-width: none;
+        width: 100%;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+    body.hud-mode .ops-status-strip,
+    body.hud-mode .event-card {
+        margin-bottom: 0.45rem;
+    }
+    body.hud-mode .ops-status-strip .card-body {
+        padding-top: 0.38rem !important;
+        padding-bottom: 0.38rem !important;
+    }
+    .ops-dashboard-grid {
+        display: block;
+    }
+    body.hud-mode .ops-dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+        grid-template-rows: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+        align-items: start;
+        height: calc(100vh - 6.25rem);
+    }
+    body.hud-mode .event-card {
+        height: auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    body.hud-mode #bldg_card {
+        grid-column: 1;
+        grid-row: 1 / span 3;
+    }
+    body.hud-mode #crit_card {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    body.hud-mode #spec_card {
+        grid-column: 2;
+        grid-row: 2;
+    }
+    body.hud-mode #trap_card {
+        grid-column: 2;
+        grid-row: 3;
+    }
+    body.hud-mode .event-card .card-body {
+        flex: 1 1 auto;
+        overflow: auto;
+    }
+    body.hud-mode #trap_card .card-body {
+        max-height: none;
+    }
+    body.hud-mode .event-card .table,
+    body.hud-mode .ops-status-strip .card-body {
+        font-size: 1rem;
+    }
+    body.hud-mode .event-card .card-title {
+        font-size: 1.1rem;
+    }
+    body.hud-mode .event-card table thead th {
+        top: 0;
+    }
+    body.hud-mode .summary-comment-static {
+        display: inline-block;
+        margin-top: 0.15rem;
+        color: #5f6d7b;
+    }
+    body.theme-dark.hud-mode .summary-comment-static {
+        color: #b9c7d6;
+    }
+    @media (max-width: 1024px) {
+        body.hud-mode .ops-dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+            height: auto;
+        }
+        body.hud-mode .event-card {
+            height: auto;
+        }
+        body.hud-mode #bldg_card,
+        body.hud-mode #crit_card,
+        body.hud-mode #spec_card,
+        body.hud-mode #trap_card {
+            grid-column: auto;
+            grid-row: auto;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block no_heading %}
+{% if not hud_mode %}
 <div class="row">
     <div class="col my-auto text-left text-sm">
         <div class="custom-control custom-switch d-inline-block ml-3">
@@ -344,10 +441,14 @@
         </div>
     </div>
     <div class="col-sm-auto text-right header-action-buttons">
+        <a href="{% url 'home_hud' %}" class="btn btn-primary btn-sm" title="Open HUD mode" aria-label="Open HUD mode">
+            <i class="fas fa-tv"></i>
+        </a>
         <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
         <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
     </div>
 </div> 
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -367,13 +468,16 @@
                 <span class="ops-chip ops-chip-light">Cards Changed: <span id="ops-cards-changed">0</span></span>
                 {% endif %}
             </div>
+            {% if not hud_mode %}
             <div class="custom-control custom-switch mt-2 mt-sm-0 ml-sm-3">
                 <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
                 <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
             </div>
+            {% endif %}
         </div>
     </div>
 
+    {% if not hud_mode %}
     <div id="chart" class="card card-primary">
         <div class="card-header py-2 ops-card-header">
             <h3 class="card-title">New Event Trends <span class="badge badge-info" id="chart_event_count">0</span></h3>
@@ -393,7 +497,9 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
+    <div class="ops-dashboard-grid">
     <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
         <div class="card-header py-2 ops-card-header">
             <h3 class="card-title">Critical Devices <span class="badge badge-danger" id="crit_card_count">0</span></h3>
@@ -405,7 +511,7 @@
 
     <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
         <div class="card-header py-2 ops-card-header">
-            <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span></h3>
+            <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span>{% if not hud_mode %}<span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span>{% endif %}</h3>
             <div class="card-tools card-meta">Refreshed <span id="bldg_card_updated">--:--:--</span></div>
         </div>
         <div class="card-body table-responsive p-0">
@@ -423,11 +529,12 @@
 
     <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
         <div class="card-header py-2 ops-card-header">
-            <h3 class="card-title">Open Traps <span class="badge badge-info" id="trap_card_count">0</span><span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="clear_all_traps" data-url="{% url 'clear_trap_all' %}">Clear all</button></span></h3>
+            <h3 class="card-title">Open Traps <span class="badge badge-info" id="trap_card_count">0</span>{% if not hud_mode %}<span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="clear_all_traps" data-url="{% url 'clear_trap_all' %}">Clear all</button></span>{% endif %}</h3>
             <div class="card-tools card-meta">Refreshed <span id="trap_card_updated">--:--:--</span></div>
         </div>
         <div class="card-body table-responsive p-0">
         </div>
+    </div>
     </div>
 
     <!-- <div class="text-right p-3">
@@ -444,6 +551,8 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
+    window.dashboardHudMode = {{ hud_mode|yesno:'true,false' }};
+
     function isChartMobile() {
         return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
     }
@@ -790,10 +899,19 @@
         if (incident && incident.url && incident.id) {
             return '<td class="text-center text-primary ' + klass + '"><a href="' + escapeHtml(incident.url) + '" target="_blank">' + escapeHtml(incident.id) + '</a></td>';
         }
+        if (window.dashboardHudMode) {
+            return '<td class="text-center text-muted ' + klass + '">-</td>';
+        }
         return '<td class="text-center text-primary ' + klass + '"><div class="form-check"><input type="checkbox" class="form-check-input" name="event" value="' + escapeHtml(eventValue) + '"></div></td>';
     }
 
     function renderSummaryComment(row) {
+        if (window.dashboardHudMode) {
+            if (row.comment) {
+                return '<span class="small summary-comment-static"><br>' + escapeHtml(row.comment) + '</span>';
+            }
+            return '';
+        }
         if (row.comment) {
             return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><br>' + escapeHtml(row.comment) + '</span>';
         }
@@ -802,13 +920,21 @@
 
     function renderCritCard(card) {
         var rows = card.rows || [];
-        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var ackChecked = row.ack ? ' checked' : '';
             var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
-            html += '<tr>' +
-                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html +=
                 '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.device_name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
                 '<td>' + escapeHtml(row.device_ip4addr) + '</td>' +
                 '<td><span class="d-inline-block text-truncate" style="max-width: 200px">' + escapeHtml(row.device_descr) + '</span></td>' +
@@ -832,15 +958,23 @@
     function renderBldgCard(card) {
         var rows = card.rows || [];
         var allExpanded = window.bldgHierarchyExpanded !== false;
-        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        }
         var currentGroup = '';
         var groupCounter = 0;
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var isDistribution = row.type === 'Distribution';
             var trClass = '';
-            var ackCell = '<td></td>';
-            if (!isDistribution) {
+            var ackCell = '';
+            if (!window.dashboardHudMode) {
+                ackCell = '<td></td>';
+            }
+            if (!isDistribution && !window.dashboardHudMode) {
                 var ackChecked = row.ack ? ' checked' : '';
                 var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
                 ackCell = '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
@@ -903,14 +1037,22 @@
 
     function renderSpecCard(card) {
         var rows = card.rows || [];
-        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var ackChecked = row.ack ? ' checked' : '';
             var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
             var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
-            html += '<tr>' +
-                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html +=
                 '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-building"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
                 '<td class="num-col">' + escapeHtml(row.total_count) + '</td>' +
                 '<td class="num-col">' + percentLabel + '</td>' +
@@ -927,7 +1069,12 @@
         var rows = card.rows || [];
         var page = card.page || 1;
         var totalPages = card.total_pages || 1;
-        var html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Ack</th><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th><th>Clear</th></tr></thead><tbody>';
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Ack</th><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th><th>Clear</th></tr></thead><tbody>';
+        }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var ackChecked = row.ack ? ' checked' : '';
@@ -936,17 +1083,21 @@
             if (row.dup_count > 0) {
                 dupBadge = '<span class="float-right badge bg-primary dup-data" data-last="' + escapeHtml(row.dup_last_iso) + '">' + escapeHtml(row.dup_count) + ' dup</span>';
             }
-            html += '<tr>' +
-                '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>' +
-                '<td><a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a></td>' +
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html += '<td><a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a></td>' +
                 '<td><a href="' + escapeHtml(row.trap_url) + '">' + escapeHtml(row.trap_oid) + '</a>' + dupBadge + '</td>' +
                 '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
-                renderIncidentCell(row.incident, 'trap_' + row.id, '') +
-                '<td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button></td>' +
-                '</tr>';
+                renderIncidentCell(row.incident, 'trap_' + row.id, '') ;
+            if (!window.dashboardHudMode) {
+                html += '<td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button></td>';
+            }
+            html += '</tr>';
         }
         html += '</tbody></table>';
-        if (totalPages > 1) {
+        if (totalPages > 1 && !window.dashboardHudMode) {
             html += '<div class="trap-pager border-top d-flex justify-content-between align-items-center px-2 py-2">';
             html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page - 1) + '"' + (card.has_prev ? '' : ' disabled') + '>Prev</button>';
             html += '<span class="small text-muted">Page ' + escapeHtml(String(page)) + ' of ' + escapeHtml(String(totalPages)) + ' (' + escapeHtml(String(card.total_open || 0)) + ' open)</span>';
@@ -1174,6 +1325,7 @@
         window.trapCardPage = 1;
         window.dashboardSimulateMode = (window.location.search.indexOf('simulate=1') !== -1);
         $('#ops-simulate-chip').toggle(window.dashboardSimulateMode);
+        var hasRefreshToggle = $('#refresh-toggle').length > 0;
 
         var csrfToken = getCookie('csrftoken');
 
@@ -1186,15 +1338,19 @@
                 window.localStorage.setItem('dashboardCompactMode', '0');
             }
         });
-        var compactEnabled = true;
+        var compactEnabled = window.dashboardHudMode ? true : true;
         try {
-            if (window.localStorage && window.localStorage.getItem('dashboardCompactMode') === '0') {
+            if (!window.dashboardHudMode && window.localStorage && window.localStorage.getItem('dashboardCompactMode') === '0') {
                 compactEnabled = false;
             }
         } catch (e) {
             // Ignore localStorage access errors
         }
-        $('#compact-toggle').prop('checked', compactEnabled).trigger('change');
+        if ($('#compact-toggle').length) {
+            $('#compact-toggle').prop('checked', compactEnabled).trigger('change');
+        } else if (compactEnabled) {
+            $('body').addClass('dashboard-compact');
+        }
 
         // Bind to the document so dynamically added content will still work
         // Configure the comment edit field
@@ -1502,10 +1658,13 @@
         // Populate the page content for the first time
         refresh_cards();
         enable_alert_toggle();
-        var chart = setup_chart();
-        window.dashboardChart = chart;
+        var chart = null;
+        if ($('#barChart').length) {
+            chart = setup_chart();
+            window.dashboardChart = chart;
+        }
 
-        if (window.MutationObserver) {
+        if (window.MutationObserver && chart) {
             var bodyClassObserver = new MutationObserver(function (mutations) {
                 for (var i = 0; i < mutations.length; i++) {
                     if (mutations[i].attributeName === 'class') {
@@ -1522,7 +1681,7 @@
         var remaining = max_remaining;
         var remainingId = setInterval(function() {
             remaining = remaining - 1;
-            if ( $('#refresh-toggle').is(':checked') ) {
+            if (!hasRefreshToggle || $('#refresh-toggle').is(':checked')) {
                 $('#time-remain').text(remaining);
             } else {
                 $('#time-remain').text('no');
@@ -1533,9 +1692,11 @@
         // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
             remaining = max_remaining;
-            if ( $('#refresh-toggle').is(':checked') && $("input[name=comment_text]:focus").length == 0 ) {
+            if ( (!hasRefreshToggle || $('#refresh-toggle').is(':checked')) && $("input[name=comment_text]:focus").length == 0 ) {
                 refresh_cards();
-                refresh_chart(chart);
+                if (chart) {
+                    refresh_chart(chart);
+                }
             }
         }, refresh_seconds * 1000);
 

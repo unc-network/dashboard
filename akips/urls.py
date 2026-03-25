@@ -6,6 +6,7 @@ urlpatterns = [
 
     # Main Views
     path('', views.Home.as_view(), name='home'),
+    path('hud/', views.Home.as_view(), {'hud_mode': True}, name='home_hud'),
     path('about/', views.About.as_view(), name='about'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),

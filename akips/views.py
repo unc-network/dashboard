@@ -63,7 +63,10 @@ class Home(LoginRequiredMixin, View):
     template_name = 'akips/home.html'
 
     def get(self, request, *args, **kwargs):
-        context = {}
+        forced_hud_mode = bool(self.kwargs.get('hud_mode', False))
+        context = {
+            'hud_mode': forced_hud_mode or str(request.GET.get('hud', '')).strip().lower() in ('1', 'true', 'yes', 'on'),
+        }
 
         # akips = AKIPS()
         # #device_name = akips.get_device_by_ip('152.19.187.21')
