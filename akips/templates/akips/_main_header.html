@@ -18,42 +18,44 @@
     <!-- Header Navbar: style can be found in header.less -->
     {% block nav_bar %}
     <!-- Left navbar links -->
+        {% with current_url=request.resolver_match.url_name %}
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a href="{% url 'home' %}" class="nav-link">Dashboard</a>
+                        <a href="{% url 'home' %}" class="nav-link{% if current_url == 'home' %} active{% endif %}">Dashboard</a>
         </li>
         <li class="nav-item">
-            <a href="{% url 'unreachable' %}" class="nav-link">Unreachables</a>
+                        <a href="{% url 'unreachable' %}" class="nav-link{% if current_url == 'unreachable' %} active{% endif %}">Unreachables</a>
         </li>
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Recent</a>
+                        <a class="nav-link dropdown-toggle{% if current_url == 'recent' or current_url == 'recent_unreachables' or current_url == 'recent_traps' or current_url == 'ups_problems' or current_url == 'users' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Recent</a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="{% url 'recent' %}">Events</a>
-              <a class="dropdown-item" href="{% url 'recent_unreachables' %}">Unreachables</a>
-              <a class="dropdown-item" href="{% url 'recent_traps' %}">Traps</a>
-              <a class="dropdown-item" href="{% url 'ups_problems' %}">UPS Problems</a>
+                            <a class="dropdown-item{% if current_url == 'recent' %} active{% endif %}" href="{% url 'recent' %}">Events</a>
+                            <a class="dropdown-item{% if current_url == 'recent_unreachables' %} active{% endif %}" href="{% url 'recent_unreachables' %}">Unreachables</a>
+                            <a class="dropdown-item{% if current_url == 'recent_traps' %} active{% endif %}" href="{% url 'recent_traps' %}">Traps</a>
+                            <a class="dropdown-item{% if current_url == 'ups_problems' %} active{% endif %}" href="{% url 'ups_problems' %}">UPS Problems</a>
               {% if request.user.is_superuser %}
-              <a class="dropdown-item" href="{% url 'users' %}">Users</a>
+                            <a class="dropdown-item{% if current_url == 'users' %} active{% endif %}" href="{% url 'users' %}">Users</a>
               {% endif %}
             </div>
         </li>
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
+                        <a class="nav-link dropdown-toggle{% if current_url == 'hibernate_requests' or current_url == 'maintenance' or current_url == 'devices' or current_url == 'device' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="{% url 'hibernate_requests' %}">Hibernate Mode</a>
-              <a class="dropdown-item" href="{% url 'maintenance' %}">Maintenance Mode</a>
-              <a class="dropdown-item" href="{% url 'devices' %}">All Devices</a>
+                            <a class="dropdown-item{% if current_url == 'hibernate_requests' %} active{% endif %}" href="{% url 'hibernate_requests' %}">Hibernate Mode</a>
+                            <a class="dropdown-item{% if current_url == 'maintenance' %} active{% endif %}" href="{% url 'maintenance' %}">Maintenance Mode</a>
+                            <a class="dropdown-item{% if current_url == 'devices' or current_url == 'device' %} active{% endif %}" href="{% url 'devices' %}">All Devices</a>
             </div>
         </li>
         <li class="nav-item">
-            <a href="{% url 'about' %}" class="nav-link">About</a>
+                        <a href="{% url 'about' %}" class="nav-link{% if current_url == 'about' %} active{% endif %}">About</a>
         </li>
         {% if request.user.is_superuser %}
         <li class="nav-item">
-            <a href="{% url 'admin:index' %}" class="nav-link">Admin</a>
+                        <a href="{% url 'admin:index' %}" class="nav-link{% if request.path|slice:':7' == '/admin/' %} active{% endif %}">Admin</a>
         </li>
         {% endif %}
     </ul>
+        {% endwith %}
 
     {% block nav_bar_center %}
     <!-- SEARCH FORM -->

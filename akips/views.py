@@ -136,6 +136,7 @@ class About(LoginRequiredMixin, View):
         context['open_unreachables'] = Unreachable.objects.filter(status='Open').count()
         context['open_traps'] = Trap.objects.filter(status='Open').count()
         context['open_summaries'] = Summary.objects.filter(status='Open').count()
+        context['logged_in_users_7d'] = User.objects.filter(last_login__gte=since_7d).count()
 
         unreachable_24h = Unreachable.objects.filter(event_start__gte=since_24h).count()
         trap_24h = Trap.objects.filter(created_at__gte=since_24h).count()
