@@ -345,13 +345,20 @@
         padding-left: 0.35rem;
         padding-right: 0.35rem;
     }
+    /* HUD: no extra margin-bottom — flex column gap handles spacing (fix 6) */
     body.hud-mode .ops-status-strip,
     body.hud-mode .event-card {
-        margin-bottom: 0.45rem;
+        margin-bottom: 0;
     }
+    /* HUD: tighter status strip (fix 1) */
     body.hud-mode .ops-status-strip .card-body {
-        padding-top: 0.38rem !important;
-        padding-bottom: 0.38rem !important;
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.22rem !important;
+        font-size: 0.88rem;
+    }
+    body.hud-mode .ops-status-strip .ops-chip {
+        font-size: 0.75rem;
+        padding: 0.18rem 0.42rem;
     }
     .ops-dashboard-grid {
         display: block;
@@ -361,15 +368,16 @@
     }
     body.hud-mode .ops-dashboard-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 0.5rem;
+        /* wider left column for Tier/Building (fix 4) */
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+        gap: 0.45rem;
         align-items: stretch;
-        height: calc(100vh - 6.25rem);
+        height: calc(100vh - 5.5rem);
     }
     body.hud-mode .ops-dashboard-column {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.45rem;
         min-height: 0;
     }
     body.hud-mode .event-card {
@@ -378,6 +386,12 @@
         min-height: 0;
         display: flex;
         flex-direction: column;
+    }
+    /* HUD: tighter card headers (fix 5) */
+    body.hud-mode .event-card .card-header,
+    body.hud-mode .ops-status-strip .card-header {
+        padding-top: 0.28rem !important;
+        padding-bottom: 0.28rem !important;
     }
     body.hud-mode #crit_card,
     body.hud-mode #spec_card {
@@ -394,14 +408,24 @@
     body.hud-mode #trap_card .card-body {
         max-height: none;
     }
-    body.hud-mode .event-card .table,
-    body.hud-mode .ops-status-strip .card-body {
-        font-size: 1rem;
+    /* HUD: larger table text for TV readability (fix 2) */
+    body.hud-mode .event-card .table {
+        font-size: 1.05rem;
     }
+    body.hud-mode .event-card .table td,
+    body.hud-mode .event-card .table th {
+        padding: 0.32rem 0.45rem;
+    }
+    body.hud-mode .ops-status-strip .card-body {
+        font-size: 0.88rem;
+    }
+    /* HUD: larger, bolder card titles (fix 3) */
     body.hud-mode .event-card .card-title {
-        font-size: 1.1rem;
+        font-size: 1.25rem;
+        font-weight: 700;
     }
     body.hud-mode .event-card table thead th {
+        font-size: 0.92rem;
         top: 0;
     }
     body.hud-mode .summary-comment-static {
