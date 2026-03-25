@@ -912,12 +912,12 @@
     function renderSummaryComment(row) {
         if (window.dashboardHudMode) {
             if (row.comment) {
-                return '<span class="small summary-comment-static"><br>' + escapeHtml(row.comment) + '</span>';
+                return '<span class="small text-muted summary-comment-static" style="margin-left:0.4em">' + escapeHtml(row.comment) + '</span>';
             }
             return '';
         }
         if (row.comment) {
-            return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><br>' + escapeHtml(row.comment) + '</span>';
+            return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '" style="margin-left:0.4em">' + escapeHtml(row.comment) + '</span>';
         }
         return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><i class="fas fa-comment-medical text-primary"></i></span>';
     }
@@ -1398,7 +1398,7 @@
                 });
                 if (comment) {
                     //$(this).closest('.summary-comment').text(comment);
-                    $(this).closest('.summary-comment').html('<br>' + comment);
+                    $(this).closest('.summary-comment').html(comment);
                 } else {
                     $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
                 }
@@ -1424,7 +1424,7 @@
             });
             if (comment) {
                 //$(this).closest('.summary-comment').text(comment);
-                $(this).closest('.summary-comment').html('<br>' + comment);
+                $(this).closest('.summary-comment').html(comment);
             } else {
                 $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
             }
