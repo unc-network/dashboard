@@ -639,6 +639,14 @@ def _simulate_dashboard_cards(trap_page=1, trap_page_size=50):
         },
     ]
 
+    # Keep distribution-level simulated totals consistent with child buildings.
+    child_rows = [row for row in bldg_rows if row.get('type') != 'Distribution']
+    if child_rows:
+        bldg_rows[0]['switch_count'] = sum(row.get('switch_count', 0) for row in child_rows)
+        bldg_rows[0]['ap_count'] = sum(row.get('ap_count', 0) for row in child_rows)
+        bldg_rows[0]['ups_count'] = sum(row.get('ups_count', 0) for row in child_rows)
+        bldg_rows[0]['ups_battery'] = sum(row.get('ups_battery', 0) for row in child_rows)
+
     spec_rows = [
         {
             'id': 92001,
