@@ -1048,13 +1048,15 @@
                 window.localStorage.setItem('dashboardCompactMode', '0');
             }
         });
+        var compactEnabled = true;
         try {
-            if (window.localStorage && window.localStorage.getItem('dashboardCompactMode') === '1') {
-                $('#compact-toggle').prop('checked', true).trigger('change');
+            if (window.localStorage && window.localStorage.getItem('dashboardCompactMode') === '0') {
+                compactEnabled = false;
             }
         } catch (e) {
             // Ignore localStorage access errors
         }
+        $('#compact-toggle').prop('checked', compactEnabled).trigger('change');
 
         // Bind to the document so dynamically added content will still work
         // Configure the comment edit field
