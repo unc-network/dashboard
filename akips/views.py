@@ -1263,6 +1263,13 @@ class UserAlertView(LoginRequiredMixin, View):
         last_notified_cookie = request.COOKIES.get('last_notified',None)
         logger.debug("cookie last_notified cookie value {}".format(last_notified_cookie))
 
+        last_notified = None
+        if last_notified_cookie is not None:
+            try:
+                last_notified = datetime.fromisoformat(last_notified_cookie)
+            except ValueError:
+                logger.warning("Invalid last_notified cookie value; resetting notification window")
+
         # Define the times we care about
         now = timezone.now()
         cutoff_hours = 2
@@ -1276,7 +1283,7 @@ class UserAlertView(LoginRequiredMixin, View):
             'voice_enabled': self.request.user.profile.voice_enabled,
         }
 
-        if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:
+        if last_notified is None or last_notified < old_session_time:
             # user has no notification history or it is an old session
             times = []
             tmp_messages = []
@@ -1340,7 +1347,6 @@ class UserAlertView(LoginRequiredMixin, View):
             # user has a typical active session
             times = []
             tmp_messages = []
-            last_notified = datetime.fromisoformat(last_notified_cookie)
             #result['messages'].append("User has an active session")
 
             # unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
@@ -1404,7 +1410,7 @@ class UserAlertView(LoginRequiredMixin, View):
             response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             response = JsonResponse(result)
-        response.set_cookie('last_notified', result['last_notified'])
+        response.set_cookie('last_notified', result['last_notified'].isoformat())
         return response
 
 class ChartDataView(LoginRequiredMixin, View):

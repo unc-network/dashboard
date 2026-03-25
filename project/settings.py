@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'debug_toolbar',
     'welcome',
 
     'adminlte3',
@@ -76,8 +75,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+if DEBUG:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'project.urls'
 
@@ -115,6 +117,14 @@ from . import database
 DATABASES = {
     'default': database.config()
 }
+
+# Harden database connection reuse for long-running workers and transient
+# disconnects (for example DB failover/proxy idle timeouts).
+DATABASES['default']['CONN_MAX_AGE'] = int(os.getenv('DB_CONN_MAX_AGE', '60'))
+DATABASES['default']['CONN_HEALTH_CHECKS'] = os.getenv('DB_CONN_HEALTH_CHECKS', 'True').lower() == 'true'
+
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql_psycopg2':
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = os.getenv('DB_DISABLE_SERVER_SIDE_CURSORS', 'True').lower() == 'true'
 
 # https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
