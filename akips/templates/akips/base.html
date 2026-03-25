@@ -42,22 +42,19 @@
 <script type="text/javascript">
     (function () {
         function resolveSystemTheme() {
-            var hour = new Date().getHours();
-            var isNight = (hour >= 19 || hour < 7);
             try {
                 if (window.matchMedia) {
                     var media = window.matchMedia('(prefers-color-scheme: dark)');
                     if (media && media.media !== 'not all') {
-                        // In system mode, honor dark preference and also force dark overnight.
-                        return (media.matches || isNight) ? 'dark' : 'light';
+                        return media.matches ? 'dark' : 'light';
                     }
                 }
             } catch (e) {
                 // Ignore matchMedia access errors
             }
 
-            // Fallback: use local time when system preference is unavailable.
-            return isNight ? 'dark' : 'light';
+            // Fallback when system preference is unavailable.
+            return 'light';
         }
 
         var mode = 'system';
@@ -147,22 +144,19 @@
         var MODES = ['light', 'dark', 'system'];
 
         function getSystemTheme() {
-            var hour = new Date().getHours();
-            var isNight = (hour >= 19 || hour < 7);
             try {
                 if (window.matchMedia) {
                     var media = window.matchMedia('(prefers-color-scheme: dark)');
                     if (media && media.media !== 'not all') {
-                        // In system mode, honor dark preference and also force dark overnight.
-                        return (media.matches || isNight) ? 'dark' : 'light';
+                        return media.matches ? 'dark' : 'light';
                     }
                 }
             } catch (e) {
                 // Ignore matchMedia access errors
             }
 
-            // Fallback: use local time when system preference is unavailable.
-            return isNight ? 'dark' : 'light';
+            // Fallback when system preference is unavailable.
+            return 'light';
         }
 
         function getStoredMode() {
