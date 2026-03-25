@@ -338,12 +338,23 @@
     }
     body.hud-mode .content {
         padding-top: 0.35rem;
+        padding-bottom: 0.25rem;
     }
     body.hud-mode .content .container {
         max-width: none;
         width: 100%;
         padding-left: 0.35rem;
         padding-right: 0.35rem;
+        min-height: calc(100vh - 0.6rem);
+        display: flex;
+        flex-direction: column;
+    }
+    body.hud-mode #myForm {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-bottom: 0;
     }
     /* HUD: no extra margin-bottom — flex column gap handles spacing (fix 6) */
     body.hud-mode .ops-status-strip,
@@ -372,7 +383,9 @@
         grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
         gap: 0.45rem;
         align-items: stretch;
-        height: calc(100vh - 5.5rem);
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
     }
     body.hud-mode .ops-dashboard-column {
         display: flex;
@@ -440,6 +453,7 @@
         body.hud-mode .ops-dashboard-grid {
             grid-template-columns: 1fr;
             height: auto;
+            flex: 0 0 auto;
         }
         body.hud-mode .ops-dashboard-column {
             gap: 0.45rem;
