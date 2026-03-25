@@ -20,7 +20,7 @@ from django.template.loader import render_to_string
 from django.contrib import messages
 from django.utils import timezone
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncHour
 
 #from django.utils.decorators import method_decorator
@@ -200,15 +200,74 @@ class Devices(LoginRequiredMixin, View):
         context = {}
         context['search'] = request.GET.get('search', '').strip()
 
-        # list = ['SWITCH','AP','UPS','ROUTER']
-        # devices = Device.objects.exclude(type__in=list)
-        devices = Device.objects.all()
-        context['devices'] = devices
-
         # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
         # context['last_device_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)
+
+
+class DevicesDataAPI(LoginRequiredMixin, View):
+    ''' API view for server-side DataTables device listing '''
+
+    columns = ['name', 'ip4addr', 'sysName', 'group', 'type']
+    order_columns = ['ip4addr', 'ip4addr', 'sysName', 'group', 'type']
+    total_count_cache_key = 'devices_data_total_count'
+    total_count_cache_ttl = 60
+
+    def _parse_int(self, value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get(self, request, *args, **kwargs):
+        draw = self._parse_int(request.GET.get('draw'), 1)
+        start = max(self._parse_int(request.GET.get('start'), 0), 0)
+        length = self._parse_int(request.GET.get('length'), 25)
+        if length <= 0:
+            length = 25
+        length = min(length, 500)
+
+        search_value = request.GET.get('search[value]', '').strip()
+        order_index = self._parse_int(request.GET.get('order[0][column]'), 0)
+        order_dir = request.GET.get('order[0][dir]', 'asc')
+        if order_index < 0 or order_index >= len(self.order_columns):
+            order_index = 0
+
+        order_field = self.order_columns[order_index]
+        order_by = f'-{order_field}' if order_dir == 'desc' else order_field
+
+        records_total = cache.get(self.total_count_cache_key)
+        if records_total is None:
+            records_total = Device.objects.count()
+            cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
+
+        base_qs = Device.objects.all()
+
+        if search_value:
+            base_qs = base_qs.filter(
+                Q(name__icontains=search_value)
+                | Q(ip4addr__icontains=search_value)
+                | Q(sysName__icontains=search_value)
+                | Q(group__icontains=search_value)
+                | Q(type__icontains=search_value)
+            )
+
+        records_filtered = records_total if not search_value else base_qs.count()
+
+        rows = base_qs.order_by(order_by).values(*self.columns)[start:start + length]
+        data = []
+        for row in rows:
+            row_data = dict(row)
+            row_data['device_url'] = reverse('device', args=[row['name']])
+            data.append(row_data)
+
+        return JsonResponse({
+            'draw': draw,
+            'recordsTotal': records_total,
+            'recordsFiltered': records_filtered,
+            'data': data,
+        })
 
 class UPSProblems(LoginRequiredMixin, View):
     ''' List UPS current in a problem state '''

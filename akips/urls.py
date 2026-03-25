@@ -34,6 +34,7 @@ urlpatterns = [
 
     # Device API
     path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
+    path('api/devices/data/', views.DevicesDataAPI.as_view(), name='devices_data_api'),
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/set_notification_mode', views.SetNotificationView.as_view(), name='set_notification'),
 
