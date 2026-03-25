@@ -209,7 +209,7 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Last AKiPS Sync</td>
+                            <td>AKiPS Sync</td>
                             {% if last_akips_sync %}
                             <td>{{ last_akips_sync.date_created }}</td>
                             <td>{% if last_akips_sync.status != 'STARTED' %}{{ last_akips_sync.date_done }}{% else %}In progress{% endif %}</td>
@@ -222,7 +222,7 @@
                             {% endif %}
                         </tr>
                         <tr>
-                            <td>Last Inventory Sync</td>
+                            <td>Inventory Sync</td>
                             {% if last_inventory_sync %}
                             <td>{{ last_inventory_sync.date_created }}</td>
                             <td>{% if last_inventory_sync.status != 'STARTED' %}{{ last_inventory_sync.date_done }}{% else %}In progress{% endif %}</td>
