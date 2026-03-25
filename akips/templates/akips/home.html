@@ -371,6 +371,12 @@
         font-size: 0.75rem;
         padding: 0.18rem 0.42rem;
     }
+    body.hud-mode .ops-status-strip .ops-status-actions {
+        margin-left: auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
     .ops-dashboard-grid {
         display: block;
     }
@@ -493,7 +499,7 @@
 <form method="get" id="myForm" action="{% url 'create_incident' %}" data-cards-url="{% url 'dashboard_cards' %}">
     <div class="card ops-status-strip">
         <div class="card-body py-2 d-flex align-items-center justify-content-between flex-wrap">
-            <div>
+            <div class="ops-status-main">
                 <span class="ops-chip ops-chip-neutral">Data Age: <span id="ops-data-age">unknown</span></span>
                 <span class="ops-chip ops-chip-warn" id="ops-simulate-chip" style="display:none">SIMULATE MODE</span>
                 <span class="ops-chip ops-chip-critical" id="ops-crit-chip" style="display:none">Crit: <span id="ops-crit-count">0</span></span>
@@ -512,9 +518,11 @@
                 <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
             </div>
             {% else %}
-            <a href="{% url 'home' %}" class="ops-chip ops-chip-neutral" title="Return to dashboard" style="text-decoration:none; line-height:1">
-                <i class="fas fa-th-large"></i>
-            </a>
+            <div class="ops-status-actions mt-2 mt-sm-0 ml-sm-3">
+                <a href="{% url 'home' %}" class="ops-chip ops-chip-neutral" title="Return to dashboard" style="text-decoration:none; line-height:1">
+                    <i class="fas fa-th-large"></i>
+                </a>
+            </div>
             {% endif %}
         </div>
     </div>
