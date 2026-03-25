@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 from django.template.loader import render_to_string
 
@@ -86,31 +86,69 @@ class EventManager:
                 counts[sid][bucket] += row['device_count']
                 counts[sid]['TOTAL'] += row['device_count']
 
+        def _accumulate_into(rows, sid, key):
+            """Accumulate rows from a fixed summary_id (used for the 'Other' bucket)."""
+            for row in rows:
+                dtype = row[key]
+                bucket = dtype if dtype in ('SWITCH', 'AP', 'UPS') else 'UNKNOWN'
+                counts[sid][bucket] += row['device_count']
+                counts[sid]['TOTAL'] += row['device_count']
+
         if building_map:
-            rows = (
-                base_qs
-                .filter(
-                    device__critical=False,
-                    device__group='default',
-                    device__building_name__in=building_map.keys(),
+            named = {k: v for k, v in building_map.items() if k != 'Other'}
+            if named:
+                rows = (
+                    base_qs
+                    .filter(
+                        device__critical=False,
+                        device__group='default',
+                        device__building_name__in=named.keys(),
+                    )
+                    .values('device__building_name', 'device__type')
+                    .annotate(device_count=Count('device_id', distinct=True))
                 )
-                .values('device__building_name', 'device__type')
-                .annotate(device_count=Count('device_id', distinct=True))
-            )
-            _accumulate(rows, building_map, 'device__building_name')
+                _accumulate(rows, named, 'device__building_name')
+            if 'Other' in building_map:
+                # blank or null building_name is displayed as 'Other'
+                other_rows = (
+                    base_qs
+                    .filter(
+                        device__critical=False,
+                        device__group='default',
+                    )
+                    .filter(Q(device__building_name='') | Q(device__building_name__isnull=True))
+                    .values('device__type')
+                    .annotate(device_count=Count('device_id', distinct=True))
+                )
+                _accumulate_into(other_rows, building_map['Other'], 'device__type')
 
         if tier_map:
-            rows = (
-                base_qs
-                .filter(
-                    device__critical=False,
-                    device__group='default',
-                    device__tier__in=tier_map.keys(),
+            named = {k: v for k, v in tier_map.items() if k != 'Other'}
+            if named:
+                rows = (
+                    base_qs
+                    .filter(
+                        device__critical=False,
+                        device__group='default',
+                        device__tier__in=named.keys(),
+                    )
+                    .values('device__tier', 'device__type')
+                    .annotate(device_count=Count('device_id', distinct=True))
                 )
-                .values('device__tier', 'device__type')
-                .annotate(device_count=Count('device_id', distinct=True))
-            )
-            _accumulate(rows, tier_map, 'device__tier')
+                _accumulate(rows, named, 'device__tier')
+            if 'Other' in tier_map:
+                # blank or null tier is displayed as 'Other'
+                other_rows = (
+                    base_qs
+                    .filter(
+                        device__critical=False,
+                        device__group='default',
+                    )
+                    .filter(Q(device__tier='') | Q(device__tier__isnull=True))
+                    .values('device__type')
+                    .annotate(device_count=Count('device_id', distinct=True))
+                )
+                _accumulate_into(other_rows, tier_map['Other'], 'device__type')
 
         if specialty_map:
             rows = (
