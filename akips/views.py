@@ -470,7 +470,7 @@ def render_card_fragment(card_id, cache_timeout=60):
     return html
 
 
-def get_card_data(card_id, cache_timeout=60):
+def get_card_data(card_id, cache_timeout=15):
     """Return one dashboard card data payload with cache reuse."""
     config = CARD_REFRESH_CONFIG[card_id]
     cached_data = cache.get(config['data_cache_key'])

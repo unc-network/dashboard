@@ -35,42 +35,113 @@ class EventManager:
             else:
                 self.incident_update_add[summary.tdx_incident] = [unreachable]
 
-    def _build_summary_count_data(self, summary_ids):
-        """Return per-summary open device counts by type and total."""
+    def _build_summary_count_data(self, summaries):
+        """Return per-summary open device counts by type and total.
+
+        For Building, Distribution, and Specialty summaries: derives counts
+        directly from live open Unreachable records grouped by device attributes,
+        bypassing the Summary.unreachables M2M table to eliminate association lag
+        (a summary row can appear before its M2M links are written).
+
+        For Critical summaries: still uses the M2M join since each Critical
+        summary corresponds to a single named device and M2M is always set first.
+        """
         counts = {
-            summary_id: {
-                'SWITCH': 0,
-                'AP': 0,
-                'UPS': 0,
-                'UNKNOWN': 0,
-                'TOTAL': 0,
-            }
-            for summary_id in summary_ids
+            s.id: {'SWITCH': 0, 'AP': 0, 'UPS': 0, 'UNKNOWN': 0, 'TOTAL': 0}
+            for s in summaries
         }
-        if not summary_ids:
+        if not summaries:
             return counts
 
-        through_model = Summary.unreachables.through
-        base_qs = through_model.objects.filter(
-            summary_id__in=summary_ids,
-            unreachable__status='Open',
-            unreachable__device__maintenance=False,
+        building_map = {}   # building_name -> summary_id
+        tier_map = {}       # tier_name     -> summary_id
+        specialty_map = {}  # group_name    -> summary_id
+        critical_ids = []
+        for s in summaries:
+            if s.type == 'Building':
+                building_map[s.name] = s.id
+            elif s.type == 'Distribution':
+                tier_map[s.name] = s.id
+            elif s.type == 'Specialty':
+                specialty_map[s.name] = s.id
+            elif s.type == 'Critical':
+                critical_ids.append(s.id)
+
+        base_qs = Unreachable.objects.filter(
+            status='Open',
+            device__maintenance=False,
+        ).exclude(
+            device__hibernate=True,
+        ).exclude(
+            device__notify=False,
         )
 
-        type_rows = base_qs.values('summary_id', 'unreachable__device__type').annotate(
-            device_count=Count('unreachable__device_id', distinct=True)
-        )
-        for row in type_rows:
-            summary_id = row['summary_id']
-            device_type = row['unreachable__device__type']
-            bucket = device_type if device_type in ['SWITCH', 'AP', 'UPS'] else 'UNKNOWN'
-            counts[summary_id][bucket] += row['device_count']
+        def _accumulate(rows, id_map, key):
+            for row in rows:
+                sid = id_map.get(row[key])
+                if sid is None:
+                    continue
+                dtype = row['device__type']
+                bucket = dtype if dtype in ('SWITCH', 'AP', 'UPS') else 'UNKNOWN'
+                counts[sid][bucket] += row['device_count']
+                counts[sid]['TOTAL'] += row['device_count']
 
-        total_rows = base_qs.values('summary_id').annotate(
-            device_count=Count('unreachable__device_id', distinct=True)
-        )
-        for row in total_rows:
-            counts[row['summary_id']]['TOTAL'] = row['device_count']
+        if building_map:
+            rows = (
+                base_qs
+                .filter(
+                    device__critical=False,
+                    device__group='default',
+                    device__building_name__in=building_map.keys(),
+                )
+                .values('device__building_name', 'device__type')
+                .annotate(device_count=Count('device_id', distinct=True))
+            )
+            _accumulate(rows, building_map, 'device__building_name')
+
+        if tier_map:
+            rows = (
+                base_qs
+                .filter(
+                    device__critical=False,
+                    device__group='default',
+                    device__tier__in=tier_map.keys(),
+                )
+                .values('device__tier', 'device__type')
+                .annotate(device_count=Count('device_id', distinct=True))
+            )
+            _accumulate(rows, tier_map, 'device__tier')
+
+        if specialty_map:
+            rows = (
+                base_qs
+                .filter(device__group__in=specialty_map.keys())
+                .values('device__group', 'device__type')
+                .annotate(device_count=Count('device_id', distinct=True))
+            )
+            _accumulate(rows, specialty_map, 'device__group')
+
+        # Critical: one device per summary, use M2M (always written before counts)
+        if critical_ids:
+            through_model = Summary.unreachables.through
+            crit_qs = through_model.objects.filter(
+                summary_id__in=critical_ids,
+                unreachable__status='Open',
+                unreachable__device__maintenance=False,
+            )
+            type_rows = crit_qs.values('summary_id', 'unreachable__device__type').annotate(
+                device_count=Count('unreachable__device_id', distinct=True)
+            )
+            for row in type_rows:
+                sid = row['summary_id']
+                dtype = row['unreachable__device__type']
+                bucket = dtype if dtype in ('SWITCH', 'AP', 'UPS') else 'UNKNOWN'
+                counts[sid][bucket] += row['device_count']
+            total_rows = crit_qs.values('summary_id').annotate(
+                device_count=Count('unreachable__device_id', distinct=True)
+            )
+            for row in total_rows:
+                counts[row['summary_id']]['TOTAL'] = row['device_count']
 
         return counts
 
@@ -352,8 +423,7 @@ class EventManager:
 
         # Calculate summary counts using precomputed aggregates to reduce query volume
         summaries = list(Summary.objects.filter(status='Open'))
-        summary_ids = [summary.id for summary in summaries]
-        summary_count_data = self._build_summary_count_data(summary_ids)
+        summary_count_data = self._build_summary_count_data(summaries)
         summary_capacity_data = self._build_summary_capacity_data()
         t_after_summary_precompute = time.perf_counter()
         for summary in summaries:
