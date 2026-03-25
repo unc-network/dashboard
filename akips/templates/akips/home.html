@@ -663,7 +663,7 @@
 
     function renderCritCard(card) {
         var rows = card.rows || [];
-        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th>Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var ackChecked = row.ack ? ' checked' : '';
@@ -764,7 +764,7 @@
 
     function renderSpecCard(card) {
         var rows = card.rows || [];
-        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th>Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        var html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var ackChecked = row.ack ? ' checked' : '';
