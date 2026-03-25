@@ -51,6 +51,9 @@
         max-height: 520px;
         overflow-y: auto;
     }
+    .trap-pager {
+        background: var(--oc-surface-2);
+    }
     .event-card .card-body .refresh-overlay {
         position: absolute;
         top: 0;
@@ -342,7 +345,7 @@
     </div>
     <div class="col-sm-auto text-right header-action-buttons">
         <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
-        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
+        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm" data-url="{% url 'clear_trap_all' %}">Clear All Traps</button>
         <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
     </div>
 </div> 
@@ -783,6 +786,8 @@
 
     function renderTrapCard(card) {
         var rows = card.rows || [];
+        var page = card.page || 1;
+        var totalPages = card.total_pages || 1;
         var html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Ack</th><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th><th>Clear</th></tr></thead><tbody>';
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
@@ -802,6 +807,13 @@
                 '</tr>';
         }
         html += '</tbody></table>';
+        if (totalPages > 1) {
+            html += '<div class="trap-pager border-top d-flex justify-content-between align-items-center px-2 py-2">';
+            html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page - 1) + '"' + (card.has_prev ? '' : ' disabled') + '>Prev</button>';
+            html += '<span class="small text-muted">Page ' + escapeHtml(String(page)) + ' of ' + escapeHtml(String(totalPages)) + ' (' + escapeHtml(String(card.total_open || 0)) + ' open)</span>';
+            html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page + 1) + '"' + (card.has_next ? '' : ' disabled') + '>Next</button>';
+            html += '</div>';
+        }
         return html;
     }
 
@@ -915,6 +927,7 @@
         window.dashboardCardSignatures = signatures;
         var cardSignatureDebug = false;
         var changedCards = [];
+        var trapPage = window.trapCardPage || 1;
 
         // Enable debug logging with either:
         // 1) URL param: ?cardSigDebug=1
@@ -943,10 +956,15 @@
             type: 'GET',
             url: cardsUrl,
             dataType: 'json',
-            data: {},
+            data: { trap_page: trapPage },
             success: function (result) {
                 var cards = result['cards'] || {};
                 var newSignatures = result['signatures'] || {};
+
+                if (cards.trap_card && cards.trap_card.page) {
+                    window.trapCardPage = cards.trap_card.page;
+                }
+
                 $('.event-card').each(function () {
                     var id = this.id;
                     var body = $(this).find('.card-body');
@@ -1010,6 +1028,7 @@
     $(document).ready(function () {
         var refresh_seconds = 30;
         var auto_refresh = true;
+        window.trapCardPage = 1;
 
         var csrfToken = getCookie('csrftoken');
 
@@ -1144,6 +1163,16 @@
             });
         });
 
+        $(document).on('click', '.trap-page-btn', function (e) {
+            e.preventDefault();
+            var requestedPage = parseInt($(this).data('page'), 10);
+            if (isNaN(requestedPage) || requestedPage < 1) {
+                return;
+            }
+            window.trapCardPage = requestedPage;
+            refresh_cards();
+        });
+
         // Collapse/expand hierarchy groups in Tier / Building card
         $(document).on('click', '.bldg-group-toggle', function (e) {
             e.preventDefault();
@@ -1177,17 +1206,36 @@
         // Configure the Clear All Traps button for traps
         // $(document).on('click', 'button.clear_all_traps', function () {
         $('#clear_all_traps').click(function () {
-            // var url = $(this).data("url");
-            // $.get(url, {})
-            $('.trap-clear').each(function (index) {
-                var tr = $(this).closest('tr');
-                var url = $(this).data("url");
-                console.log("clearing trap with " + url)
-                $.get(url, {})
-                tr.css("background-color", "#FF3700");
-                tr.fadeOut(400, function () {
-                    tr.remove();
-                });
+            var btn = $(this);
+            var url = btn.data("url");
+            btn.prop('disabled', true);
+            $.ajax({
+                type: 'GET',
+                url: url,
+                dataType: 'json',
+                success: function (result) {
+                    showToast({
+                        class: 'bg-info',
+                        title: 'Clear All Traps',
+                        body: 'Cleared ' + (result.cleared_count || 0) + ' open traps.',
+                        autohide: true,
+                        delay: 5000
+                    });
+                    window.trapCardPage = 1;
+                    refresh_cards();
+                },
+                error: function () {
+                    showToast({
+                        class: 'bg-danger',
+                        title: 'Clear All Traps',
+                        body: 'Failed to clear all traps. Please try again.',
+                        autohide: true,
+                        delay: 6000
+                    });
+                },
+                complete: function () {
+                    btn.prop('disabled', false);
+                }
             });
         });
 

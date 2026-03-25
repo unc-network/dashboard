@@ -478,9 +478,22 @@ def _trap_incident(trap):
     return None
 
 
-def _serialize_trap_data(traps):
+def _serialize_trap_data(traps, page=1, page_size=50):
+    if page_size <= 0:
+        page_size = 50
+
+    if hasattr(traps, 'count'):
+        total_open = traps.count()
+    else:
+        total_open = len(traps)
+
+    total_pages = max(1, math.ceil(total_open / page_size))
+    page = min(max(page, 1), total_pages)
+    start = (page - 1) * page_size
+    end = start + page_size
+
     rows = []
-    for trap in traps:
+    for trap in traps[start:end]:
         rows.append({
             'id': trap.id,
             'ack': trap.ack,
@@ -500,7 +513,12 @@ def _serialize_trap_data(traps):
     return {
         'rows': rows,
         'has_rows': len(rows) > 0,
-        'total_open': len(traps),
+        'total_open': total_open,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': total_pages,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
     }
 
 
@@ -529,17 +547,27 @@ def render_card_fragment(card_id, cache_timeout=60):
     return html
 
 
-def get_card_data(card_id, cache_timeout=15):
+def get_card_data(card_id, cache_timeout=15, serializer_kwargs=None, cache_variant=None):
     """Return one dashboard card data payload with cache reuse."""
     config = CARD_REFRESH_CONFIG[card_id]
-    cached_data = cache.get(config['data_cache_key'])
+    cache_key = config['data_cache_key']
+    if cache_variant:
+        cache_key = f"{cache_key}:{cache_variant}"
+
+    cached_data = cache.get(cache_key)
     if cached_data is not None:
-        logger.debug(f"Cache HIT for {config['data_cache_key']}")
+        logger.debug(f"Cache HIT for {cache_key}")
         return cached_data
 
-    logger.debug(f"Cache MISS for {config['data_cache_key']}")
-    data = CARD_SERIALIZERS[card_id](list(config['queryset']()))
-    cache.set(config['data_cache_key'], data, cache_timeout)
+    logger.debug(f"Cache MISS for {cache_key}")
+    queryset = config['queryset']()
+    serializer = CARD_SERIALIZERS[card_id]
+    if serializer_kwargs:
+        data = serializer(queryset, **serializer_kwargs)
+    else:
+        data = serializer(list(queryset))
+
+    cache.set(cache_key, data, cache_timeout)
     return data
 
 
@@ -547,10 +575,28 @@ class DashboardCardsView(LoginRequiredMixin, View):
     ''' Return all dashboard cards as JSON in one request '''
     pretty_print = True
 
+    def _parse_int(self, value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
     def get(self, request, *args, **kwargs):
+        trap_page = max(self._parse_int(request.GET.get('trap_page'), 1), 1)
+        trap_page_size = 50
+
         result = {'cards': {}, 'signatures': {}}
         for card_id in CARD_REFRESH_CONFIG:
-            card_data = get_card_data(card_id)
+            serializer_kwargs = None
+            cache_variant = None
+            if card_id == 'trap_card':
+                serializer_kwargs = {
+                    'page': trap_page,
+                    'page_size': trap_page_size,
+                }
+                cache_variant = f"p{trap_page}:s{trap_page_size}"
+
+            card_data = get_card_data(card_id, serializer_kwargs=serializer_kwargs, cache_variant=cache_variant)
             result['cards'][card_id] = card_data
             card_json = json.dumps(card_data, sort_keys=True, default=str)
             result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
@@ -1215,6 +1261,28 @@ class ClearTrapView(LoginRequiredMixin, View):
             return JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             return JsonResponse(result)
+
+
+class ClearAllTrapsView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        now = timezone.now()
+        cleared_count = Trap.objects.filter(status='Open').update(
+            status='Closed',
+            cleared_by=request.user.username,
+            cleared_at=now,
+        )
+        logger.info("Cleared %s open traps via clear-all", cleared_count)
+
+        result = {
+            'status': 'Closed',
+            'cleared_count': cleared_count,
+        }
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        return JsonResponse(result)
 
 
 class AckTrapView(LoginRequiredMixin, View):
