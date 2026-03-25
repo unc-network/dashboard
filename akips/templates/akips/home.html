@@ -99,13 +99,6 @@
     .event-card .bldg-parent-row {
         background: #edf3f9;
     }
-    .event-card .bldg-parent-row td {
-        font-weight: 500;
-    }
-    .event-card .bldg-child-row .num-col,
-    .event-card .bldg-child-row .ts-col {
-        font-weight: 700;
-    }
     .event-card .bldg-group-toggle {
         border: 0;
         background: transparent;
@@ -665,6 +658,14 @@
         return html;
     }
 
+    function renderDownCount(n) {
+        var val = parseInt(n, 10);
+        if (!isNaN(val) && val > 0) {
+            return '<span class="text-danger font-weight-bold">' + escapeHtml(String(n)) + '</span>';
+        }
+        return escapeHtml(String(n));
+    }
+
     function renderBldgCard(card) {
         var rows = card.rows || [];
         var allExpanded = window.bldgHierarchyExpanded !== false;
@@ -706,9 +707,9 @@
             html += '<tr' + trClass + '>' +
                 ackCell +
                 nameCell +
-                '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.switch_count) + '</td>' +
-                '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.ap_count) + '</td>' +
-                '<td class="d-none d-md-table-cell num-col">' + escapeHtml(row.ups_count) + upsBatteryIcon + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.switch_count) + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.ap_count) + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.ups_count) + upsBatteryIcon + '</td>' +
                 '<td class="d-none d-md-table-cell num-col">' + percentLabel + '</td>' +
                 '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
                 trendCell +
