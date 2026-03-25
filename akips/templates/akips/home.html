@@ -34,6 +34,12 @@
     .ops-chip-danger { background: #f6e9ec; color: #6e2e3b; border-color: #e8ccd3; }
     .ops-chip-warn { background: #f8f1e1; color: #6f5520; border-color: #e8d5ad; }
     .ops-chip-light { background: #f4f6f8; color: #4f5f72; border-color: #e1e6eb; }
+    .ops-chip-critical { background: #f6e9ec; color: #6e2e3b; border-color: #e8ccd3; }
+    .ops-chip-switch { background: #fbe8e0; color: #7c3419; border-color: #efcbbd; }
+    .ops-chip-ap { background: #f8efd8; color: #6b5417; border-color: #e8d4a1; }
+    .ops-chip-ups { background: #ece7fb; color: #50307d; border-color: #d5caf3; }
+    .ops-chip-special { background: #e4f4ec; color: #1f5a41; border-color: #bfe1cf; }
+    .ops-chip-trap { background: #e7effa; color: #214b77; border-color: #c8d9ef; }
 
     .event-card .table-responsive {
         overflow-x: auto;
@@ -256,6 +262,12 @@
     body.theme-dark .ops-chip-danger { background: #5a333d; color: #ffe3e9; border-color: #7b4b57; }
     body.theme-dark .ops-chip-warn { background: #524124; color: #f7e8c8; border-color: #76603d; }
     body.theme-dark .ops-chip-light { background: #2b3847; color: #c8d6e4; border-color: #3f5065; }
+    body.theme-dark .ops-chip-critical { background: #5a333d; color: #ffe3e9; border-color: #7b4b57; }
+    body.theme-dark .ops-chip-switch { background: #5c3a2c; color: #ffe7de; border-color: #7f5847; }
+    body.theme-dark .ops-chip-ap { background: #5b4b28; color: #f9edca; border-color: #7b6940; }
+    body.theme-dark .ops-chip-ups { background: #44395e; color: #ede5ff; border-color: #655487; }
+    body.theme-dark .ops-chip-special { background: #27493a; color: #ddf7ea; border-color: #42705c; }
+    body.theme-dark .ops-chip-trap { background: #2c435d; color: #deedff; border-color: #476585; }
     body.theme-dark .event-card table thead th {
         background: #2a3a50;
         border-bottom: 2px solid #435b7d;
@@ -337,10 +349,13 @@
     <div class="card ops-status-strip">
         <div class="card-body py-2 d-flex align-items-center justify-content-between flex-wrap">
             <div>
-                <span class="ops-chip ops-chip-info">Last Refresh: <span id="ops-last-refresh">pending</span></span>
                 <span class="ops-chip ops-chip-neutral">Data Age: <span id="ops-data-age">unknown</span></span>
-                <span class="ops-chip ops-chip-danger">Critical: <span id="ops-crit-count">0</span></span>
-                <span class="ops-chip ops-chip-warn">Open Traps: <span id="ops-trap-count">0</span></span>
+                <span class="ops-chip ops-chip-critical" id="ops-crit-chip" style="display:none">Crit: <span id="ops-crit-count">0</span></span>
+                <span class="ops-chip ops-chip-switch" id="ops-bldg-switch-chip" style="display:none">SW: <span id="ops-bldg-switch-count">0</span></span>
+                <span class="ops-chip ops-chip-ap" id="ops-bldg-ap-chip" style="display:none">AP: <span id="ops-bldg-ap-count">0</span></span>
+                <span class="ops-chip ops-chip-ups" id="ops-bldg-ups-chip" style="display:none">UPS: <span id="ops-bldg-ups-count">0</span></span>
+                <span class="ops-chip ops-chip-special" id="ops-spec-chip" style="display:none">Spec: <span id="ops-spec-count">0</span></span>
+                <span class="ops-chip ops-chip-trap" id="ops-trap-chip" style="display:none">Traps: <span id="ops-trap-count">0</span></span>
                 <span class="ops-chip ops-chip-light">Cards Changed: <span id="ops-cards-changed">0</span></span>
             </div>
             <div class="custom-control custom-switch mt-2 mt-sm-0 ml-sm-3">
@@ -822,13 +837,46 @@
         }
     }
 
+    function getBldgDeviceTotals(card) {
+        var totals = { sw: 0, ap: 0, ups: 0 };
+        var bldgRows = (card && card.rows) ? card.rows : [];
+        for (var i = 0; i < bldgRows.length; i++) {
+            if (bldgRows[i].type !== 'Distribution') {
+                totals.sw += parseInt(bldgRows[i].switch_count, 10) || 0;
+                totals.ap += parseInt(bldgRows[i].ap_count, 10) || 0;
+                totals.ups += parseInt(bldgRows[i].ups_count, 10) || 0;
+            }
+        }
+        return totals;
+    }
+
+    function getSpecTotal(card) {
+        var total = 0;
+        var rows = (card && card.rows) ? card.rows : [];
+        for (var i = 0; i < rows.length; i++) {
+            total += parseInt(rows[i].total_count, 10) || 0;
+        }
+        return total;
+    }
+
+    function setOpsChipCount(chipSelector, countSelector, count) {
+        $(countSelector).text(count);
+        $(chipSelector).toggle(count > 0);
+    }
+
     function updateOpsStrip(cards, changedCards, refreshSeconds) {
         var now = new Date();
         window.dashboardLastRefreshAt = now;
-        $('#ops-last-refresh').text(formatClock(now));
         $('#ops-cards-changed').text(changedCards.length);
-        $('#ops-crit-count').text((cards.crit_card && cards.crit_card.rows) ? cards.crit_card.rows.length : 0);
-        $('#ops-trap-count').text((cards.trap_card && cards.trap_card.total_open !== undefined) ? cards.trap_card.total_open : ((cards.trap_card && cards.trap_card.rows) ? cards.trap_card.rows.length : 0));
+        var critCount = (cards.crit_card && cards.crit_card.rows) ? cards.crit_card.rows.length : 0;
+        setOpsChipCount('#ops-crit-chip', '#ops-crit-count', critCount);
+        var bldgTotals = getBldgDeviceTotals(cards.bldg_card);
+        setOpsChipCount('#ops-bldg-switch-chip', '#ops-bldg-switch-count', bldgTotals.sw);
+        setOpsChipCount('#ops-bldg-ap-chip', '#ops-bldg-ap-count', bldgTotals.ap);
+        setOpsChipCount('#ops-bldg-ups-chip', '#ops-bldg-ups-count', bldgTotals.ups);
+        setOpsChipCount('#ops-spec-chip', '#ops-spec-count', getSpecTotal(cards.spec_card));
+        var trapCount = (cards.trap_card && cards.trap_card.total_open !== undefined) ? cards.trap_card.total_open : ((cards.trap_card && cards.trap_card.rows) ? cards.trap_card.rows.length : 0);
+        setOpsChipCount('#ops-trap-chip', '#ops-trap-count', trapCount);
 
         var freshness = $('#ops-data-age');
         freshness.text('0s');
