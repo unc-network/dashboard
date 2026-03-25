@@ -356,7 +356,9 @@
                 <span class="ops-chip ops-chip-ups" id="ops-bldg-ups-chip" style="display:none">UPS: <span id="ops-bldg-ups-count">0</span></span>
                 <span class="ops-chip ops-chip-special" id="ops-spec-chip" style="display:none">Spec: <span id="ops-spec-count">0</span></span>
                 <span class="ops-chip ops-chip-trap" id="ops-trap-chip" style="display:none">Traps: <span id="ops-trap-count">0</span></span>
+                {% if request.user.is_staff %}
                 <span class="ops-chip ops-chip-light">Cards Changed: <span id="ops-cards-changed">0</span></span>
+                {% endif %}
             </div>
             <div class="custom-control custom-switch mt-2 mt-sm-0 ml-sm-3">
                 <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
@@ -867,7 +869,9 @@
     function updateOpsStrip(cards, changedCards, refreshSeconds) {
         var now = new Date();
         window.dashboardLastRefreshAt = now;
+        {% if request.user.is_staff %}
         $('#ops-cards-changed').text(changedCards.length);
+        {% endif %}
         var critCount = (cards.crit_card && cards.crit_card.rows) ? cards.crit_card.rows.length : 0;
         setOpsChipCount('#ops-crit-chip', '#ops-crit-count', critCount);
         var bldgTotals = getBldgDeviceTotals(cards.bldg_card);
