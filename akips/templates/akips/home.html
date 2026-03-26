@@ -431,8 +431,21 @@
         max-height: none;
     }
     /* HUD: larger table text for TV readability (fix 2) */
-    body.hud-mode .event-card .table {
-        font-size: calc(1.05rem * var(--hud-font-scale));
+    body.hud-mode .event-card .table,
+    body.hud-mode .event-card .card-body,
+    body.hud-mode .event-card .card-body td,
+    body.hud-mode .event-card .card-body th,
+    body.hud-mode .event-card .card-body a,
+    body.hud-mode .event-card .card-body span,
+    body.hud-mode .event-card .card-body label,
+    body.hud-mode .event-card .card-body button,
+    body.hud-mode .event-card .card-body i {
+        font-size: calc(1.05rem * var(--hud-font-scale)) !important;
+    }
+    body.hud-mode .event-card .card-body .small,
+    body.hud-mode .event-card .card-body small,
+    body.hud-mode .event-card .card-body .badge {
+        font-size: calc(0.9rem * var(--hud-font-scale)) !important;
     }
     body.hud-mode .event-card .table td,
     body.hud-mode .event-card .table th {
