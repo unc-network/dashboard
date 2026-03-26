@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
-    hud_font_scale_default = 1.9
+    hud_font_scale_default = 1.0
     hud_font_scale_min = 1.0
     hud_font_scale_max = 1.9
 
