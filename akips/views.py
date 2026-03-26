@@ -61,11 +61,32 @@ logger = logging.getLogger(__name__)
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
+    hud_font_scale_default = 1.3
+    hud_font_scale_min = 1.0
+    hud_font_scale_max = 1.6
+
+    def _get_hud_font_scale(self, request, hud_mode):
+        if not hud_mode:
+            return 1.0
+
+        raw_scale = str(request.GET.get('scale', '')).strip()
+        if not raw_scale:
+            return self.hud_font_scale_default
+
+        try:
+            scale = float(raw_scale)
+        except (TypeError, ValueError):
+            return self.hud_font_scale_default
+
+        return max(self.hud_font_scale_min, min(self.hud_font_scale_max, scale))
 
     def get(self, request, *args, **kwargs):
         forced_hud_mode = bool(self.kwargs.get('hud_mode', False))
+        hud_mode = forced_hud_mode or str(request.GET.get('hud', '')).strip().lower() in ('1', 'true', 'yes', 'on')
+        hud_font_scale = self._get_hud_font_scale(request, hud_mode)
         context = {
-            'hud_mode': forced_hud_mode or str(request.GET.get('hud', '')).strip().lower() in ('1', 'true', 'yes', 'on'),
+            'hud_mode': hud_mode,
+            'hud_font_scale': hud_font_scale,
         }
 
         # akips = AKIPS()

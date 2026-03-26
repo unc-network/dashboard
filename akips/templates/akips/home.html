@@ -336,6 +336,9 @@
         padding: 0.2rem 0.35rem;
         font-size: 0.88rem;
     }
+    body.hud-mode {
+        --hud-font-scale: {{ hud_font_scale|default:1.3 }};
+    }
     body.hud-mode .content {
         padding-top: 0.35rem;
         padding-bottom: 0.25rem;
@@ -365,10 +368,10 @@
     body.hud-mode .ops-status-strip .card-body {
         padding-top: 0.22rem !important;
         padding-bottom: 0.22rem !important;
-        font-size: 0.88rem;
+        font-size: calc(0.88rem * var(--hud-font-scale));
     }
     body.hud-mode .ops-status-strip .ops-chip {
-        font-size: 0.75rem;
+        font-size: calc(0.75rem * var(--hud-font-scale));
         padding: 0.18rem 0.42rem;
     }
     .ops-status-strip .ops-status-actions {
@@ -429,22 +432,22 @@
     }
     /* HUD: larger table text for TV readability (fix 2) */
     body.hud-mode .event-card .table {
-        font-size: 1.05rem;
+        font-size: calc(1.05rem * var(--hud-font-scale));
     }
     body.hud-mode .event-card .table td,
     body.hud-mode .event-card .table th {
         padding: 0.32rem 0.45rem;
     }
     body.hud-mode .ops-status-strip .card-body {
-        font-size: 0.88rem;
+        font-size: calc(0.88rem * var(--hud-font-scale));
     }
     /* HUD: larger, bolder card titles (fix 3) */
     body.hud-mode .event-card .card-title {
-        font-size: 1.25rem;
+        font-size: calc(1.25rem * var(--hud-font-scale));
         font-weight: 700;
     }
     body.hud-mode .event-card table thead th {
-        font-size: 0.92rem;
+        font-size: calc(0.92rem * var(--hud-font-scale));
         top: 0;
     }
     body.hud-mode .summary-comment-static {
