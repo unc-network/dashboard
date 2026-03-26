@@ -1126,7 +1126,7 @@
                 html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
             }
             html +=
-                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-building"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
                 '<td class="num-col">' + escapeHtml(row.total_count) + '</td>' +
                 '<td class="num-col">' + percentLabel + '</td>' +
                 '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
