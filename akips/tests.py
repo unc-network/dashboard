@@ -19,7 +19,7 @@ class HomeHudScaleTests(SimpleTestCase):
             context = mock_render.call_args.kwargs['context']
 
         self.assertTrue(context['hud_mode'])
-        self.assertEqual(context['hud_font_scale'], 1.3)
+        self.assertEqual(context['hud_font_scale'], 1.9)
 
     def test_hud_route_accepts_valid_scale(self):
         request = self.factory.get('/hud/?scale=1.5')
@@ -39,7 +39,7 @@ class HomeHudScaleTests(SimpleTestCase):
             self.view(request, hud_mode=True)
             context = mock_render.call_args.kwargs['context']
 
-        self.assertEqual(context['hud_font_scale'], 1.3)
+        self.assertEqual(context['hud_font_scale'], 1.9)
 
     def test_hud_route_clamps_low_scale(self):
         request = self.factory.get('/hud/?scale=0.2')
@@ -59,7 +59,7 @@ class HomeHudScaleTests(SimpleTestCase):
             self.view(request, hud_mode=True)
             context = mock_render.call_args.kwargs['context']
 
-        self.assertEqual(context['hud_font_scale'], 1.6)
+        self.assertEqual(context['hud_font_scale'], 1.9)
 
     def test_non_hud_route_keeps_hud_scale_neutral(self):
         request = self.factory.get('/')
