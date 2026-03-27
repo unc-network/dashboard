@@ -389,11 +389,12 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(minutes=1),
         'description': 'Review hibernate device requests and update device status if needed.'
     },
-    'Refresh ServiceNow': {
-        'task': 'akips.task.refresh_incidents',
-        'schedule': timedelta(minutes=10),
-        'description': 'Refresh our ServiceNow incident status if needed.'
-    },
+    # Disabled: Migrated to TDX
+    # 'Refresh ServiceNow': {
+    #     'task': 'akips.task.refresh_incidents',
+    #     'schedule': timedelta(minutes=10),
+    #     'description': 'Refresh our ServiceNow incident status if needed.'
+    # },
     'Cleanup Dashboard Data': {
         'task': 'akips.task.cleanup_dashboard_data',
         'schedule': timedelta(hours=1),
