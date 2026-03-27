@@ -4,6 +4,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 from unittest.mock import patch
 
+from .models import TDXConfiguration
 from .views import Home
 
 class HomeHudScaleTests(SimpleTestCase):
@@ -155,3 +156,38 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Snapshot file must end with .json or .json.gz')
+
+    def test_settings_page_shows_tdx_card(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'TDX Integration')
+        self.assertContains(response, 'Save TDX Settings')
+
+    def test_staff_can_save_tdx_settings(self):
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'save_tdx_settings',
+                'enabled': 'on',
+                'api_url': 'https://tdx.example.edu/TDWebApi/',
+                'flow_url': 'https://flows.example.edu/create/',
+                'username': 'tdx-user',
+                'password': 'tdx-pass',
+                'apikey': 'tdx-key',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+
+        config = TDXConfiguration.get_solo()
+        self.assertTrue(config.enabled)
+        self.assertEqual(config.api_url, 'https://tdx.example.edu/TDWebApi/')
+        self.assertEqual(config.flow_url, 'https://flows.example.edu/create/')
+        self.assertEqual(config.username, 'tdx-user')
+        self.assertEqual(config.password, 'tdx-pass')
+        self.assertEqual(config.apikey, 'tdx-key')

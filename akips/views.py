@@ -33,8 +33,8 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm
 from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
@@ -378,9 +378,16 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     def _get_import_form(self, data=None, files=None):
         return AppSnapshotImportForm(data=data, files=files)
 
-    def _build_context(self, import_form=None):
+    def _get_tdx_config(self):
+        return TDXConfiguration.get_solo()
+
+    def _get_tdx_form(self, data=None, instance=None):
+        return TDXSettingsForm(data=data, instance=instance or self._get_tdx_config())
+
+    def _build_context(self, import_form=None, tdx_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
+            'tdx_form': tdx_form or self._get_tdx_form(),
         }
 
     def _export_snapshot_response(self):
@@ -453,6 +460,17 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
                 logger.exception('Settings import failed')
                 messages.error(request, f'Import failed: {exc}')
                 return render(request, self.template_name, context=self._build_context(import_form=import_form))
+
+        if action == 'save_tdx_settings':
+            config = self._get_tdx_config()
+            tdx_form = self._get_tdx_form(data=request.POST, instance=config)
+            if tdx_form.is_valid():
+                tdx_form.save()
+                messages.success(request, 'TDX settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'TDX settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(tdx_form=tdx_form))
 
         messages.error(request, 'Unknown Settings action requested.')
         return render(request, self.template_name, context=self._build_context())

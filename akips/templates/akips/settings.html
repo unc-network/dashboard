@@ -5,6 +5,76 @@
 
 {% block content %}
 <div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">TDX Integration</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Manage TeamDynamix connectivity without editing environment variables on the server.</p>
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_tdx_settings">
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ tdx_form.enabled }}
+                            <label class="custom-control-label" for="{{ tdx_form.enabled.auto_id }}">{{ tdx_form.enabled.label }}</label>
+                        </div>
+                        {% for error in tdx_form.enabled.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ tdx_form.api_url.label_tag }}
+                            {{ tdx_form.api_url }}
+                            {% for error in tdx_form.api_url.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ tdx_form.flow_url.label_tag }}
+                            {{ tdx_form.flow_url }}
+                            {% for error in tdx_form.flow_url.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            {{ tdx_form.username.label_tag }}
+                            {{ tdx_form.username }}
+                            {% for error in tdx_form.username.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group col-md-4">
+                            {{ tdx_form.password.label_tag }}
+                            {{ tdx_form.password }}
+                            {% for error in tdx_form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group col-md-4">
+                            {{ tdx_form.apikey.label_tag }}
+                            {{ tdx_form.apikey }}
+                            {% for error in tdx_form.apikey.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Save TDX Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="col-12 col-lg-6">
         <div class="card">
             <div class="card-header">

@@ -4,6 +4,8 @@ from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
+from .models import TDXConfiguration
+
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
     remember_me = forms.BooleanField(required=False)  # and add the remember_me field
@@ -167,3 +169,23 @@ class AppSnapshotImportForm(forms.Form):
         if not (name.endswith('.json') or name.endswith('.json.gz')):
             raise ValidationError('Snapshot file must end with .json or .json.gz')
         return snapshot_file
+
+
+class TDXSettingsForm(forms.ModelForm):
+    class Meta:
+        model = TDXConfiguration
+        fields = ['enabled', 'api_url', 'flow_url', 'username', 'password', 'apikey']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'api_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'flow_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'password': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+            'apikey': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+        }
+        labels = {
+            'enabled': 'Enable TDX updates',
+            'api_url': 'API URL',
+            'flow_url': 'Flow URL',
+            'apikey': 'API key',
+        }

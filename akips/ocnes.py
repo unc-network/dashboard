@@ -24,8 +24,11 @@ logger = logging.getLogger(__name__)
 class EventManager:
     """ Handle processing for unreachable changes and event summary updates """
     incident_update_add = {}
-    update_incident_tickets = True
-    tdx = TDX()
+
+    def __init__(self):
+        self.incident_update_add = {}
+        self.tdx = TDX()
+        self.update_incident_tickets = self.tdx.enabled
 
     def _record_unreachable_for_incident(self, summary, unreachable):
         """Track new unreachable associations for incident update messages."""

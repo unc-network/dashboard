@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
+import os
 from django.db import models
+from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -232,6 +234,47 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class TDXConfiguration(models.Model):
+    enabled = models.BooleanField(default=True)
+    api_url = models.URLField(blank=True, default='')
+    flow_url = models.URLField(blank=True, default='')
+    username = models.CharField(max_length=255, blank=True, default='')
+    password = models.CharField(max_length=255, blank=True, default='')
+    apikey = models.CharField(max_length=255, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'TDX configuration'
+        verbose_name_plural = 'TDX configuration'
+
+    @classmethod
+    def env_defaults(cls):
+        return {
+            'enabled': os.getenv('UPDATE_TDX', 'true').lower() == 'true',
+            'api_url': os.getenv('TDX_URL', 'https://tdx.unc.edu/TDWebApi/'),
+            'flow_url': os.getenv('TDX_FLOW_URL', ''),
+            'username': os.getenv('TDX_USERNAME', ''),
+            'password': os.getenv('TDX_PASSWORD', ''),
+            'apikey': os.getenv('TDX_APIKEY', ''),
+        }
+
+    @classmethod
+    def get_solo(cls):
+        defaults = cls.env_defaults()
+        try:
+            obj, _created = cls.objects.get_or_create(pk=1, defaults=defaults)
+            return obj
+        except (OperationalError, ProgrammingError):
+            return cls(pk=1, **defaults)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'TDX configuration'
 
 
 @receiver(post_save, sender=User)

@@ -2,33 +2,52 @@ import os
 import requests
 import json
 import logging
+import urllib3
 
 from django.conf import settings
 from django.core.cache import cache
 
-from .models import ServiceNowIncident
+from .models import ServiceNowIncident, TDXConfiguration
 #from akips.task import update_incident
 
 # Get an instance logger
 logger = logging.getLogger(__name__)
 
 # The InCommon intermediate CA is not in the default cert bundle, disable warning.
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 class TDX:
     # Class to handle interactions with TeamDynamix
     auth_mode = "user"
-    base_url = os.getenv('TDX_URL', 'https://tdx.unc.edu/TDWebApi/')
-    username = os.getenv('TDX_USERNAME', '')
-    password = os.getenv('TDX_PASSWORD', '')
-    apikey   = os.getenv('TDX_APIKEY', '')
-    flow_base = os.getenv('TDX_FLOW_URL', '')
-    session = requests.Session()
-    token = None
     ticket_app_id = 34
 
-    def init_session(self) -> None:
+    def __init__(self):
+        config = TDXConfiguration.get_solo()
+        defaults = TDXConfiguration.env_defaults()
+
+        self.enabled = config.enabled
+        self.base_url = (config.api_url or defaults['api_url']).rstrip('/')
+        self.username = config.username or defaults['username']
+        self.password = config.password or defaults['password']
+        self.apikey = config.apikey or defaults['apikey']
+        self.flow_base = (config.flow_url or defaults['flow_url']).rstrip('/')
+        self.session = requests.Session()
+        self.token = None
+
+    def _is_enabled(self):
+        if not self.enabled:
+            logger.info('TDX integration is disabled')
+            return False
+        return True
+
+    def init_session(self) -> bool:
         ''' Initialize the API session '''
+        if not self._is_enabled():
+            return False
+        if not self.base_url or not self.username or not self.password:
+            logger.warning('TDX API settings are incomplete')
+            return False
+
         logger.info(f"Logging into {self.base_url} as {self.username}")
         response = requests.post(
             self.base_url + "/api/auth",
@@ -51,12 +70,13 @@ class TDX:
                 "Authorization": f"Bearer {self.token}",
             }
         )
+        return True
 
     # tdx_method("GET", "/api/applications")
     def get_applications(self):
         ''' get TDX applications '''
-        if self.token is None:
-            self.init_session()
+        if self.token is None and not self.init_session():
+            return None
 
         logger.info(f"Getting applications")
         response = self.session.get(
@@ -75,8 +95,8 @@ class TDX:
     # tdx_method("GET", "/api/{appId}/tickets/{id}")
     def get_ticket(self, number):
         ''' get a ticket '''
-        if self.token is None:
-            self.init_session()
+        if self.token is None and not self.init_session():
+            return None
 
         logger.info(f"Getting ticket {number}")
         response = self.session.get(
@@ -92,8 +112,8 @@ class TDX:
     # tdx_method("POST", "/api/{appId}/tickets/search")
     def get_ticket_search(self):
         ''' perform a ticket search '''
-        if self.token is None:
-            self.init_session()
+        if self.token is None and not self.init_session():
+            return None
 
         response = self.session.post(
             self.base_url + f"/api/{self.ticket_app_id}/tickets/search",
@@ -112,8 +132,8 @@ class TDX:
     # tdx_method("POST", "/api/{appId}/tickets")
     def create_ticket(self, group, priority, subject, description):
         ''' create a ticket '''
-        if self.token is None:
-            self.init_session()
+        if self.token is None and not self.init_session():
+            return None
 
         response = self.session.post(
             self.base_url + f"/api/{self.ticket_app_id}/tickets",
@@ -136,8 +156,8 @@ class TDX:
     # tdx_method("POST", "/api/{appId}/tickets/{id}/feed")
     def update_ticket(self, number, comment):
         ''' update a ticket '''
-        if self.token is None:
-            self.init_session()
+        if self.token is None and not self.init_session():
+            return None
 
         update_url = self.base_url + f"/api/{self.ticket_app_id}/ticket/{number}/feed"
         logger.info(
@@ -176,6 +196,12 @@ class TDX:
     def create_ticket_flow(self, group, priority, subject, description):
         ''' Use incident_in flow to create incident ticket '''
         ''' https://us1.teamdynamix.com/tdapp/app/flow/api/v1/start/uncchapelhill/incident_in_prod/create_ticket?waitForResults=true '''
+
+        if not self._is_enabled():
+            return None
+        if not self.flow_base or not self.apikey:
+            logger.warning('TDX flow settings are incomplete')
+            return None
 
         response = self.session.post(
             self.flow_base + f"/create_ticket?waitForResults=true",
