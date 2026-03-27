@@ -8,40 +8,6 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Last Import Status</h3>
-            </div>
-            <div class="card-body">
-                {% if last_import_task %}
-                <p class="mb-2">
-                    <strong>Status:</strong>
-                    {% if last_import_task.status == 'SUCCESS' %}
-                    <span class="badge badge-success">{{ last_import_task.status }}</span>
-                    {% elif last_import_task.status == 'FAILURE' %}
-                    <span class="badge badge-danger">{{ last_import_task.status }}</span>
-                    {% elif last_import_task.status == 'STARTED' %}
-                    <span class="badge badge-info">{{ last_import_task.status }}</span>
-                    {% else %}
-                    <span class="badge badge-secondary">{{ last_import_task.status }}</span>
-                    {% endif %}
-                </p>
-                <p class="mb-1"><strong>Task ID:</strong> {{ last_import_task.task_id }}</p>
-                <p class="mb-1"><strong>Queued:</strong> {{ last_import_task.date_created }}</p>
-                <p class="mb-0"><strong>Completed:</strong> {{ last_import_task.date_done|default:'In progress' }}</p>
-                {% if last_import_task.status == 'FAILURE' and last_import_task.traceback %}
-                <div class="alert alert-danger mt-3 mb-0" role="alert">
-                    Import failed. Check worker logs for details.
-                </div>
-                {% endif %}
-                {% else %}
-                <p class="text-muted mb-0">No snapshot import has run yet.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
                 <h3 class="card-title">TDX Integration</h3>
             </div>
             <div class="card-body">
@@ -167,6 +133,40 @@
                         </button>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Last Import Status</h3>
+            </div>
+            <div class="card-body">
+                {% if last_import_task %}
+                <p class="mb-2">
+                    <strong>Status:</strong>
+                    {% if last_import_task.status == 'SUCCESS' %}
+                    <span class="badge badge-success">{{ last_import_task.status }}</span>
+                    {% elif last_import_task.status == 'FAILURE' %}
+                    <span class="badge badge-danger">{{ last_import_task.status }}</span>
+                    {% elif last_import_task.status == 'STARTED' %}
+                    <span class="badge badge-info">{{ last_import_task.status }}</span>
+                    {% else %}
+                    <span class="badge badge-secondary">{{ last_import_task.status }}</span>
+                    {% endif %}
+                </p>
+                <p class="mb-1"><strong>Task ID:</strong> {{ last_import_task.task_id }}</p>
+                <p class="mb-1"><strong>Queued:</strong> {{ last_import_task.date_created }}</p>
+                <p class="mb-0"><strong>Completed:</strong> {{ last_import_task.date_done|default:'In progress' }}</p>
+                {% if last_import_task.status == 'FAILURE' and last_import_task.traceback %}
+                <div class="alert alert-danger mt-3 mb-0" role="alert">
+                    Import failed. Check worker logs for details.
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">No snapshot import has run yet.</p>
+                {% endif %}
             </div>
         </div>
     </div>
