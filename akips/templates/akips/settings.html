@@ -68,6 +68,31 @@
                         <i class="fas fa-save mr-1"></i> Save AKIPS Settings
                     </button>
                 </form>
+
+                <div id="akips-sync-actions" class="settings-toggle-body mt-3" data-has-errors="false">
+                    <hr>
+
+                    <div class="form-row">
+                        <div class="col-12 col-md-6 mb-2 mb-md-0">
+                            <form method="post" action="" class="mb-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="run_refresh_akips_devices">
+                                <button type="submit" class="btn btn-outline-primary btn-block">
+                                    <i class="fas fa-sync mr-1"></i> Run AKIPS Device Sync
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <form method="post" action="" class="mb-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="run_refresh_akips_status_sync">
+                                <button type="submit" class="btn btn-outline-primary btn-block">
+                                    <i class="fas fa-sync mr-1"></i> Run AKIPS Status Sync
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -332,6 +357,7 @@
             updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-settings-fields');
             updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-sync-actions');
             updateSettingsToggleSection('#{{ akips_form.enabled.auto_id }}', '#akips-settings-fields');
+            updateSettingsToggleSection('#{{ akips_form.enabled.auto_id }}', '#akips-sync-actions');
         }
 
         syncSettingsSections();

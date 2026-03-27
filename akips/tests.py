@@ -304,6 +304,72 @@ class SettingsViewTests(TestCase):
         messages = [message.message for message in get_messages(response.wsgi_request)]
         self.assertIn('Inventory sync was not started because the external inventory feed is disabled.', messages)
 
+    @patch('akips.views.refresh_akips_devices.delay')
+    def test_staff_can_queue_akips_device_sync(self, mock_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = True
+        config.save()
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_devices'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        self.assertEqual(mock_delay.call_count, 1)
+
+    @patch('akips.views.refresh_battery_test_status.delay')
+    @patch('akips.views.refresh_ups_status.delay')
+    @patch('akips.views.refresh_snmp_status.delay')
+    @patch('akips.views.refresh_ping_status.delay')
+    def test_staff_can_queue_combined_akips_status_sync(self, mock_ping_delay, mock_snmp_delay, mock_ups_delay, mock_battery_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = True
+        config.save()
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_status_sync'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        self.assertEqual(mock_ping_delay.call_count, 1)
+        self.assertEqual(mock_snmp_delay.call_count, 1)
+        self.assertEqual(mock_ups_delay.call_count, 1)
+        self.assertEqual(mock_battery_delay.call_count, 1)
+
+    @patch('akips.views.refresh_battery_test_status.delay')
+    @patch('akips.views.refresh_ups_status.delay')
+    @patch('akips.views.refresh_snmp_status.delay')
+    @patch('akips.views.refresh_ping_status.delay')
+    def test_combined_akips_status_sync_not_queued_when_disabled(self, mock_ping_delay, mock_snmp_delay, mock_ups_delay, mock_battery_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = False
+        config.save()
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_status_sync'}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_ping_delay.call_count, 0)
+        self.assertEqual(mock_snmp_delay.call_count, 0)
+        self.assertEqual(mock_ups_delay.call_count, 0)
+        self.assertEqual(mock_battery_delay.call_count, 0)
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertIn('AKIPS status sync was not started because AKIPS integration is disabled.', messages)
+
+    @patch('akips.views.refresh_akips_devices.delay')
+    def test_akips_device_sync_not_queued_when_disabled(self, mock_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = False
+        config.save()
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_devices'}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_delay.call_count, 0)
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertIn('AKIPS device sync was not started because AKIPS integration is disabled.', messages)
+
     @patch('akips.task.os.path.exists', return_value=False)
     @patch('akips.task.cache.delete')
     @patch('akips.task.call_command')

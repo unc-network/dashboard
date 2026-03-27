@@ -36,7 +36,7 @@ from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
 from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm
-from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_inventory, import_snapshot_task
+from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
@@ -433,6 +433,49 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
         else:
             messages.warning(self.request, 'Inventory sync is already in progress.')
 
+    def _queue_akips_sync_task(self, task_name, task_callable, display_name):
+        config = self._get_akips_config()
+        if not config.enabled:
+            messages.warning(self.request, f'{display_name} was not started because AKIPS integration is disabled.')
+            return
+
+        pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
+        started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
+        if pending == 0 and started == 0:
+            task_callable.delay()
+            messages.success(self.request, f'{display_name} was queued.')
+        else:
+            messages.warning(self.request, f'{display_name} is already in progress.')
+
+    def _queue_akips_status_sync(self):
+        config = self._get_akips_config()
+        if not config.enabled:
+            messages.warning(self.request, 'AKIPS status sync was not started because AKIPS integration is disabled.')
+            return
+
+        status_tasks = [
+            ('akips.task.refresh_ping_status', refresh_ping_status),
+            ('akips.task.refresh_snmp_status', refresh_snmp_status),
+            ('akips.task.refresh_ups_status', refresh_ups_status),
+            ('akips.task.refresh_battery_test_status', refresh_battery_test_status),
+        ]
+
+        queued_count = 0
+        already_running_count = 0
+        for task_name, task_callable in status_tasks:
+            pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
+            started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
+            if pending == 0 and started == 0:
+                task_callable.delay()
+                queued_count += 1
+            else:
+                already_running_count += 1
+
+        if queued_count:
+            messages.success(self.request, f'AKIPS status sync queued {queued_count} task(s).')
+        if already_running_count:
+            messages.warning(self.request, f'{already_running_count} AKIPS status task(s) were already in progress.')
+
     def _get_last_snapshot_import_task(self):
         return (
             TaskResult.objects
@@ -555,6 +598,30 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
         if action == 'run_inventory_sync':
             self._queue_inventory_sync()
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_akips_devices':
+            self._queue_akips_sync_task('akips.task.refresh_akips_devices', refresh_akips_devices, 'AKIPS device sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_akips_status_sync':
+            self._queue_akips_status_sync()
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_ping_status':
+            self._queue_akips_sync_task('akips.task.refresh_ping_status', refresh_ping_status, 'AKIPS ping status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_snmp_status':
+            self._queue_akips_sync_task('akips.task.refresh_snmp_status', refresh_snmp_status, 'AKIPS SNMP status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_ups_status':
+            self._queue_akips_sync_task('akips.task.refresh_ups_status', refresh_ups_status, 'AKIPS UPS status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_battery_test_status':
+            self._queue_akips_sync_task('akips.task.refresh_battery_test_status', refresh_battery_test_status, 'AKIPS battery test status sync')
             return HttpResponseRedirect(reverse('settings'))
 
         messages.error(request, 'Unknown Settings action requested.')
