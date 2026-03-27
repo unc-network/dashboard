@@ -152,3 +152,18 @@ class PreferencesForm(forms.Form):
     #     max_value=2,
     #     widget=forms.NumberInput(attrs={'step': "0.1"})
     # )
+
+
+class AppSnapshotImportForm(forms.Form):
+    snapshot_file = forms.FileField(
+        label='Snapshot file',
+        help_text='Upload a JSON fixture exported from this app.',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'})
+    )
+
+    def clean_snapshot_file(self):
+        snapshot_file = self.cleaned_data['snapshot_file']
+        name = snapshot_file.name.lower()
+        if not (name.endswith('.json') or name.endswith('.json.gz')):
+            raise ValidationError('Snapshot file must end with .json or .json.gz')
+        return snapshot_file

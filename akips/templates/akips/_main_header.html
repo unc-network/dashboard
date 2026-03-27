@@ -49,11 +49,6 @@
         <li class="nav-item">
                         <a href="{% url 'about' %}" class="nav-link{% if current_url == 'about' %} active{% endif %}">About</a>
         </li>
-        {% if request.user.is_superuser %}
-        <li class="nav-item">
-                        <a href="{% url 'admin:index' %}" class="nav-link{% if request.path|slice:':7' == '/admin/' %} active{% endif %}">Admin</a>
-        </li>
-        {% endif %}
     </ul>
         {% endwith %}
 
@@ -77,18 +72,24 @@
         <ul class="nav navbar-nav">
             {% block header_dropdowns %}
             <li class="nav-item">
-                <div class="navbar-text custom-control custom-switch">
-                    <input type="checkbox" class="custom-control-input alert-toggle" id="alert-toggle" 
-                        data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}" checked>
-                    <label class="custom-control-label" for="alert-toggle"><i class="fas fa-volume-up"></i></label>
-                </div>
+                <a class="nav-link" href="#" id="alert-toggle"
+                   data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}"
+                   title="Notifications: On" aria-label="Toggle notifications" aria-pressed="true">
+                    <i id="alert-toggle-icon" class="fas fa-volume-up"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
+                    <i id="theme-toggle-icon" class="fas fa-adjust"></i>
+                </a>
             </li>
             <!-- Notifications Dropdown Menu -->
             {% block user_info %}
             {% if request.user.is_authenticated %}
             <li class="nav-item dropdown">
                     <a class="nav-link" data-toggle="dropdown" href="#">
-                        <i class="far fa-user fa-2x"></i>
+                        Welcome, {% firstof request.user.get_full_name request.user.get_username %}
+                        <i class="fas fa-bars"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                         <a href="#" class="dropdown-item">
@@ -111,6 +112,15 @@
                         <a href="{% url 'user_preferences' %}" class="dropdown-item">
                             <i class="fas fa-sliders-h mr-2"></i> User Preferences
                         </a>
+                        {% if request.user.is_staff %}
+                        <a href="{% url 'settings' %}" class="dropdown-item">
+                            <i class="fas fa-cogs mr-2"></i> Application Settings
+                        </a>
+                        <a href="{% url 'admin:index' %}" class="dropdown-item">
+                            <i class="fas fa-cogs mr-2"></i> Django Admin
+                        </a>
+                        {% endif %}
+
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-footer">
                                 <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">{%trans 'Log out'%}</a>
@@ -120,11 +130,6 @@
                 </li>
             {% endif %}
             {% endblock user_info %}
-            <li class="nav-item">
-                <a class="nav-link" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
-                    <i id="theme-toggle-icon" class="fas fa-adjust"></i>
-                </a>
-            </li>
             {% endblock header_dropdowns %}
         </ul>
     </ul>

@@ -1,0 +1,59 @@
+{% extends 'akips/base.html' %}
+
+{% block title %}OCNES Settings{% endblock %}
+{% block page_name %}Admin Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Application Export</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Download a full application snapshot that can be imported into another OCNES environment.</p>
+                <ul class="mb-3">
+                    <li>Includes core application data, users, groups, and permissions.</li>
+                    <li>Excludes active sessions and admin log entries.</li>
+                </ul>
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="export_snapshot">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-file-export mr-1"></i> Export Snapshot
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Application Import</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Import a previously exported snapshot into this environment.</p>
+                <p class="text-warning"><strong>Warning:</strong> Importing data can overwrite existing records with matching IDs.</p>
+                <form method="post" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_snapshot">
+                    <div class="form-group">
+                        {{ import_form.snapshot_file.label_tag }}
+                        {{ import_form.snapshot_file }}
+                        {% if import_form.snapshot_file.help_text %}
+                        <small class="form-text text-muted">{{ import_form.snapshot_file.help_text }}</small>
+                        {% endif %}
+                        {% for error in import_form.snapshot_file.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-file-import mr-1"></i> Import Snapshot
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

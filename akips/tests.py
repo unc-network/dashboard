@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AnonymousUser, User
-from django.test import RequestFactory, SimpleTestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory, SimpleTestCase, TestCase
+from django.urls import reverse
 from unittest.mock import patch
 
 from .views import Home
@@ -78,3 +80,78 @@ class HomeHudScaleTests(SimpleTestCase):
         response = self.view(request, hud_mode=True)
 
         self.assertEqual(response.status_code, 302)
+
+
+class SettingsViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse('settings')
+        self.user = User.objects.create_user(username='viewer', password='testpass123')
+        self.staff_user = User.objects.create_user(
+            username='staff_admin',
+            password='testpass123',
+            is_staff=True,
+        )
+        self.superuser = User.objects.create_superuser(
+            username='super_admin',
+            email='super_admin@example.com',
+            password='testpass123',
+        )
+
+    def test_anonymous_user_redirects_to_login(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response['Location'])
+
+    def test_non_superuser_is_forbidden(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_user_can_access_settings_page(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Settings')
+
+    def test_superuser_can_access_settings_page(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    @patch('akips.views.call_command')
+    def test_staff_can_export_snapshot(self, mock_call_command):
+        self.client.force_login(self.staff_user)
+        response = self.client.post(self.url, {'action': 'export_snapshot'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertIn('attachment; filename="ocnes-snapshot-', response['Content-Disposition'])
+        self.assertEqual(mock_call_command.call_count, 1)
+        self.assertEqual(mock_call_command.call_args[0][0], 'dumpdata')
+
+    @patch('akips.views.call_command')
+    def test_staff_can_import_snapshot(self, mock_call_command):
+        self.client.force_login(self.staff_user)
+        upload = SimpleUploadedFile('snapshot.json', b'[]', content_type='application/json')
+
+        response = self.client.post(
+            self.url,
+            {'action': 'import_snapshot', 'snapshot_file': upload},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        self.assertEqual(mock_call_command.call_count, 1)
+        self.assertEqual(mock_call_command.call_args[0][0], 'loaddata')
+
+    def test_import_rejects_non_json_file(self):
+        self.client.force_login(self.staff_user)
+        upload = SimpleUploadedFile('snapshot.txt', b'invalid', content_type='text/plain')
+
+        response = self.client.post(
+            self.url,
+            {'action': 'import_snapshot', 'snapshot_file': upload},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Snapshot file must end with .json or .json.gz')

@@ -2,19 +2,22 @@ import logging
 import json
 import re
 import hashlib
+import os
+import tempfile
 from datetime import datetime, timedelta
 from secrets import compare_digest
 import math
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.management import call_command
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 #from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.sessions.models import Session
 from django.template.loader import render_to_string
 from django.contrib import messages
@@ -31,7 +34,7 @@ from django.views.decorators.http import require_POST
 from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
-from .forms import IncidentForm, HibernateForm, PreferencesForm
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm
 from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
@@ -361,6 +364,98 @@ class UserPreferences(LoginRequiredMixin, View):
             pass
 
         return render(request, self.template_name, context=context)
+
+
+class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
+    ''' Admin-only settings scaffold page '''
+    template_name = 'akips/settings.html'
+    fixture_apps = ('akips', 'welcome', 'auth')
+    fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def _get_import_form(self, data=None, files=None):
+        return AppSnapshotImportForm(data=data, files=files)
+
+    def _build_context(self, import_form=None):
+        return {
+            'import_form': import_form or self._get_import_form(),
+        }
+
+    def _export_snapshot_response(self):
+        with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
+            snapshot_path = tmp.name
+
+        try:
+            dump_args = list(self.fixture_apps)
+            dump_kwargs = {
+                'indent': 2,
+                'use_natural_foreign_keys': True,
+                'use_natural_primary_keys': True,
+                'output': snapshot_path,
+                'exclude': list(self.fixture_excludes),
+            }
+            call_command('dumpdata', *dump_args, **dump_kwargs)
+
+            with open(snapshot_path, 'rb') as snapshot_file:
+                payload = snapshot_file.read()
+
+            timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
+            filename = f'ocnes-snapshot-{timestamp}.json'
+            response = HttpResponse(payload, content_type='application/json')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        finally:
+            if os.path.exists(snapshot_path):
+                os.remove(snapshot_path)
+
+    def _import_snapshot(self, uploaded_file):
+        suffix = '.json.gz' if uploaded_file.name.lower().endswith('.json.gz') else '.json'
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            for chunk in uploaded_file.chunks():
+                tmp.write(chunk)
+            snapshot_path = tmp.name
+
+        try:
+            call_command('loaddata', snapshot_path)
+        finally:
+            if os.path.exists(snapshot_path):
+                os.remove(snapshot_path)
+
+    def get(self, request, *args, **kwargs):
+        context = self._build_context()
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action', '').strip()
+
+        if action == 'export_snapshot':
+            try:
+                return self._export_snapshot_response()
+            except Exception as exc:
+                logger.exception('Settings export failed')
+                messages.error(request, f'Export failed: {exc}')
+                return render(request, self.template_name, context=self._build_context())
+
+        if action == 'import_snapshot':
+            import_form = self._get_import_form(data=request.POST, files=request.FILES)
+            if not import_form.is_valid():
+                messages.error(request, 'Import failed: please provide a valid snapshot file.')
+                return render(request, self.template_name, context=self._build_context(import_form=import_form))
+
+            try:
+                snapshot_file = import_form.cleaned_data['snapshot_file']
+                self._import_snapshot(snapshot_file)
+                messages.success(request, 'Snapshot import completed.')
+                return HttpResponseRedirect(reverse('settings'))
+            except Exception as exc:
+                logger.exception('Settings import failed')
+                messages.error(request, f'Import failed: {exc}')
+                return render(request, self.template_name, context=self._build_context(import_form=import_form))
+
+        messages.error(request, 'Unknown Settings action requested.')
+        return render(request, self.template_name, context=self._build_context())
 
 
 CARD_REFRESH_CONFIG = {

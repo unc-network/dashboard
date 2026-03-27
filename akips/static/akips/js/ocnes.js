@@ -117,8 +117,12 @@ function refresh_alerts() {
 
 function alert_user() {
     // Poll for alerts and notify the user if needed.
-    var alert_toggle = $('#alert-toggle').prop('checked') // Boolean
-    var alert_url = $('#alert-toggle').data('alert-url')
+    var toggle = $('#alert-toggle');
+    var alert_url = toggle.data('alert-url');
+
+    if (!alert_url) {
+        return;
+    }
 
     // console.log("Alerting user if necessary.");
 
@@ -171,6 +175,32 @@ function alert_user() {
     })
 }
 
+function set_alert_toggle_state(enabled) {
+    var toggle = $('#alert-toggle');
+    if (!toggle.length) {
+        return;
+    }
+
+    toggle.data('enabled', !!enabled);
+    toggle.attr('aria-pressed', !!enabled ? 'true' : 'false');
+    toggle.attr('title', !!enabled ? 'Notifications: On' : 'Notifications: Off');
+
+    var icon = $('#alert-toggle-icon');
+    if (icon.length) {
+        icon.removeClass('fa-volume-up fa-volume-mute');
+        icon.addClass(enabled ? 'fa-volume-up' : 'fa-volume-mute');
+    }
+}
+
+function get_alert_toggle_state() {
+    var toggle = $('#alert-toggle');
+    if (!toggle.length) {
+        return true;
+    }
+    var enabled = toggle.data('enabled');
+    return typeof enabled === 'undefined' ? true : !!enabled;
+}
+
 function enable_alert_toggle() {
     // Initialize from user profile API so templates do not need to query profile directly.
     var toggle = $('#alert-toggle');
@@ -178,20 +208,21 @@ function enable_alert_toggle() {
     if (toggle.length && url) {
         $.get(url, function (data) {
             if (typeof data.alert_enabled !== 'undefined') {
-                toggle.prop('checked', !!data.alert_enabled);
+                set_alert_toggle_state(!!data.alert_enabled);
             }
         });
     }
 
-    // Configure the user preference switch
-    $(document).on('change', 'input.alert-toggle', function () {
-        var url = $(this).data("url");
-        if (this.checked) {
-            console.log("alert checkbox on");
-            $.get(url, { "alert_enabled": 'True' })
-        } else {
-            console.log("alert checkbox off")
-            $.get(url, { "alert_enabled": 'False' })
+    // Configure the user preference icon toggle.
+    $(document).off('click.alertToggle', '#alert-toggle').on('click.alertToggle', '#alert-toggle', function (e) {
+        e.preventDefault();
+        var current = get_alert_toggle_state();
+        var next = !current;
+        set_alert_toggle_state(next);
+
+        var endpoint = $(this).data('url');
+        if (endpoint) {
+            $.get(endpoint, { "alert_enabled": next ? 'True' : 'False' });
         }
     });
 }
