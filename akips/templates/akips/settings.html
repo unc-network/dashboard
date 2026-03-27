@@ -1,7 +1,7 @@
 {% extends 'akips/base.html' %}
 
 {% block title %}OCNES Settings{% endblock %}
-{% block page_name %}Admin Settings{% endblock %}
+{% block page_name %}OCNES Settings{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -82,6 +82,9 @@
             </div>
             <div class="card-body">
                 <p class="text-muted">Download a full application snapshot that can be imported into another OCNES environment.</p>
+                <div class="alert alert-warning" role="alert">
+                    <strong>Sensitive data:</strong> Snapshots include stored application configuration and integration credentials, including TDX settings. Handle exported files as secrets.
+                </div>
                 <ul class="mb-3">
                     <li>Includes core application data, users, groups, and permissions.</li>
                     <li>Excludes active sessions and admin log entries.</li>
@@ -104,6 +107,9 @@
             </div>
             <div class="card-body">
                 <p class="text-muted">Import a previously exported snapshot into this environment.</p>
+                <div class="alert alert-warning" role="alert">
+                    <strong>Sensitive data:</strong> Imported snapshots may contain live credentials and other protected configuration values from another environment.
+                </div>
                 <p class="text-warning"><strong>Warning:</strong> Importing data can overwrite existing records with matching IDs.</p>
                 <form method="post" action="" enctype="multipart/form-data">
                     {% csrf_token %}
