@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
-from .models import TDXConfiguration
+from .models import TDXConfiguration, InventoryConfiguration
 
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
@@ -188,4 +188,20 @@ class TDXSettingsForm(forms.ModelForm):
             'api_url': 'API URL',
             'flow_url': 'Flow URL',
             'apikey': 'API key',
+        }
+
+
+class InventorySettingsForm(forms.ModelForm):
+    class Meta:
+        model = InventoryConfiguration
+        fields = ['enabled', 'inventory_url', 'inventory_token']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'inventory_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'inventory_token': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+        }
+        labels = {
+            'enabled': 'Enable inventory feed',
+            'inventory_url': 'Inventory URL',
+            'inventory_token': 'Inventory token',
         }

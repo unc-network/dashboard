@@ -33,9 +33,9 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm
-from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm
+from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_inventory
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
@@ -371,6 +371,8 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     template_name = 'akips/settings.html'
     fixture_apps = ('akips', 'welcome', 'auth')
     fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
+    tdx_form_prefix = 'tdx'
+    inventory_form_prefix = 'inventory'
 
     def test_func(self):
         return self.request.user.is_staff
@@ -382,12 +384,41 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
         return TDXConfiguration.get_solo()
 
     def _get_tdx_form(self, data=None, instance=None):
-        return TDXSettingsForm(data=data, instance=instance or self._get_tdx_config())
+        return TDXSettingsForm(
+            data=data,
+            instance=instance or self._get_tdx_config(),
+            prefix=self.tdx_form_prefix,
+        )
 
-    def _build_context(self, import_form=None, tdx_form=None):
+    def _get_inventory_config(self):
+        return InventoryConfiguration.get_solo()
+
+    def _get_inventory_form(self, data=None, instance=None):
+        return InventorySettingsForm(
+            data=data,
+            instance=instance or self._get_inventory_config(),
+            prefix=self.inventory_form_prefix,
+        )
+
+    def _queue_inventory_sync(self):
+        config = self._get_inventory_config()
+        if not config.enabled:
+            messages.warning(self.request, 'Inventory sync was not started because the external inventory feed is disabled.')
+            return
+
+        pending = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='PENDING').count()
+        started = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='STARTED').count()
+        if pending == 0 and started == 0:
+            refresh_inventory.delay()
+            messages.success(self.request, 'Inventory sync was queued.')
+        else:
+            messages.warning(self.request, 'Inventory sync is already in progress.')
+
+    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
             'tdx_form': tdx_form or self._get_tdx_form(),
+            'inventory_form': inventory_form or self._get_inventory_form(),
         }
 
     def _export_snapshot_response(self):
@@ -471,6 +502,21 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
             messages.error(request, 'TDX settings could not be saved. Please review the form.')
             return render(request, self.template_name, context=self._build_context(tdx_form=tdx_form))
+
+        if action == 'save_inventory_settings':
+            config = self._get_inventory_config()
+            inventory_form = self._get_inventory_form(data=request.POST, instance=config)
+            if inventory_form.is_valid():
+                inventory_form.save()
+                messages.success(request, 'Inventory feed settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'Inventory feed settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(inventory_form=inventory_form))
+
+        if action == 'run_inventory_sync':
+            self._queue_inventory_sync()
+            return HttpResponseRedirect(reverse('settings'))
 
         messages.error(request, 'Unknown Settings action requested.')
         return render(request, self.template_name, context=self._build_context())

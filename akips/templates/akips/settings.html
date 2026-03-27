@@ -1,7 +1,7 @@
 {% extends 'akips/base.html' %}
 
 {% block title %}OCNES Settings{% endblock %}
-{% block page_name %}OCNES Settings{% endblock %}
+{% block page_name %}Settings{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -26,44 +26,46 @@
                         {% endfor %}
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            {{ tdx_form.api_url.label_tag }}
-                            {{ tdx_form.api_url }}
-                            {% for error in tdx_form.api_url.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                    <div id="tdx-settings-fields" class="settings-toggle-body" data-has-errors="{% if tdx_form.errors %}true{% else %}false{% endif %}">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                {{ tdx_form.api_url.label_tag }}
+                                {{ tdx_form.api_url }}
+                                {% for error in tdx_form.api_url.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-6">
+                                {{ tdx_form.flow_url.label_tag }}
+                                {{ tdx_form.flow_url }}
+                                {% for error in tdx_form.flow_url.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div class="form-group col-md-6">
-                            {{ tdx_form.flow_url.label_tag }}
-                            {{ tdx_form.flow_url }}
-                            {% for error in tdx_form.flow_url.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            {{ tdx_form.username.label_tag }}
-                            {{ tdx_form.username }}
-                            {% for error in tdx_form.username.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="form-group col-md-4">
-                            {{ tdx_form.password.label_tag }}
-                            {{ tdx_form.password }}
-                            {% for error in tdx_form.password.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        <div class="form-group col-md-4">
-                            {{ tdx_form.apikey.label_tag }}
-                            {{ tdx_form.apikey }}
-                            {% for error in tdx_form.apikey.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                {{ tdx_form.username.label_tag }}
+                                {{ tdx_form.username }}
+                                {% for error in tdx_form.username.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-4">
+                                {{ tdx_form.password.label_tag }}
+                                {{ tdx_form.password }}
+                                {% for error in tdx_form.password.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-4">
+                                {{ tdx_form.apikey.label_tag }}
+                                {{ tdx_form.apikey }}
+                                {% for error in tdx_form.apikey.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
 
@@ -71,6 +73,66 @@
                         <i class="fas fa-save mr-1"></i> Save TDX Settings
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">External Inventory Feed</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Manage the external inventory feed used to enrich device metadata without editing server environment variables.</p>
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_inventory_settings">
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ inventory_form.enabled }}
+                            <label class="custom-control-label" for="{{ inventory_form.enabled.auto_id }}">{{ inventory_form.enabled.label }}</label>
+                        </div>
+                        {% for error in inventory_form.enabled.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="inventory-settings-fields" class="settings-toggle-body" data-has-errors="{% if inventory_form.errors %}true{% else %}false{% endif %}">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                {{ inventory_form.inventory_url.label_tag }}
+                                {{ inventory_form.inventory_url }}
+                                {% for error in inventory_form.inventory_url.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-6">
+                                {{ inventory_form.inventory_token.label_tag }}
+                                {{ inventory_form.inventory_token }}
+                                {% for error in inventory_form.inventory_token.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Save Inventory Settings
+                    </button>
+                </form>
+
+                <div id="inventory-sync-actions" class="settings-toggle-body mt-3" data-has-errors="false">
+                    <hr>
+
+                    <form method="post" action="" class="mb-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="run_inventory_sync">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-sync mr-1"></i> Run Inventory Sync
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -132,4 +194,36 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+    function updateSettingsToggleSection(toggleSelector, sectionSelector) {
+        var toggle = $(toggleSelector);
+        var section = $(sectionSelector);
+
+        if (!toggle.length || !section.length) {
+            return;
+        }
+
+        var hasErrors = section.data('has-errors') === true || section.data('has-errors') === 'true';
+        var shouldShow = toggle.is(':checked') || hasErrors;
+        section.stop(true, true)[shouldShow ? 'slideDown' : 'slideUp'](150);
+    }
+
+    $(document).ready(function () {
+        enable_alert_toggle();
+
+        function syncSettingsSections() {
+            updateSettingsToggleSection('#{{ tdx_form.enabled.auto_id }}', '#tdx-settings-fields');
+            updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-settings-fields');
+            updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-sync-actions');
+        }
+
+        syncSettingsSections();
+
+        $('#{{ tdx_form.enabled.auto_id }}').on('change', syncSettingsSections);
+        $('#{{ inventory_form.enabled.auto_id }}').on('change', syncSettingsSections);
+    });
+</script>
 {% endblock %}

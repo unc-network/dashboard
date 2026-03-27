@@ -13,7 +13,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-from .models import Device, Unreachable, Status, Summary, ServiceNowIncident
+from .models import Device, Unreachable, Status, Summary, ServiceNowIncident, InventoryConfiguration
 #from akips.task import update_incident
 
 # Get an instance logger
@@ -443,12 +443,20 @@ class AKIPS:
 
 class Inventory:
     # Class to handle interactions with the NIT
-    inventory_url = settings.INVENTORY_URL
-    inventory_token = settings.INVENTORY_TOKEN
-    session = requests.Session()
+    def __init__(self):
+        config = InventoryConfiguration.get_solo()
+        defaults = InventoryConfiguration.env_defaults()
+
+        self.enabled = config.enabled
+        self.inventory_url = config.inventory_url or defaults['inventory_url']
+        self.inventory_token = config.inventory_token or defaults['inventory_token']
+        self.session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
+        if not self.enabled:
+            logger.info("Inventory feed is disabled")
+            return None
         if not self.inventory_url:
             logger.debug("Inventory feed url is not defined")
             return None

@@ -277,6 +277,41 @@ class TDXConfiguration(models.Model):
         return 'TDX configuration'
 
 
+class InventoryConfiguration(models.Model):
+    enabled = models.BooleanField(default=True)
+    inventory_url = models.URLField(blank=True, default='')
+    inventory_token = models.CharField(max_length=255, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Inventory configuration'
+        verbose_name_plural = 'Inventory configuration'
+
+    @classmethod
+    def env_defaults(cls):
+        return {
+            'enabled': bool(os.getenv('INVENTORY_URL')),
+            'inventory_url': os.getenv('INVENTORY_URL', ''),
+            'inventory_token': os.getenv('INVENTORY_TOKEN', ''),
+        }
+
+    @classmethod
+    def get_solo(cls):
+        defaults = cls.env_defaults()
+        try:
+            obj, _created = cls.objects.get_or_create(pk=1, defaults=defaults)
+            return obj
+        except (OperationalError, ProgrammingError):
+            return cls(pk=1, **defaults)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'Inventory configuration'
+
+
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:

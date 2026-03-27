@@ -1,10 +1,11 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 from unittest.mock import patch
 
-from .models import TDXConfiguration
+from .models import TDXConfiguration, InventoryConfiguration
 from .views import Home
 
 class HomeHudScaleTests(SimpleTestCase):
@@ -112,7 +113,7 @@ class SettingsViewTests(TestCase):
         self.client.force_login(self.staff_user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Admin Settings')
+        self.assertContains(response, 'Settings')
 
     def test_superuser_can_access_settings_page(self):
         self.client.force_login(self.superuser)
@@ -172,12 +173,12 @@ class SettingsViewTests(TestCase):
             self.url,
             {
                 'action': 'save_tdx_settings',
-                'enabled': 'on',
-                'api_url': 'https://tdx.example.edu/TDWebApi/',
-                'flow_url': 'https://flows.example.edu/create/',
-                'username': 'tdx-user',
-                'password': 'tdx-pass',
-                'apikey': 'tdx-key',
+                'tdx-enabled': 'on',
+                'tdx-api_url': 'https://tdx.example.edu/TDWebApi/',
+                'tdx-flow_url': 'https://flows.example.edu/create/',
+                'tdx-username': 'tdx-user',
+                'tdx-password': 'tdx-pass',
+                'tdx-apikey': 'tdx-key',
             },
         )
 
@@ -191,3 +192,56 @@ class SettingsViewTests(TestCase):
         self.assertEqual(config.username, 'tdx-user')
         self.assertEqual(config.password, 'tdx-pass')
         self.assertEqual(config.apikey, 'tdx-key')
+
+    def test_settings_page_shows_inventory_card(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'External Inventory Feed')
+        self.assertContains(response, 'Save Inventory Settings')
+
+    def test_staff_can_save_inventory_settings(self):
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'save_inventory_settings',
+                'inventory-enabled': 'on',
+                'inventory-inventory_url': 'https://inventory.example.edu/full_dump.json',
+                'inventory-inventory_token': 'inventory-secret-token',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+
+        config = InventoryConfiguration.get_solo()
+        self.assertTrue(config.enabled)
+        self.assertEqual(config.inventory_url, 'https://inventory.example.edu/full_dump.json')
+        self.assertEqual(config.inventory_token, 'inventory-secret-token')
+
+    @patch('akips.views.refresh_inventory.delay')
+    def test_staff_can_queue_inventory_sync(self, mock_delay):
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_inventory_sync'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        self.assertEqual(mock_delay.call_count, 1)
+
+    @patch('akips.views.refresh_inventory.delay')
+    def test_inventory_sync_not_queued_when_disabled(self, mock_delay):
+        config = InventoryConfiguration.get_solo()
+        config.enabled = False
+        config.save()
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(self.url, {'action': 'run_inventory_sync'}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_delay.call_count, 0)
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertIn('Inventory sync was not started because the external inventory feed is disabled.', messages)
