@@ -34,8 +34,8 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm
 from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
@@ -381,6 +381,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     snapshot_import_dir = os.path.join(settings.BASE_DIR, 'tmp', 'snapshot_imports')
     tdx_form_prefix = 'tdx'
     inventory_form_prefix = 'inventory'
+    akips_form_prefix = 'akips'
 
     def test_func(self):
         return self.request.user.is_staff
@@ -408,6 +409,16 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             prefix=self.inventory_form_prefix,
         )
 
+    def _get_akips_config(self):
+        return AKIPSConfiguration.get_solo()
+
+    def _get_akips_form(self, data=None, instance=None):
+        return AKIPSSettingsForm(
+            data=data,
+            instance=instance or self._get_akips_config(),
+            prefix=self.akips_form_prefix,
+        )
+
     def _queue_inventory_sync(self):
         config = self._get_inventory_config()
         if not config.enabled:
@@ -430,11 +441,12 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             .first()
         )
 
-    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None):
+    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
             'tdx_form': tdx_form or self._get_tdx_form(),
             'inventory_form': inventory_form or self._get_inventory_form(),
+            'akips_form': akips_form or self._get_akips_form(),
             'last_import_task': self._get_last_snapshot_import_task(),
         }
 
@@ -529,6 +541,17 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
             messages.error(request, 'Inventory feed settings could not be saved. Please review the form.')
             return render(request, self.template_name, context=self._build_context(inventory_form=inventory_form))
+
+        if action == 'save_akips_settings':
+            config = self._get_akips_config()
+            akips_form = self._get_akips_form(data=request.POST, instance=config)
+            if akips_form.is_valid():
+                akips_form.save()
+                messages.success(request, 'AKIPS settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'AKIPS settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(akips_form=akips_form))
 
         if action == 'run_inventory_sync':
             self._queue_inventory_sync()

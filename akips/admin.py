@@ -52,3 +52,8 @@ class ServiceNowIncidentAdmin(admin.ModelAdmin):
 @admin.register(models.Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'voice_enabled']
+
+@admin.register(models.AKIPSConfiguration)
+class AKIPSConfigurationAdmin(admin.ModelAdmin):
+    list_display = ['enabled', 'server', 'username', 'verify_ssl', 'updated_at']
+    readonly_fields = ['updated_at']

@@ -9,8 +9,15 @@ from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 from unittest.mock import patch
 
-from .models import TDXConfiguration, InventoryConfiguration, create_profile, save_profile
-from .task import SNAPSHOT_FIXTURE_LABELS, import_snapshot_task, refresh_inventory, sanitize_snapshot_for_import
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, create_profile, save_profile
+from .task import (
+    SNAPSHOT_FIXTURE_LABELS,
+    import_snapshot_task,
+    refresh_inventory,
+    refresh_akips_devices,
+    refresh_unreachable,
+    sanitize_snapshot_for_import,
+)
 from .views import Home
 
 class HomeHudScaleTests(SimpleTestCase):
@@ -207,6 +214,13 @@ class SettingsViewTests(TestCase):
         self.assertContains(response, 'TDX Integration')
         self.assertContains(response, 'Save TDX Settings')
 
+    def test_settings_page_shows_akips_card_first(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+
+        content = response.content.decode('utf-8')
+        self.assertLess(content.find('AKIPS Integration'), content.find('TDX Integration'))
+
     def test_staff_can_save_tdx_settings(self):
         self.client.force_login(self.staff_user)
 
@@ -326,6 +340,30 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(mock_import_in_progress.call_count, 1)
         self.assertEqual(mock_inventory.call_count, 0)
+
+    @patch('akips.task.AKIPS')
+    @patch('akips.task.is_snapshot_import_in_progress', return_value=False)
+    def test_refresh_akips_devices_skips_when_akips_disabled(self, mock_import_in_progress, mock_akips):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = False
+        config.save()
+
+        refresh_akips_devices.run()
+
+        self.assertEqual(mock_import_in_progress.call_count, 1)
+        self.assertEqual(mock_akips.call_count, 0)
+
+    @patch('akips.task.EventManager')
+    @patch('akips.task.is_snapshot_import_in_progress', return_value=False)
+    def test_refresh_unreachable_skips_when_akips_disabled(self, mock_import_in_progress, mock_event_manager):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = False
+        config.save()
+
+        refresh_unreachable.run()
+
+        self.assertEqual(mock_import_in_progress.call_count, 1)
+        self.assertEqual(mock_event_manager.call_count, 0)
 
     def test_sanitize_snapshot_for_import_removes_unsupported_models(self):
         with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as snapshot_file:

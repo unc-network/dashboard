@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
-from .models import TDXConfiguration, InventoryConfiguration
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
 
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
@@ -212,4 +212,24 @@ class InventorySettingsForm(forms.ModelForm):
             'enabled': 'Enable inventory feed',
             'inventory_url': 'Inventory URL',
             'inventory_token': 'Inventory token',
+        }
+
+
+class AKIPSSettingsForm(forms.ModelForm):
+    class Meta:
+        model = AKIPSConfiguration
+        fields = ['enabled', 'server', 'username', 'password', 'verify_ssl']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'server': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'akips.example.com'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'password': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+            'verify_ssl': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+        }
+        labels = {
+            'enabled': 'Enable AKIPS',
+            'server': 'AKIPS Server',
+            'username': 'Username',
+            'password': 'Password',
+            'verify_ssl': 'Verify SSL Certificate',
         }

@@ -8,6 +8,73 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
+                <h3 class="card-title">AKIPS Integration</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Manage AKIPS connectivity without editing environment variables on the server.</p>
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_akips_settings">
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ akips_form.enabled }}
+                            <label class="custom-control-label" for="{{ akips_form.enabled.auto_id }}">{{ akips_form.enabled.label }}</label>
+                        </div>
+                        {% for error in akips_form.enabled.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="akips-settings-fields" class="settings-toggle-body" data-has-errors="{% if akips_form.errors %}true{% else %}false{% endif %}">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                {{ akips_form.server.label_tag }}
+                                {{ akips_form.server }}
+                                {% for error in akips_form.server.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-6">
+                                <div class="custom-control custom-switch mt-4">
+                                    {{ akips_form.verify_ssl }}
+                                    <label class="custom-control-label" for="{{ akips_form.verify_ssl.auto_id }}">{{ akips_form.verify_ssl.label }}</label>
+                                </div>
+                                {% for error in akips_form.verify_ssl.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                {{ akips_form.username.label_tag }}
+                                {{ akips_form.username }}
+                                {% for error in akips_form.username.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group col-md-6">
+                                {{ akips_form.password.label_tag }}
+                                {{ akips_form.password }}
+                                {% for error in akips_form.password.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Save AKIPS Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
                 <h3 class="card-title">TDX Integration</h3>
             </div>
             <div class="card-body">
@@ -264,12 +331,14 @@
             updateSettingsToggleSection('#{{ tdx_form.enabled.auto_id }}', '#tdx-settings-fields');
             updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-settings-fields');
             updateSettingsToggleSection('#{{ inventory_form.enabled.auto_id }}', '#inventory-sync-actions');
+            updateSettingsToggleSection('#{{ akips_form.enabled.auto_id }}', '#akips-settings-fields');
         }
 
         syncSettingsSections();
 
         $('#{{ tdx_form.enabled.auto_id }}').on('change', syncSettingsSections);
         $('#{{ inventory_form.enabled.auto_id }}').on('change', syncSettingsSections);
+        $('#{{ akips_form.enabled.auto_id }}').on('change', syncSettingsSections);
     });
 </script>
 {% endblock %}

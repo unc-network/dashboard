@@ -25,7 +25,7 @@ from akips.utils import AKIPS, Inventory
 from akips.ocnes import EventManager
 from akips.servicenow import ServiceNow
 
-from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident
+from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status, ServiceNowIncident, AKIPSConfiguration
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -80,6 +80,18 @@ def skip_task_for_snapshot_import(task_name):
         return False
 
     logger.warning('Skipping %s because a snapshot import is in progress', task_name)
+    return True
+
+
+def is_akips_enabled():
+    return AKIPSConfiguration.get_solo().enabled
+
+
+def skip_task_for_disabled_akips(task_name):
+    if is_akips_enabled():
+        return False
+
+    logger.warning('Skipping %s because AKIPS integration is disabled', task_name)
     return True
 
 
@@ -190,6 +202,8 @@ def refresh_akips_devices():
     Refresh local data for devices
     """
     if skip_task_for_snapshot_import('refresh_akips_devices'):
+        return
+    if skip_task_for_disabled_akips('refresh_akips_devices'):
         return
 
     logger.info("refreshing akips devices")
@@ -330,6 +344,8 @@ def refresh_ping_status():
     """
     if skip_task_for_snapshot_import('refresh_ping_status'):
         return
+    if skip_task_for_disabled_akips('refresh_ping_status'):
+        return
 
     logger.info("refreshing ping status")
     now = timezone.now()
@@ -376,6 +392,8 @@ def refresh_snmp_status():
     Refresh local snmp data
     """
     if skip_task_for_snapshot_import('refresh_snmp_status'):
+        return
+    if skip_task_for_disabled_akips('refresh_snmp_status'):
         return
 
     logger.info("refreshing snmp status")
@@ -424,6 +442,8 @@ def refresh_ups_status():
     """
     if skip_task_for_snapshot_import('refresh_ups_status'):
         return
+    if skip_task_for_disabled_akips('refresh_ups_status'):
+        return
 
     logger.info("refreshing ups status")
     now = timezone.now()
@@ -470,6 +490,8 @@ def refresh_battery_test_status():
     Refresh local battery test data
     """
     if skip_task_for_snapshot_import('refresh_battery_test_status'):
+        return
+    if skip_task_for_disabled_akips('refresh_battery_test_status'):
         return
 
     logger.info("refreshing battery test status")
@@ -750,6 +772,8 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
     Check for locks test
     """
     if skip_task_for_snapshot_import('refresh_unreachable'):
+        return
+    if skip_task_for_disabled_akips('refresh_unreachable'):
         return
 
     logger.info(f"Task {self.request.id} starting refresh unreachable task")

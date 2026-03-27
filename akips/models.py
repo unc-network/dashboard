@@ -236,8 +236,47 @@ class Profile(models.Model):
         return str(self.user)
 
 
+class AKIPSConfiguration(models.Model):
+    enabled = models.BooleanField(default=False)
+    server = models.CharField(max_length=255, blank=True, default='')
+    username = models.CharField(max_length=255, blank=True, default='')
+    password = models.CharField(max_length=255, blank=True, default='')
+    verify_ssl = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'AKIPS configuration'
+        verbose_name_plural = 'AKIPS configuration'
+
+    @classmethod
+    def env_defaults(cls):
+        return {
+            'enabled': os.getenv('AKIPS_SERVER', '') != '',
+            'server': os.getenv('AKIPS_SERVER', ''),
+            'username': os.getenv('AKIPS_USERNAME', ''),
+            'password': os.getenv('AKIPS_PASSWORD', ''),
+            'verify_ssl': os.getenv('AKIPS_CACERT', '').lower() != 'false',
+        }
+
+    @classmethod
+    def get_solo(cls):
+        defaults = cls.env_defaults()
+        try:
+            obj, _created = cls.objects.get_or_create(pk=1, defaults=defaults)
+            return obj
+        except (OperationalError, ProgrammingError):
+            return cls(pk=1, **defaults)
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'AKIPS configuration'
+
+
 class TDXConfiguration(models.Model):
-    enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=False)
     api_url = models.URLField(blank=True, default='')
     flow_url = models.URLField(blank=True, default='')
     username = models.CharField(max_length=255, blank=True, default='')
@@ -252,7 +291,7 @@ class TDXConfiguration(models.Model):
     @classmethod
     def env_defaults(cls):
         return {
-            'enabled': os.getenv('UPDATE_TDX', 'true').lower() == 'true',
+            'enabled': os.getenv('UPDATE_TDX', 'false').lower() == 'true',
             'api_url': os.getenv('TDX_URL', 'https://tdx.unc.edu/TDWebApi/'),
             'flow_url': os.getenv('TDX_FLOW_URL', ''),
             'username': os.getenv('TDX_USERNAME', ''),
@@ -278,7 +317,7 @@ class TDXConfiguration(models.Model):
 
 
 class InventoryConfiguration(models.Model):
-    enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=False)
     inventory_url = models.URLField(blank=True, default='')
     inventory_token = models.CharField(max_length=255, blank=True, default='')
     updated_at = models.DateTimeField(auto_now=True)
