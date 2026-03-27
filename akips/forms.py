@@ -157,6 +157,14 @@ class PreferencesForm(forms.Form):
 
 
 class AppSnapshotImportForm(forms.Form):
+    clear_existing_data = forms.BooleanField(
+        label='Clear existing app data before import',
+        required=False,
+        initial=True,
+        help_text='Recommended when restoring from another environment to avoid duplicate key conflicts.',
+        widget=forms.CheckboxInput(attrs={'class': 'custom-control-input'})
+    )
+
     snapshot_file = forms.FileField(
         label='Snapshot file',
         help_text='Upload a JSON fixture exported from this app.',

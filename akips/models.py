@@ -314,12 +314,16 @@ class InventoryConfiguration(models.Model):
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created:
         Profile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if not hasattr(instance, 'profile'):
         Profile.objects.create(user=instance)
     instance.profile.save()

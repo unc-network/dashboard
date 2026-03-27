@@ -4,15 +4,22 @@ Define tasks to be run in the background
 import logging
 import time
 import re
+import os
+import gzip
+import json
+import tempfile
 from datetime import datetime, timedelta
 
 from celery import shared_task, current_app
 from django_celery_results.models import TaskResult
 
 from django.conf import settings
+from django.apps import apps as django_apps
 from django.core.cache import cache
+from django.core.management import call_command
 from django.utils import timezone
 from django.template.loader import render_to_string
+from django.db.transaction import atomic
 
 from akips.utils import AKIPS, Inventory
 from akips.ocnes import EventManager
@@ -22,6 +29,125 @@ from .models import Device, HibernateRequest, Unreachable, Summary, Trap, Status
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+SNAPSHOT_FIXTURE_LABELS = ('akips', 'welcome', 'auth.group', 'auth.user')
+SNAPSHOT_IMPORT_EXCLUDED_MODELS = {
+    'admin.logentry',
+    'auth.permission',
+    'contenttypes.contenttype',
+    'sessions.session',
+}
+SNAPSHOT_IMPORT_EXCLUDED_MODELS_MERGE_ONLY = {
+    'akips.profile',
+    'auth.group',
+    'auth.user',
+}
+SNAPSHOT_IMPORT_LOCK_KEY = 'snapshot_import_task'
+SNAPSHOT_IMPORT_LOCK_TIMEOUT = 60 * 60 * 4
+
+
+def get_snapshot_import_models(fixture_labels=SNAPSHOT_FIXTURE_LABELS):
+    models = []
+    seen_labels = set()
+
+    for fixture_label in fixture_labels:
+        if '.' in fixture_label:
+            candidate_models = [django_apps.get_model(fixture_label)]
+        else:
+            candidate_models = list(django_apps.get_app_config(fixture_label).get_models())
+
+        for model in candidate_models:
+            model_label = model._meta.label_lower
+            if model_label in seen_labels:
+                continue
+            seen_labels.add(model_label)
+            models.append(model)
+
+    return models
+
+
+def clear_snapshot_import_targets(fixture_labels=SNAPSHOT_FIXTURE_LABELS):
+    for model in reversed(get_snapshot_import_models(fixture_labels=fixture_labels)):
+        model.objects.all().delete()
+
+
+def is_snapshot_import_in_progress():
+    return bool(cache.get(SNAPSHOT_IMPORT_LOCK_KEY))
+
+
+def skip_task_for_snapshot_import(task_name):
+    if not is_snapshot_import_in_progress():
+        return False
+
+    logger.warning('Skipping %s because a snapshot import is in progress', task_name)
+    return True
+
+
+def sanitize_snapshot_for_import(snapshot_path, clear_existing_data=False):
+    opener = gzip.open if snapshot_path.lower().endswith('.gz') else open
+
+    with opener(snapshot_path, 'rt', encoding='utf-8') as snapshot_file:
+        snapshot_records = json.load(snapshot_file)
+
+    filtered_records = []
+    changed = False
+
+    for record in snapshot_records:
+        model_label = record.get('model')
+        if model_label in SNAPSHOT_IMPORT_EXCLUDED_MODELS:
+            changed = True
+            continue
+        if not clear_existing_data and model_label in SNAPSHOT_IMPORT_EXCLUDED_MODELS_MERGE_ONLY:
+            changed = True
+            continue
+
+        fields = dict(record.get('fields', {}))
+        if model_label == 'auth.group' and 'permissions' in fields:
+            fields.pop('permissions', None)
+            changed = True
+        if model_label == 'auth.user' and 'user_permissions' in fields:
+            fields.pop('user_permissions', None)
+            changed = True
+
+        if fields != record.get('fields', {}):
+            updated_record = dict(record)
+            updated_record['fields'] = fields
+            filtered_records.append(updated_record)
+        else:
+            filtered_records.append(record)
+
+    if not changed:
+        return snapshot_path
+
+    with tempfile.NamedTemporaryFile('w', suffix='.json', dir=os.path.dirname(snapshot_path), delete=False) as sanitized_file:
+        json.dump(filtered_records, sanitized_file)
+        return sanitized_file.name
+
+
+@shared_task
+def import_snapshot_task(snapshot_path, clear_existing_data=False):
+    """Import a snapshot fixture file in the background to avoid request timeouts."""
+    import_path = snapshot_path
+
+    if not cache.add(SNAPSHOT_IMPORT_LOCK_KEY, True, SNAPSHOT_IMPORT_LOCK_TIMEOUT):
+        raise RuntimeError('A snapshot import is already in progress.')
+
+    try:
+        import_path = sanitize_snapshot_for_import(snapshot_path, clear_existing_data=clear_existing_data)
+        with atomic():
+            if clear_existing_data:
+                clear_snapshot_import_targets()
+            call_command('loaddata', import_path)
+        logger.info('Snapshot import task completed successfully: %s', snapshot_path)
+    except Exception:
+        logger.exception('Snapshot import task failed: %s', snapshot_path)
+        raise
+    finally:
+        cache.delete(SNAPSHOT_IMPORT_LOCK_KEY)
+        if import_path != snapshot_path and import_path and os.path.exists(import_path):
+            os.remove(import_path)
+        if snapshot_path and os.path.exists(snapshot_path):
+            os.remove(snapshot_path)
 
 
 # Cache keys used by dashboard cards and chart data.
@@ -63,6 +189,9 @@ def refresh_akips_devices():
     """
     Refresh local data for devices
     """
+    if skip_task_for_snapshot_import('refresh_akips_devices'):
+        return
+
     logger.info("refreshing akips devices")
     now = timezone.now()
     sleep_delay = 0
@@ -199,6 +328,9 @@ def refresh_ping_status():
     """
     Refresh local ping data
     """
+    if skip_task_for_snapshot_import('refresh_ping_status'):
+        return
+
     logger.info("refreshing ping status")
     now = timezone.now()
     sleep_delay = 0
@@ -243,6 +375,9 @@ def refresh_snmp_status():
     """
     Refresh local snmp data
     """
+    if skip_task_for_snapshot_import('refresh_snmp_status'):
+        return
+
     logger.info("refreshing snmp status")
     now = timezone.now()
     sleep_delay = 0
@@ -287,6 +422,9 @@ def refresh_ups_status():
     """
     Refresh local ups data
     """
+    if skip_task_for_snapshot_import('refresh_ups_status'):
+        return
+
     logger.info("refreshing ups status")
     now = timezone.now()
     sleep_delay = 0
@@ -331,6 +469,9 @@ def refresh_battery_test_status():
     """
     Refresh local battery test data
     """
+    if skip_task_for_snapshot_import('refresh_battery_test_status'):
+        return
+
     logger.info("refreshing battery test status")
     now = timezone.now()
     sleep_delay = 0
@@ -375,6 +516,9 @@ def refresh_inventory():
     """
     Refresh external device inventory feed
     """
+    if skip_task_for_snapshot_import('refresh_inventory'):
+        return
+
     logger.info("Refreshing inventory device data")
     now = timezone.now()
     sleep_delay = 0
@@ -435,6 +579,9 @@ def refresh_incidents():
     """
     Check for any needed updates
     """
+    if skip_task_for_snapshot_import('refresh_incidents'):
+        return
+
     logger.debug("Refreshing incidents")
     now = timezone.now()
     servicenow = ServiceNow()
@@ -476,6 +623,9 @@ def refresh_hibernate():
     """
     Refresh hibernate status
     """
+    if skip_task_for_snapshot_import('refresh_hibernate'):
+        return
+
     logger.info("Refreshing hibernated devices")
     now = timezone.now()
     sleep_delay = 0
@@ -541,6 +691,9 @@ def cleanup_dashboard_data():
     """
     Remove old data
     """
+    if skip_task_for_snapshot_import('cleanup_dashboard_data'):
+        return
+
     logger.info("Cleanup dashboard data is starting")
     now = timezone.now()
 
@@ -596,6 +749,9 @@ def refresh_unreachable(self, mode='poll', lock_expire=120):
     """ 
     Check for locks test
     """
+    if skip_task_for_snapshot_import('refresh_unreachable'):
+        return
+
     logger.info(f"Task {self.request.id} starting refresh unreachable task")
     lock_id = "refresh_unreachable_task"
     lock_expire = lock_expire

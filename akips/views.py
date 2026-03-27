@@ -4,6 +4,7 @@ import re
 import hashlib
 import os
 import tempfile
+import uuid
 from datetime import datetime, timedelta
 from secrets import compare_digest
 import math
@@ -35,7 +36,7 @@ from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration
 from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm
-from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_inventory
+from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
@@ -325,11 +326,17 @@ class Users(LoginRequiredMixin, View):
             logger.debug("session {}".format( s.get_decoded() ))
             logger.debug("session expire {}".format( s.expire_date ))
             logger.debug("session start {}".format( session_start ))
-            sessions.append({ 
-                'user': User.objects.get(id=s_decoded['_auth_user_id']),
-                'expire': s.expire_date,
-                'start': session_start,
-                })
+            # Skip sessions where the associated user no longer exists (e.g., after import)
+            try:
+                user = User.objects.get(id=s_decoded['_auth_user_id'])
+                sessions.append({ 
+                    'user': user,
+                    'expire': s.expire_date,
+                    'start': session_start,
+                    })
+            except User.DoesNotExist:
+                logger.debug(f"Session references non-existent user ID: {s_decoded.get('_auth_user_id')}")
+                continue
         context['session_list'] = sessions
 
 
@@ -369,8 +376,9 @@ class UserPreferences(LoginRequiredMixin, View):
 class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     ''' Admin-only settings scaffold page '''
     template_name = 'akips/settings.html'
-    fixture_apps = ('akips', 'welcome', 'auth')
+    fixture_labels = SNAPSHOT_FIXTURE_LABELS
     fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
+    snapshot_import_dir = os.path.join(settings.BASE_DIR, 'tmp', 'snapshot_imports')
     tdx_form_prefix = 'tdx'
     inventory_form_prefix = 'inventory'
 
@@ -414,11 +422,20 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
         else:
             messages.warning(self.request, 'Inventory sync is already in progress.')
 
+    def _get_last_snapshot_import_task(self):
+        return (
+            TaskResult.objects
+            .filter(task_name='akips.task.import_snapshot_task')
+            .order_by('-date_created')
+            .first()
+        )
+
     def _build_context(self, import_form=None, tdx_form=None, inventory_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
             'tdx_form': tdx_form or self._get_tdx_form(),
             'inventory_form': inventory_form or self._get_inventory_form(),
+            'last_import_task': self._get_last_snapshot_import_task(),
         }
 
     def _export_snapshot_response(self):
@@ -426,7 +443,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             snapshot_path = tmp.name
 
         try:
-            dump_args = list(self.fixture_apps)
+            dump_args = list(self.fixture_labels)
             dump_kwargs = {
                 'indent': 2,
                 'use_natural_foreign_keys': True,
@@ -448,18 +465,15 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             if os.path.exists(snapshot_path):
                 os.remove(snapshot_path)
 
-    def _import_snapshot(self, uploaded_file):
+    def _persist_uploaded_snapshot(self, uploaded_file):
         suffix = '.json.gz' if uploaded_file.name.lower().endswith('.json.gz') else '.json'
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        os.makedirs(self.snapshot_import_dir, exist_ok=True)
+        snapshot_filename = f"snapshot-{uuid.uuid4()}{suffix}"
+        snapshot_path = os.path.join(self.snapshot_import_dir, snapshot_filename)
+        with open(snapshot_path, 'wb') as fh:
             for chunk in uploaded_file.chunks():
-                tmp.write(chunk)
-            snapshot_path = tmp.name
-
-        try:
-            call_command('loaddata', snapshot_path)
-        finally:
-            if os.path.exists(snapshot_path):
-                os.remove(snapshot_path)
+                fh.write(chunk)
+        return snapshot_path
 
     def get(self, request, *args, **kwargs):
         context = self._build_context()
@@ -484,8 +498,10 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
             try:
                 snapshot_file = import_form.cleaned_data['snapshot_file']
-                self._import_snapshot(snapshot_file)
-                messages.success(request, 'Snapshot import completed.')
+                clear_existing_data = import_form.cleaned_data.get('clear_existing_data', False)
+                snapshot_path = self._persist_uploaded_snapshot(snapshot_file)
+                task_result = import_snapshot_task.delay(snapshot_path, clear_existing_data=clear_existing_data)
+                messages.success(request, f'Snapshot import started in the background (task: {task_result.id}). Refresh this page to track progress.')
                 return HttpResponseRedirect(reverse('settings'))
             except Exception as exc:
                 logger.exception('Settings import failed')
