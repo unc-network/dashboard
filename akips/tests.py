@@ -224,6 +224,9 @@ class SettingsViewTests(TestCase):
 
     @patch('akips.views.refresh_inventory.delay')
     def test_staff_can_queue_inventory_sync(self, mock_delay):
+        config = InventoryConfiguration.get_solo()
+        config.enabled = True
+        config.save()
         self.client.force_login(self.staff_user)
 
         response = self.client.post(self.url, {'action': 'run_inventory_sync'})
