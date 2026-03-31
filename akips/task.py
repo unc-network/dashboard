@@ -258,7 +258,7 @@ def refresh_akips_devices():
             # Do not set or change type unless we can tell by the name
             if re.search(r'-(ups[0-9]*)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
                 defaults['type'] = 'UPS'
-            elif re.search(r'-(ap)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
+            elif re.search(r'[-_]?(ap)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
                 defaults['type'] = 'AP'
             elif re.search(r'-(tier1|bes|sw[0-9]*|spine|pod[a-z]*)[-_]?', value['SNMPv2-MIB.sysName'], re.IGNORECASE):
                 defaults['type'] = 'SWITCH'
