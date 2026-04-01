@@ -13,7 +13,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-from .models import Device, Unreachable, Status, Summary, ServiceNowIncident
+from .models import Device, Unreachable, Status, Summary, ServiceNowIncident, InventoryConfiguration, AKIPSConfiguration
 #from akips.task import update_incident
 
 # Get an instance logger
@@ -24,11 +24,14 @@ requests.packages.urllib3.disable_warnings()
 
 class AKIPS:
     # Class to handle interactions with AKiPS instance
-    akips_server = os.getenv('AKIPS_SERVER', '')
-    akips_username = os.getenv('AKIPS_USERNAME', '')
-    akips_password = os.getenv('AKIPS_PASSWORD', '')
-    session = requests.Session()
-    cacert = settings.AKIPS_CACERT
+
+    def __init__(self):
+        config = AKIPSConfiguration.get_solo()
+        self.akips_server = config.server or os.getenv('AKIPS_SERVER', '')
+        self.akips_username = config.username or os.getenv('AKIPS_USERNAME', '')
+        self.akips_password = config.password or os.getenv('AKIPS_PASSWORD', '')
+        self.verify_ssl = config.verify_ssl
+        self.session = requests.Session()
 
     def get_devices(self):
         ''' Pull a list of fields for all devices in akips '''
@@ -415,12 +418,7 @@ class AKIPS:
         params['username'] = self.akips_username
         params['password'] = self.akips_password
         # GET requests have 2 args: URL, HEADERS
-        if self.cacert:
-            # Use the custom CA chain provided
-            r = self.session.get(url, params=params, verify=self.cacert)
-        else:
-            # Verify is off because the 'certifi' python module is missing the InCommon interim CA
-            r = self.session.get(url, params=params, verify=False)
+        r = self.session.get(url, params=params, verify=self.verify_ssl)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
@@ -443,12 +441,20 @@ class AKIPS:
 
 class Inventory:
     # Class to handle interactions with the NIT
-    inventory_url = settings.INVENTORY_URL
-    inventory_token = settings.INVENTORY_TOKEN
-    session = requests.Session()
+    def __init__(self):
+        config = InventoryConfiguration.get_solo()
+        defaults = InventoryConfiguration.env_defaults()
+
+        self.enabled = config.enabled
+        self.inventory_url = config.inventory_url or defaults['inventory_url']
+        self.inventory_token = config.inventory_token or defaults['inventory_token']
+        self.session = requests.Session()
 
     def get_device_data(self, params=None):
         ''' Search and Read Objects: GET Method '''
+        if not self.enabled:
+            logger.info("Inventory feed is disabled")
+            return None
         if not self.inventory_url:
             logger.debug("Inventory feed url is not defined")
             return None

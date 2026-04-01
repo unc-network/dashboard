@@ -71,5 +71,9 @@ target/
 .python-version
 .env
 
+# Temporary snapshot imports (contains sensitive data)
+tmp/
+snapshot_imports/
+
 # Docker related data
 .docker/

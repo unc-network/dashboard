@@ -3,31 +3,554 @@
 {% load auth_extras %}
 
 {% block title %}OCNES Dashboard{% endblock %}
+{% block bodyclass %}layout-top-nav{% if hud_mode %} hud-mode{% endif %}{% endblock %}
+{% block nav_header %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
+{% block nav_footer %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
+{% block content_header %}{% if not hud_mode %}{{ block.super }}{% endif %}{% endblock %}
 {% block extra_head%}
 <!-- <meta http-equiv="refresh" content="30"> -->
+<style>
+    .ops-status-strip,
+    #chart,
+    .event-card {
+        border-radius: 0.45rem;
+        box-shadow: 0 1px 2px rgba(18, 24, 32, 0.08);
+    }
+    .event-card {
+        margin-bottom: 0.8rem;
+    }
+    .ops-status-strip .badge {
+        font-size: 0.8rem;
+        margin-right: 0.35rem;
+    }
+    .ops-chip {
+        display: inline-block;
+        padding: 0.24rem 0.5rem;
+        margin-right: 0.35rem;
+        margin-bottom: 0.2rem;
+        border-radius: 999px;
+        font-size: 0.79rem;
+        line-height: 1.1;
+        border: 1px solid transparent;
+    }
+    .ops-chip-info { background: #d8e9f6; color: #163a5f; border-color: #b6d5ec; }
+    .ops-chip-neutral { background: #edf1f5; color: #3f4f61; border-color: #d6dde5; }
+    .ops-chip-danger { background: #f6e9ec; color: #6e2e3b; border-color: #e8ccd3; }
+    .ops-chip-warn { background: #f8f1e1; color: #6f5520; border-color: #e8d5ad; }
+    .ops-chip-light { background: #f4f6f8; color: #4f5f72; border-color: #e1e6eb; }
+    .ops-chip-critical { background: #f6e9ec; color: #6e2e3b; border-color: #e8ccd3; }
+    .ops-chip-switch { background: #fbe8e0; color: #7c3419; border-color: #efcbbd; }
+    .ops-chip-ap { background: #f8efd8; color: #6b5417; border-color: #e8d4a1; }
+    .ops-chip-ups { background: #ece7fb; color: #50307d; border-color: #d5caf3; }
+    .ops-chip-special { background: #e4f4ec; color: #1f5a41; border-color: #bfe1cf; }
+    .ops-chip-trap { background: #e7effa; color: #214b77; border-color: #c8d9ef; }
+
+    .event-card .table-responsive {
+        overflow-x: auto;
+    }
+    .event-card .card-body {
+        position: relative;
+    }
+    #trap_card .card-body {
+        max-height: 520px;
+        overflow-y: auto;
+    }
+    .trap-pager {
+        background: var(--oc-surface-2);
+    }
+    .event-card .card-body .refresh-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        z-index: 3;
+        pointer-events: none;
+    }
+    body.theme-dark .event-card .card-body .refresh-overlay {
+        background: rgba(15, 27, 46, 0.28);
+    }
+    .event-card .table,
+    #chart .card-body,
+    .ops-status-strip .card-body {
+        font-size: 0.92rem;
+    }
+    .event-card .card-header,
+    #chart .card-header {
+        padding: 0.42rem 0.68rem;
+    }
+    .event-card .card-title,
+    #chart .card-title {
+        font-size: 1.02rem;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+    }
+    .event-card table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--oc-surface-2);
+        border-bottom: 2px solid var(--oc-border);
+        font-size: 0.9rem;
+        font-weight: 650;
+    }
+    .event-card td i.fas,
+    .event-card td i.far {
+        font-size: 0.92rem;
+    }
+    .event-card td .form-check {
+        margin: 0;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .event-card td .form-check-input {
+        position: static;
+        margin: 0;
+    }
+    .event-card .bldg-parent-row {
+        background: #edf3f9;
+    }
+    .event-card .bldg-group-toggle {
+        border: 0;
+        background: transparent;
+        color: #0f5f8d;
+        padding: 0 0.25rem 0 0;
+        cursor: pointer;
+    }
+    .event-card .bldg-group-toggle:focus {
+        outline: none;
+    }
+    .event-card .bldg-child-name {
+        display: inline-flex;
+        align-items: center;
+        padding-left: 1.15rem;
+        margin-right: 0.5rem;
+        position: relative;
+    }
+    .event-card .bldg-child-name:before {
+        content: '';
+        position: absolute;
+        left: 0.45rem;
+        top: 50%;
+        width: 0.45rem;
+        border-top: 1px solid var(--oc-border);
+        transform: translateY(-50%);
+    }
+    .num-col {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .ts-col {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .card-meta {
+        font-size: 0.88rem;
+        color: #2f3b47;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    .card-meta span {
+        color: #111827;
+        font-weight: 700;
+    }
+    .ops-card-header .card-tools {
+        margin-right: 0 !important;
+        padding-right: 0.35rem;
+    }
+    .bldg-controls {
+        display: inline-flex;
+        gap: 0.25rem;
+        margin-left: 0.55rem;
+        vertical-align: middle;
+    }
+    .bldg-controls .btn {
+        line-height: 1;
+        padding: 0.14rem 0.36rem;
+        font-size: 0.72rem;
+        border-radius: 999px;
+        border-color: rgba(255, 255, 255, 0.92) !important;
+        color: #f7fcff !important;
+        background: rgba(10, 43, 65, 0.22) !important;
+    }
+    .bldg-controls .btn:hover,
+    .bldg-controls .btn:focus {
+        background: rgba(10, 43, 65, 0.34) !important;
+        color: #ffffff !important;
+    }
+    .header-action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+        white-space: nowrap;
+    }
+    .ops-card-header {
+        background: var(--oc-surface-2);
+        border-bottom: 1px solid var(--oc-border);
+    }
+    .card-primary .card-header.ops-card-header {
+        background: linear-gradient(90deg, #0079a7 0%, #318fc0 55%, #4b9cd3 100%) !important;
+        border-bottom: 1px solid #0b638a !important;
+        color: #f6fbff !important;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    }
+    .card-primary .card-header.ops-card-header .card-title,
+    .card-primary .card-header.ops-card-header .card-tools,
+    .card-primary .card-header.ops-card-header .card-meta,
+    .card-primary .card-header.ops-card-header .card-meta span {
+        color: #f6fbff !important;
+    }
+    .ops-card-header .badge {
+        font-size: 0.74rem;
+        font-weight: 700;
+        vertical-align: middle;
+        background: rgba(255, 255, 255, 0.88);
+        color: #0f4669;
+        border: 1px solid rgba(255, 255, 255, 0.96);
+    }
+    .ops-card-header #crit_card_count {
+        background: #ffdfe6;
+        color: #7b1f33;
+        border-color: #ffc9d5;
+    }
+
+    .event-card td.bg-danger.akips_trend {
+        background: #a13f50 !important;
+        color: #fff2f5 !important;
+    }
+    .event-card td.bg-success.akips_trend {
+        background: #2f7d64 !important;
+        color: #eefaf6 !important;
+    }
+
+    .card-refresh-changed {
+        animation: cardPulse 650ms ease-out;
+    }
+    @keyframes cardPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(78, 161, 255, 0.35);
+            transform: translateY(0);
+        }
+        35% {
+            box-shadow: 0 0 0 7px rgba(78, 161, 255, 0.06);
+            transform: translateY(-1px);
+        }
+        100% {
+            box-shadow: 0 1px 2px rgba(18, 24, 32, 0.08);
+            transform: translateY(0);
+        }
+    }
+
+    body.theme-dark .ops-card-header {
+        background: #243246;
+        border-bottom: 1px solid #3a4d66;
+    }
+    body.theme-dark .card-primary .card-header.ops-card-header {
+        background: linear-gradient(90deg, #2b5f8d 0%, #3f79ad 58%, #5992c6 100%) !important;
+        border-bottom: 1px solid #6aa2d2 !important;
+        color: #eef6ff !important;
+    }
+    body.theme-dark .card-primary .card-header.ops-card-header .card-title,
+    body.theme-dark .card-primary .card-header.ops-card-header .card-tools,
+    body.theme-dark .card-primary .card-header.ops-card-header .card-meta,
+    body.theme-dark .card-primary .card-header.ops-card-header .card-meta span {
+        color: #eef6ff !important;
+    }
+    body.theme-dark .ops-status-strip,
+    body.theme-dark #chart,
+    body.theme-dark .event-card {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.36);
+    }
+    body.theme-dark .ops-chip-info { background: #234061; color: #dceeff; border-color: #3d678f; }
+    body.theme-dark .ops-chip-neutral { background: #283544; color: #c9d7e6; border-color: #3b4d62; }
+    body.theme-dark .ops-chip-danger { background: #5a333d; color: #ffe3e9; border-color: #7b4b57; }
+    body.theme-dark .ops-chip-warn { background: #524124; color: #f7e8c8; border-color: #76603d; }
+    body.theme-dark .ops-chip-light { background: #2b3847; color: #c8d6e4; border-color: #3f5065; }
+    body.theme-dark .ops-chip-critical { background: #5a333d; color: #ffe3e9; border-color: #7b4b57; }
+    body.theme-dark .ops-chip-switch { background: #5c3a2c; color: #ffe7de; border-color: #7f5847; }
+    body.theme-dark .ops-chip-ap { background: #5b4b28; color: #f9edca; border-color: #7b6940; }
+    body.theme-dark .ops-chip-ups { background: #44395e; color: #ede5ff; border-color: #655487; }
+    body.theme-dark .ops-chip-special { background: #27493a; color: #ddf7ea; border-color: #42705c; }
+    body.theme-dark .ops-chip-trap { background: #2c435d; color: #deedff; border-color: #476585; }
+    body.theme-dark .event-card table thead th {
+        background: #2a3a50;
+        border-bottom: 2px solid #435b7d;
+        color: #dce8f5;
+    }
+    body.theme-dark .ops-card-header .badge {
+        background: rgba(235, 245, 255, 0.94);
+        color: #184363;
+        border-color: rgba(235, 245, 255, 0.95);
+    }
+    body.theme-dark .ops-card-header #crit_card_count {
+        background: #ffd2db;
+        color: #74263a;
+        border-color: #ffbdcb;
+    }
+    body.theme-dark .bldg-controls .btn {
+        border-color: rgba(228, 242, 255, 0.9) !important;
+        color: #eef6ff !important;
+        background: rgba(17, 35, 58, 0.3) !important;
+    }
+    body.theme-dark .bldg-controls .btn:hover,
+    body.theme-dark .bldg-controls .btn:focus {
+        background: rgba(17, 35, 58, 0.45) !important;
+    }
+    body.theme-dark .event-card tr.bg-light {
+        background: #223042 !important;
+        color: #dce8f5;
+    }
+    body.theme-dark .event-card .bldg-parent-row {
+        background: #25364a;
+    }
+    body.theme-dark .event-card .bldg-group-toggle {
+        color: #8fc7f0;
+    }
+    body.theme-dark .event-card td.bg-danger.akips_trend {
+        background: #6a3a45 !important;
+        color: #ffe6ec !important;
+    }
+    body.theme-dark .event-card td.bg-success.akips_trend {
+        background: #2f6d59 !important;
+        color: #e3f8ef !important;
+    }
+    body.theme-dark .event-card .badge.bg-danger,
+    body.theme-dark .event-card .badge.badge-danger {
+        background: #6f3b47 !important;
+        color: #ffe8ed !important;
+    }
+    body.theme-dark .event-card .badge.bg-primary,
+    body.theme-dark .event-card .badge.badge-primary {
+        background: #2f5f8f !important;
+        color: #e2efff !important;
+    }
+    body.dashboard-compact .event-card .table td,
+    body.dashboard-compact .event-card .table th {
+        padding: 0.2rem 0.35rem;
+        font-size: 0.88rem;
+    }
+    body.hud-mode {
+        --hud-font-scale: {{ hud_font_scale|default:1.0 }};
+    }
+    body.hud-mode .content {
+        padding-top: 0.35rem;
+        padding-bottom: 0.25rem;
+    }
+    body.hud-mode .content .container {
+        max-width: none;
+        width: 100%;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        min-height: calc(100vh - 0.6rem);
+        display: flex;
+        flex-direction: column;
+    }
+    body.hud-mode #myForm {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-bottom: 0;
+    }
+    /* HUD: no extra margin-bottom — flex column gap handles spacing (fix 6) */
+    body.hud-mode .ops-status-strip,
+    body.hud-mode .event-card {
+        margin-bottom: 0;
+    }
+    /* HUD: tighter status strip (fix 1) */
+    body.hud-mode .ops-status-strip .card-body {
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.22rem !important;
+        font-size: calc(0.88rem * var(--hud-font-scale));
+    }
+    body.hud-mode .ops-status-strip .ops-chip {
+        font-size: calc(0.75rem * var(--hud-font-scale));
+        padding: 0.18rem 0.42rem;
+    }
+    .ops-status-strip .ops-status-actions {
+        margin-left: auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    .ops-dashboard-grid {
+        display: block;
+    }
+    .ops-dashboard-column {
+        display: contents;
+    }
+    body.hud-mode .ops-dashboard-grid {
+        display: grid;
+        /* wider left column for Tier/Building (fix 4) */
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+        gap: 0.45rem;
+        align-items: stretch;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+    }
+    body.hud-mode .ops-dashboard-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        min-height: 0;
+    }
+    body.hud-mode .event-card {
+        margin-bottom: 0;
+        height: auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    /* HUD: tighter card headers (fix 5) */
+    body.hud-mode .event-card .card-header,
+    body.hud-mode .ops-status-strip .card-header {
+        padding-top: 0.28rem !important;
+        padding-bottom: 0.28rem !important;
+    }
+    body.hud-mode #crit_card,
+    body.hud-mode #spec_card {
+        flex: 0 0 auto;
+    }
+    body.hud-mode #bldg_card,
+    body.hud-mode #trap_card {
+        flex: 1 1 auto;
+    }
+    body.hud-mode .event-card .card-body {
+        flex: 1 1 auto;
+        overflow: auto;
+    }
+    body.hud-mode #trap_card .card-body {
+        max-height: none;
+    }
+    /* HUD: larger table text for TV readability (fix 2) */
+    body.hud-mode .event-card .table,
+    body.hud-mode .event-card .card-body,
+    body.hud-mode .event-card .card-body td,
+    body.hud-mode .event-card .card-body th,
+    body.hud-mode .event-card .card-body a,
+    body.hud-mode .event-card .card-body span,
+    body.hud-mode .event-card .card-body label,
+    body.hud-mode .event-card .card-body button,
+    body.hud-mode .event-card .card-body i {
+        font-size: calc(1.05rem * var(--hud-font-scale)) !important;
+    }
+    body.hud-mode .event-card .card-body .small,
+    body.hud-mode .event-card .card-body small,
+    body.hud-mode .event-card .card-body .badge {
+        font-size: calc(0.9rem * var(--hud-font-scale)) !important;
+    }
+    body.hud-mode .event-card .table td,
+    body.hud-mode .event-card .table th {
+        padding: 0.32rem 0.45rem;
+    }
+    body.hud-mode .ops-status-strip .card-body {
+        font-size: calc(0.88rem * var(--hud-font-scale));
+    }
+    /* HUD: larger, bolder card titles (fix 3) */
+    body.hud-mode .event-card .card-title {
+        font-size: calc(1.25rem * var(--hud-font-scale));
+        font-weight: 700;
+    }
+    body.hud-mode .event-card table thead th {
+        font-size: calc(0.92rem * var(--hud-font-scale));
+        top: 0;
+    }
+    body.hud-mode .summary-comment-static {
+        display: inline-block;
+        margin-top: 0.15rem;
+        color: #5f6d7b;
+    }
+    body.theme-dark.hud-mode .summary-comment-static {
+        color: #b9c7d6;
+    }
+    @media (max-width: 1024px) {
+        body.hud-mode .ops-dashboard-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+            flex: 0 0 auto;
+        }
+        body.hud-mode .ops-dashboard-column {
+            gap: 0.45rem;
+        }
+        body.hud-mode .event-card {
+            height: auto;
+        }
+        body.hud-mode #bldg_card,
+        body.hud-mode #trap_card {
+            flex: 0 0 auto;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block no_heading %}
+{% if not hud_mode %}
 <div class="row">
-    <div class="col-sm-6 my-auto text-left text-sm">
-        <div class="custom-control custom-switch">
-            <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
-            <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
+    <div class="col my-auto text-left text-sm">
+        <div class="custom-control custom-switch d-inline-block ml-3">
+            <input type="checkbox" class="custom-control-input" id="compact-toggle">
+            <label class="custom-control-label" for="compact-toggle">Compact rows</label>
         </div>
     </div>
-    <div class="col-sm-6 text-right">
+    <div class="col-sm-auto text-right header-action-buttons">
+        <a href="{% url 'home_hud' %}" class="btn btn-primary btn-sm" title="Open HUD mode" aria-label="Open HUD mode">
+            <i class="fas fa-tv"></i>
+        </a>
         <button type="button" id="incident_button" class="btn btn-primary btn-sm">Manage Incident</button>
-        <button type="button" id="clear_all_traps" class="btn btn-primary btn-sm">Clear All Traps</button>
         <button type="button" id="sync_button" class="btn btn-primary btn-sm" data-url="{% url 'request_sync' %}">Force AKiPS Sync</button>
     </div>
 </div> 
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<form method="get" id="myForm" action="{% url 'create_incident' %}">
-    <div id="chart" class="card">
-        <div class="card-header">
-            <h3 class="card-title">New Event Trends</h3>
+<form method="get" id="myForm" action="{% url 'create_incident' %}" data-cards-url="{% url 'dashboard_cards' %}">
+    <div class="card ops-status-strip">
+        <div class="card-body py-2 d-flex align-items-center flex-wrap">
+            <div class="ops-status-main">
+                <span class="ops-chip ops-chip-neutral">Data Age: <span id="ops-data-age">unknown</span></span>
+                <span class="ops-chip ops-chip-warn" id="ops-simulate-chip" style="display:none">SIMULATE MODE</span>
+                <span class="ops-chip ops-chip-critical" id="ops-crit-chip" style="display:none">Crit: <span id="ops-crit-count">0</span></span>
+                <span class="ops-chip ops-chip-switch" id="ops-bldg-switch-chip" style="display:none">SW: <span id="ops-bldg-switch-count">0</span></span>
+                <span class="ops-chip ops-chip-ap" id="ops-bldg-ap-chip" style="display:none">AP: <span id="ops-bldg-ap-count">0</span></span>
+                <span class="ops-chip ops-chip-ups" id="ops-bldg-ups-chip" style="display:none">UPS: <span id="ops-bldg-ups-count">0</span></span>
+                <span class="ops-chip ops-chip-special" id="ops-spec-chip" style="display:none">Spec: <span id="ops-spec-count">0</span></span>
+                <span class="ops-chip ops-chip-trap" id="ops-trap-chip" style="display:none">Traps: <span id="ops-trap-count">0</span></span>
+                {% if request.user.is_staff %}
+                <span class="ops-chip ops-chip-light">Cards Changed: <span id="ops-cards-changed">0</span></span>
+                {% endif %}
+            </div>
+            {% if not hud_mode %}
+            <div class="ops-status-actions mt-2 mt-sm-0">
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="refresh-toggle" checked>
+                    <label class="custom-control-label" for="refresh-toggle">Refresh in <span id="time-remain">30</span> seconds</label>
+                </div>
+            </div>
+            {% else %}
+            <div class="ops-status-actions">
+                <input type="checkbox" class="custom-control-input alert-toggle" id="alert-toggle" data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}" checked style="display:none">
+                <a href="{% url 'home' %}" class="ops-chip ops-chip-neutral" title="Return to dashboard" style="text-decoration:none; line-height:1">
+                    <i class="fas fa-th-large"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not hud_mode %}
+    <div id="chart" class="card card-primary">
+        <div class="card-header py-2 ops-card-header">
+            <h3 class="card-title">New Event Trends <span class="badge badge-info" id="chart_event_count">0</span></h3>
+            <div class="card-tools card-meta">Refreshed <span id="chart_updated">--:--:--</span></div>
         </div>
         <div class="card-body p-0">
             <div class="chart">
@@ -43,25 +566,48 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
-    <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
-        <div class="card-body table-responsive p-0">
+    <div class="ops-dashboard-grid">
+    <div class="ops-dashboard-column ops-dashboard-column-left">
+        <div id="crit_card" class="card card-primary event-card" data-url="{% url 'crit_card' %}">
+            <div class="card-header py-2 ops-card-header">
+                <h3 class="card-title">Critical Devices <span class="badge badge-danger" id="crit_card_count">0</span></h3>
+                <div class="card-tools card-meta">Refreshed <span id="crit_card_updated">--:--:--</span></div>
+            </div>
+            <div class="card-body table-responsive p-0">
+            </div>
+        </div>
+
+        <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
+            <div class="card-header py-2 ops-card-header">
+                <h3 class="card-title">Tier / Building <span class="badge badge-info" id="bldg_card_count">0</span>{% if not hud_mode %}<span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="bldg-expand-all">Expand all</button><button type="button" class="btn btn-outline-light btn-xs" id="bldg-collapse-all">Collapse all</button></span>{% endif %}</h3>
+                <div class="card-tools card-meta">Refreshed <span id="bldg_card_updated">--:--:--</span></div>
+            </div>
+            <div class="card-body table-responsive p-0">
+            </div>
         </div>
     </div>
 
-    <div id="bldg_card" class="card card-primary event-card" data-url="{% url 'bldg_card' %}">
-        <div class="card-body table-responsive p-0">
+    <div class="ops-dashboard-column ops-dashboard-column-right">
+        <div id="spec_card" class="card card-primary event-card" data-url="{% url 'spec_card' %}">
+            <div class="card-header py-2 ops-card-header">
+                <h3 class="card-title">Special Groups <span class="badge badge-info" id="spec_card_count">0</span></h3>
+                <div class="card-tools card-meta">Refreshed <span id="spec_card_updated">--:--:--</span></div>
+            </div>
+            <div class="card-body table-responsive p-0">
+            </div>
+        </div>
+
+        <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
+            <div class="card-header py-2 ops-card-header">
+                <h3 class="card-title">Open Traps <span class="badge badge-info" id="trap_card_count">0</span>{% if not hud_mode %}<span class="bldg-controls"><button type="button" class="btn btn-outline-light btn-xs" id="clear_all_traps" data-url="{% url 'clear_trap_all' %}">Clear all</button></span>{% endif %}</h3>
+                <div class="card-tools card-meta">Refreshed <span id="trap_card_updated">--:--:--</span></div>
+            </div>
+            <div class="card-body table-responsive p-0">
+            </div>
         </div>
     </div>
-
-    <div id="spec_card" class="card card-primary event-card" data-url="{% url 'spec_card' %}">
-        <div class="card-body table-responsive p-0">
-        </div>
-    </div>
-
-    <div id="trap_card" class="card card-primary event-card" data-url="{% url 'trap_card' %}">
-        <div class="card-body table-responsive p-0">
-        </div>
     </div>
 
     <!-- <div class="text-right p-3">
@@ -78,6 +624,109 @@
 {% block js %}
 <script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
 <script type="text/javascript">
+    window.dashboardHudMode = {{ hud_mode|yesno:'true,false' }};
+
+    function isChartMobile() {
+        return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function getChartPalette() {
+        var isDark = $('body').hasClass('theme-dark');
+        if (isDark) {
+            return {
+                unreachable: { fill: 'rgba(98, 175, 221, 0.72)', border: 'rgba(132, 198, 236, 0.95)', recentFill: 'rgba(122, 197, 241, 0.92)', recentBorder: 'rgba(174, 223, 249, 0.98)' },
+                trap: { fill: 'rgba(145, 159, 178, 0.55)', border: 'rgba(173, 185, 201, 0.92)', recentFill: 'rgba(164, 178, 196, 0.82)', recentBorder: 'rgba(196, 208, 223, 0.96)' },
+                battery: { fill: 'rgba(216, 126, 118, 0.74)', border: 'rgba(232, 154, 146, 0.95)', recentFill: 'rgba(234, 145, 137, 0.94)', recentBorder: 'rgba(247, 181, 174, 0.98)' },
+                total: { line: 'rgba(255, 230, 140, 0.95)', recentLine: 'rgba(255, 241, 180, 0.98)' }
+            };
+        }
+        return {
+            unreachable: { fill: 'rgba(32, 124, 181, 0.78)', border: 'rgba(24, 100, 150, 0.95)', recentFill: 'rgba(26, 145, 211, 0.92)', recentBorder: 'rgba(17, 112, 164, 0.98)' },
+            trap: { fill: 'rgba(162, 172, 186, 0.58)', border: 'rgba(131, 145, 163, 0.9)', recentFill: 'rgba(145, 159, 178, 0.8)', recentBorder: 'rgba(116, 132, 151, 0.94)' },
+            battery: { fill: 'rgba(198, 101, 95, 0.78)', border: 'rgba(165, 74, 69, 0.94)', recentFill: 'rgba(219, 117, 111, 0.92)', recentBorder: 'rgba(185, 87, 82, 0.97)' },
+            total: { line: 'rgba(240, 174, 38, 0.95)', recentLine: 'rgba(255, 154, 39, 0.98)' }
+        };
+    }
+
+    function buildSeriesColors(pointCount, baseColor, recentColor) {
+        var colors = [];
+        for (var i = 0; i < pointCount; i++) {
+            colors.push(i === pointCount - 1 ? recentColor : baseColor);
+        }
+        return colors;
+    }
+
+    function buildPointRadius(pointCount, baseRadius, recentRadius) {
+        var radii = [];
+        for (var i = 0; i < pointCount; i++) {
+            radii.push(i === pointCount - 1 ? recentRadius : baseRadius);
+        }
+        return radii;
+    }
+
+    function buildTotalSeries(eventData, trapData, batteryData) {
+        var maxLen = Math.max(eventData.length, trapData.length, batteryData.length);
+        var totals = [];
+        for (var i = 0; i < maxLen; i++) {
+            totals.push((eventData[i] || 0) + (trapData[i] || 0) + (batteryData[i] || 0));
+        }
+        return totals;
+    }
+
+    function getChartThemeOptions() {
+        var isDark = $('body').hasClass('theme-dark');
+        return {
+            legendColor: isDark ? '#eef6ff' : '#2f3b47',
+            tickColor: isDark ? '#d8e6f5' : '#324252',
+            gridColor: isDark ? 'rgba(163, 188, 217, 0.16)' : 'rgba(47, 59, 71, 0.1)',
+            zeroLineColor: isDark ? 'rgba(192, 214, 236, 0.38)' : 'rgba(47, 59, 71, 0.26)',
+            tooltipBg: isDark ? 'rgba(19, 32, 52, 0.95)' : 'rgba(20, 38, 59, 0.95)',
+            tooltipTitle: '#f4f9ff',
+            tooltipBody: '#ddeaf7'
+        };
+    }
+
+    function applyChartTheme(barChart) {
+        var theme = getChartThemeOptions();
+        barChart.options.legend.position = isChartMobile() ? 'bottom' : 'right';
+        barChart.options.legend.labels = barChart.options.legend.labels || {};
+        barChart.options.legend.labels.fontColor = theme.legendColor;
+        barChart.options.legend.labels.fontSize = isChartMobile() ? 11 : 13;
+        barChart.options.legend.labels.boxWidth = isChartMobile() ? 10 : 12;
+        barChart.options.legend.labels.padding = isChartMobile() ? 12 : 16;
+
+        barChart.options.scales.xAxes[0].gridLines.color = theme.gridColor;
+        barChart.options.scales.xAxes[0].ticks = barChart.options.scales.xAxes[0].ticks || {};
+        barChart.options.scales.xAxes[0].ticks.fontColor = theme.tickColor;
+        barChart.options.scales.xAxes[0].ticks.maxRotation = isChartMobile() ? 0 : 40;
+        barChart.options.scales.xAxes[0].ticks.minRotation = 0;
+        barChart.options.scales.xAxes[0].ticks.callback = function (value, index, values) {
+            var isLast = index === values.length - 1;
+            var step = isChartMobile() ? 3 : 2;
+            return (index % step === 0 || isLast) ? value : '';
+        };
+
+        barChart.options.scales.yAxes[0].gridLines.color = theme.gridColor;
+        barChart.options.scales.yAxes[0].gridLines.zeroLineColor = theme.zeroLineColor;
+        barChart.options.scales.yAxes[0].ticks = barChart.options.scales.yAxes[0].ticks || {};
+        barChart.options.scales.yAxes[0].ticks.fontColor = theme.tickColor;
+        barChart.options.scales.yAxes[0].ticks.maxTicksLimit = isChartMobile() ? 4 : 6;
+
+        barChart.options.tooltips = barChart.options.tooltips || {};
+        barChart.options.tooltips.backgroundColor = theme.tooltipBg;
+        barChart.options.tooltips.titleFontColor = theme.tooltipTitle;
+        barChart.options.tooltips.bodyFontColor = theme.tooltipBody;
+        barChart.options.tooltips.footerFontColor = theme.tooltipTitle;
+    }
+
+    function syncChartThemeNow() {
+        if (!window.dashboardChart) {
+            return;
+        }
+        applyChartTheme(window.dashboardChart);
+        window.dashboardChart.update();
+    }
+
     function setup_chart() {
         /* ChartJS
         * -------
@@ -86,13 +735,15 @@
     
         // Bar Chart
         var barChartCanvas = $('#barChart').get(0).getContext('2d');
+        var palette = getChartPalette();
         var barChartData = {
             labels  : [],
             datasets: [
             {
                 label               : 'Unreachable',
-                backgroundColor     : 'rgba(60,141,188,0.9)',
-                borderColor         : 'rgba(60,141,188,0.8)',
+            backgroundColor     : palette.unreachable.fill,
+            borderColor         : palette.unreachable.border,
+            borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : '#3b8bba',
                 pointStrokeColor    : 'rgba(60,141,188,1)',
@@ -102,8 +753,9 @@
             },
             {
                 label               : 'Trap',
-                backgroundColor     : 'rgba(210,214,222,1)',
-                borderColor         : 'rgba(210,214,222,1)',
+                backgroundColor     : palette.trap.fill,
+                borderColor         : palette.trap.border,
+                borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : 'rgba(210, 214, 222, 1)',
                 pointStrokeColor    : '#c1c7d1',
@@ -113,14 +765,30 @@
             },
             {
                 label               : 'Battery',
-                backgroundColor     : 'rgba(204,112,113,0.9)',
-                borderColor         : 'rgba(204,112,113,0.8)',
+                backgroundColor     : palette.battery.fill,
+                borderColor         : palette.battery.border,
+                borderWidth         : 1,
                 pointRadius          : false,
                 pointColor          : 'rgba(204,112,113,1)',
                 pointStrokeColor    : '#c1c7d1',
                 pointHighlightFill  : '#fff',
                 pointHighlightStroke: 'rgba(204,112,113,1)',
                 data                : []
+            },
+            {
+                type                : 'line',
+                label               : 'Total',
+                data                : [],
+                backgroundColor     : 'rgba(0,0,0,0)',
+                borderColor         : palette.total.line,
+                borderWidth         : 2,
+                pointBackgroundColor: palette.total.line,
+                pointBorderColor    : '#ffffff',
+                pointBorderWidth    : 1,
+                pointRadius         : 2,
+                pointHoverRadius    : 4,
+                lineTension         : 0.18,
+                fill                : false
             }
             ]
         }
@@ -129,21 +797,53 @@
             maintainAspectRatio : false,
             response : true,
             legend: {
-                position: 'right',
+                position: isChartMobile() ? 'bottom' : 'right',
                 display: true,
+                labels: {
+                    usePointStyle: true,
+                }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    footer: function (tooltipItems) {
+                        var total = 0;
+                        for (var i = 0; i < tooltipItems.length; i++) {
+                            var item = tooltipItems[i];
+                            var ds = item.datasetIndex;
+                            if (barChartData.datasets[ds] && barChartData.datasets[ds].label === 'Total') {
+                                continue;
+                            }
+                            total += item.yLabel || 0;
+                        }
+                        return 'Total: ' + total;
+                    }
+                }
+            },
+            hover: {
+                mode: 'index',
+                intersect: false,
             },
             datasetFill : false,
             scales: {
                 xAxes: [{
-                    gridLines : { display : true },
+                    gridLines : {
+                        display : true,
+                        drawBorder: false,
+                    },
                     stacked: true
                 }],
                 yAxes: [{
                     // type: 'logarithmic',
-                    gridLines : { display : true },
+                    gridLines : {
+                        display : true,
+                        drawBorder: false,
+                    },
                     stacked: true,
                     ticks: {
-                        min: 0
+                        min: 0,
+                        precision: 0,
                     }
                 }]
             }
@@ -154,6 +854,9 @@
             data: barChartData,
             options: barChartOptions
         })
+
+        applyChartTheme(barChart);
+        barChart.update();
 
         refresh_chart(barChart);
         return barChart;
@@ -166,15 +869,45 @@
             dataType: "json",
             data: {},
             success: function (result, status, xhr) {
+                var palette = getChartPalette();
+                applyChartTheme(barChart);
                 barChart.data.labels = result['chart_labels'];
                 barChart.data.datasets[0].data = result['chart_event_data'];
                 barChart.data.datasets[1].data = result['chart_trap_data'];
                 barChart.data.datasets[2].data = result['chart_battery_data'];
+                barChart.data.datasets[3].data = buildTotalSeries(
+                    barChart.data.datasets[0].data || [],
+                    barChart.data.datasets[1].data || [],
+                    barChart.data.datasets[2].data || []
+                );
+
+                var pointCount = barChart.data.labels.length;
+                barChart.data.datasets[0].backgroundColor = buildSeriesColors(pointCount, palette.unreachable.fill, palette.unreachable.recentFill);
+                barChart.data.datasets[0].borderColor = buildSeriesColors(pointCount, palette.unreachable.border, palette.unreachable.recentBorder);
+                barChart.data.datasets[1].backgroundColor = buildSeriesColors(pointCount, palette.trap.fill, palette.trap.recentFill);
+                barChart.data.datasets[1].borderColor = buildSeriesColors(pointCount, palette.trap.border, palette.trap.recentBorder);
+                barChart.data.datasets[2].backgroundColor = buildSeriesColors(pointCount, palette.battery.fill, palette.battery.recentFill);
+                barChart.data.datasets[2].borderColor = buildSeriesColors(pointCount, palette.battery.border, palette.battery.recentBorder);
+                barChart.data.datasets[3].borderColor = buildSeriesColors(pointCount, palette.total.line, palette.total.recentLine);
+                barChart.data.datasets[3].pointBackgroundColor = buildSeriesColors(pointCount, palette.total.line, palette.total.recentLine);
+                barChart.data.datasets[3].pointRadius = buildPointRadius(pointCount, 1.5, 3.2);
+
                 barChart.update();
+
+                var chartTotal = 0;
+                var evt = result['chart_event_data'] || [];
+                var trp = result['chart_trap_data'] || [];
+                var bat = result['chart_battery_data'] || [];
+                var totalSeries = barChart.data.datasets[3].data || [];
+                if (totalSeries.length) {
+                    chartTotal = totalSeries[totalSeries.length - 1] || 0;
+                }
+                $('#chart_event_count').text(chartTotal);
+                $('#chart_updated').text(formatClock(new Date()));
 
                 if (result['above_max_unreachable']) {
                     //alert("above max unreachable");
-                    $(document).Toasts('create', {
+                    showToast({
                         class: 'bg-warning',
                         title: 'AKiPS Max Unreachable Devices Exceeded',
                         body: 'Summary updates are paused because AKiPS reports an excessive number of devices down at once. \
@@ -191,6 +924,12 @@
             }
         });
     }
+
+    function showToast(options) {
+        var toastOptions = $.extend({ position: 'topRight' }, options || {});
+        $(document).Toasts('create', toastOptions);
+    }
+
     function refresh_duplicates() {
         $('.dup-data').each(function (index) {
             var now = new Date();
@@ -202,43 +941,449 @@
             }
         });
     }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderTrendCell(trend) {
+        if (trend === 'New' || trend === 'Increasing') {
+            return '<td class="text-center bg-danger akips_trend d-none d-md-table-cell"><i class="fas fa-caret-up" title="' + escapeHtml(trend) + '"></i></td>';
+        }
+        if (trend === 'Decreasing') {
+            return '<td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-caret-down" title="Decreasing"></i></td>';
+        }
+        if (trend === 'Recovered') {
+            return '<td class="text-center bg-success akips_trend d-none d-md-table-cell"><i class="fas fa-thumbs-up" title="Recovered"></i></td>';
+        }
+        return '<td class="text-center akips_trend d-none d-md-table-cell"></td>';
+    }
+
+    function renderIncidentCell(incident, eventValue, extraClass) {
+        var klass = extraClass || '';
+        if (incident && incident.url && incident.id) {
+            return '<td class="text-center text-primary ' + klass + '"><a href="' + escapeHtml(incident.url) + '" target="_blank">' + escapeHtml(incident.id) + '</a></td>';
+        }
+        if (window.dashboardHudMode) {
+            return '<td class="text-center text-muted ' + klass + '">-</td>';
+        }
+        return '<td class="text-center text-primary ' + klass + '"><div class="form-check"><input type="checkbox" class="form-check-input" name="event" value="' + escapeHtml(eventValue) + '"></div></td>';
+    }
+
+    function renderSummaryComment(row) {
+        if (window.dashboardHudMode) {
+            if (row.comment) {
+                return '<span class="small text-muted summary-comment-static" style="margin-left:0.4em">' + escapeHtml(row.comment) + '</span>';
+            }
+            return '';
+        }
+        if (row.comment) {
+            return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '" style="margin-left:0.4em">' + escapeHtml(row.comment) + '</span>';
+        }
+        return '<span class="small summary-comment" data-url="' + escapeHtml(row.comment_url) + '"><i class="fas fa-comment-medical text-primary"></i></span>';
+    }
+
+    function renderCritCard(card) {
+        var rows = card.rows || [];
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html +=
+                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.device_name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td>' + escapeHtml(row.device_ip4addr) + '</td>' +
+                '<td><span class="d-inline-block text-truncate" style="max-width: 200px">' + escapeHtml(row.device_descr) + '</span></td>' +
+                '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
+                renderTrendCell(row.trend) +
+                renderIncidentCell(row.incident, 'summary_' + row.id, '') +
+                '</tr>';
+        }
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderDownCount(n) {
+        var val = parseInt(n, 10);
+        if (!isNaN(val) && val > 0) {
+            return '<span class="text-danger font-weight-bold">' + escapeHtml(String(n)) + '</span>';
+        }
+        return escapeHtml(String(n));
+    }
+
+    function renderBldgCard(card) {
+        var rows = card.rows || [];
+        var allExpanded = window.bldgHierarchyExpanded !== false;
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
+        }
+        var currentGroup = '';
+        var groupCounter = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var isDistribution = row.type === 'Distribution';
+            var trClass = '';
+            var ackCell = '';
+            if (!window.dashboardHudMode) {
+                ackCell = '<td></td>';
+            }
+            if (!isDistribution && !window.dashboardHudMode) {
+                var ackChecked = row.ack ? ' checked' : '';
+                var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+                ackCell = '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+
+            var upsBatteryIcon = row.ups_battery > 0 ? ' <i class="fas fa-battery-three-quarters text-danger"></i>' : '';
+            var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
+            var trendCell = renderTrendCell(row.trend);
+            var incidentCell = renderIncidentCell(row.incident, 'summary_' + row.id, 'd-none d-md-table-cell');
+            var nameCell = '';
+
+            if (isDistribution) {
+                groupCounter += 1;
+                currentGroup = 'bldg-group-' + groupCounter;
+                trClass = ' class="bldg-parent-row" data-group="' + currentGroup + '"';
+                nameCell = '<td><button type="button" class="bldg-group-toggle" data-group="' + currentGroup + '" aria-expanded="' + (allExpanded ? 'true' : 'false') + '" title="' + (allExpanded ? 'Collapse section' : 'Expand section') + '"><i class="fas ' + (allExpanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-layer-group"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
+                trendCell = '<td class="d-none d-md-table-cell"></td>';
+                incidentCell = '<td class="text-center d-none d-md-table-cell"></td>';
+            } else {
+                trClass = currentGroup ? ' class="bldg-child-row bldg-child-of-' + currentGroup + '"' : '';
+                if (!allExpanded) {
+                    trClass = trClass.replace('"', '" style="display:none"');
+                }
+                nameCell = '<td><span class="bldg-child-name"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
+            }
+
+            html += '<tr' + trClass + '>' +
+                ackCell +
+                nameCell +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.switch_count) + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.ap_count) + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + renderDownCount(row.ups_count) + upsBatteryIcon + '</td>' +
+                '<td class="d-none d-md-table-cell num-col">' + percentLabel + '</td>' +
+                '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
+                trendCell +
+                incidentCell +
+                '</tr>';
+        }
+
+        if (!rows.length) {
+            html += '<tr><td colspan="10" class="text-center">' + escapeHtml(card.empty_message || 'Tier 1 and Building events are currently clear') + '</td></tr>';
+        }
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function setBldgGroupsExpanded(expanded) {
+        window.bldgHierarchyExpanded = expanded;
+        $('#bldg_card .bldg-group-toggle').each(function () {
+            $(this)
+                .attr('aria-expanded', expanded ? 'true' : 'false')
+                .attr('title', expanded ? 'Collapse section' : 'Expand section')
+                .find('i')
+                .toggleClass('fa-chevron-down', expanded)
+                .toggleClass('fa-chevron-right', !expanded);
+        });
+        $('#bldg_card .bldg-child-row').toggle(expanded);
+    }
+
+    function renderSpecCard(card) {
+        var rows = card.rows || [];
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Ack</th><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html +=
+                '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
+                '<td class="num-col">' + escapeHtml(row.total_count) + '</td>' +
+                '<td class="num-col">' + percentLabel + '</td>' +
+                '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
+                renderTrendCell(row.trend) +
+                renderIncidentCell(row.incident, 'summary_' + row.id, '') +
+                '</tr>';
+        }
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderTrapCard(card) {
+        var rows = card.rows || [];
+        var page = card.page || 1;
+        var totalPages = card.total_pages || 1;
+        var html;
+        if (window.dashboardHudMode) {
+            html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th></tr></thead><tbody>';
+        } else {
+            html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Ack</th><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th><th>Clear</th></tr></thead><tbody>';
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var ackChecked = row.ack ? ' checked' : '';
+            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
+            var dupBadge = '';
+            if (row.dup_count > 0) {
+                dupBadge = '<span class="float-right badge bg-primary dup-data" data-last="' + escapeHtml(row.dup_last_iso) + '">' + escapeHtml(row.dup_count) + ' dup</span>';
+            }
+            html += '<tr>';
+            if (!window.dashboardHudMode) {
+                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+            }
+            html += '<td><a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a></td>' +
+                '<td><a href="' + escapeHtml(row.trap_url) + '">' + escapeHtml(row.trap_oid) + '</a>' + dupBadge + '</td>' +
+                '<td class="ts-col">' + escapeHtml(row.last_event) + '</td>' +
+                renderIncidentCell(row.incident, 'trap_' + row.id, '') ;
+            if (!window.dashboardHudMode) {
+                html += '<td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button></td>';
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        if (totalPages > 1 && !window.dashboardHudMode) {
+            html += '<div class="trap-pager border-top d-flex justify-content-between align-items-center px-2 py-2">';
+            html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page - 1) + '"' + (card.has_prev ? '' : ' disabled') + '>Prev</button>';
+            html += '<span class="small text-muted">Page ' + escapeHtml(String(page)) + ' of ' + escapeHtml(String(totalPages)) + ' (' + escapeHtml(String(card.total_open || 0)) + ' open)</span>';
+            html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page + 1) + '"' + (card.has_next ? '' : ' disabled') + '>Next</button>';
+            html += '</div>';
+        }
+        return html;
+    }
+
+    function renderCardHtml(cardId, card) {
+        if (cardId === 'crit_card') {
+            return renderCritCard(card);
+        }
+        if (cardId === 'bldg_card') {
+            return renderBldgCard(card);
+        }
+        if (cardId === 'spec_card') {
+            return renderSpecCard(card);
+        }
+        if (cardId === 'trap_card') {
+            return renderTrapCard(card);
+        }
+        return '';
+    }
+
+    function formatClock(dt) {
+        var hh = String(dt.getHours()).padStart(2, '0');
+        var mm = String(dt.getMinutes()).padStart(2, '0');
+        var ss = String(dt.getSeconds()).padStart(2, '0');
+        return hh + ':' + mm + ':' + ss;
+    }
+
+    function updateCardMeta(cards, changedCards) {
+        var now = new Date();
+        var cardIds = ['crit_card', 'bldg_card', 'spec_card', 'trap_card'];
+        for (var i = 0; i < cardIds.length; i++) {
+            var cardId = cardIds[i];
+            var card = cards[cardId] || { rows: [] };
+            var count = (cardId === 'trap_card' && card.total_open !== undefined) ? card.total_open : (card.rows || []).length;
+            $('#' + cardId + '_count').text(count);
+            $('#' + cardId + '_updated').text(formatClock(now));
+        }
+    }
+
+    function getBldgDeviceTotals(card) {
+        var totals = { sw: 0, ap: 0, ups: 0 };
+        var bldgRows = (card && card.rows) ? card.rows : [];
+        for (var i = 0; i < bldgRows.length; i++) {
+            if (bldgRows[i].type !== 'Distribution') {
+                totals.sw += parseInt(bldgRows[i].switch_count, 10) || 0;
+                totals.ap += parseInt(bldgRows[i].ap_count, 10) || 0;
+                totals.ups += parseInt(bldgRows[i].ups_count, 10) || 0;
+            }
+        }
+        return totals;
+    }
+
+    function getSpecTotal(card) {
+        var total = 0;
+        var rows = (card && card.rows) ? card.rows : [];
+        for (var i = 0; i < rows.length; i++) {
+            total += parseInt(rows[i].total_count, 10) || 0;
+        }
+        return total;
+    }
+
+    function setOpsChipCount(chipSelector, countSelector, count) {
+        $(countSelector).text(count);
+        $(chipSelector).toggle(count > 0);
+    }
+
+    function updateOpsStrip(cards, changedCards, refreshSeconds) {
+        var now = new Date();
+        window.dashboardLastRefreshAt = now;
+        {% if request.user.is_staff %}
+        $('#ops-cards-changed').text(changedCards.length);
+        {% endif %}
+        var critCount = (cards.crit_card && cards.crit_card.rows) ? cards.crit_card.rows.length : 0;
+        setOpsChipCount('#ops-crit-chip', '#ops-crit-count', critCount);
+        var bldgTotals = getBldgDeviceTotals(cards.bldg_card);
+        setOpsChipCount('#ops-bldg-switch-chip', '#ops-bldg-switch-count', bldgTotals.sw);
+        setOpsChipCount('#ops-bldg-ap-chip', '#ops-bldg-ap-count', bldgTotals.ap);
+        setOpsChipCount('#ops-bldg-ups-chip', '#ops-bldg-ups-count', bldgTotals.ups);
+        setOpsChipCount('#ops-spec-chip', '#ops-spec-count', getSpecTotal(cards.spec_card));
+        var trapCount = (cards.trap_card && cards.trap_card.total_open !== undefined) ? cards.trap_card.total_open : ((cards.trap_card && cards.trap_card.rows) ? cards.trap_card.rows.length : 0);
+        setOpsChipCount('#ops-trap-chip', '#ops-trap-count', trapCount);
+
+        var freshness = $('#ops-data-age');
+        freshness.text('0s');
+        var freshnessChip = freshness.closest('.ops-chip');
+        freshnessChip.removeClass('ops-chip-warn ops-chip-danger').addClass('ops-chip-neutral');
+        window.dashboardRefreshSeconds = refreshSeconds;
+    }
+
+    function updateDataFreshnessBadge() {
+        if (!window.dashboardLastRefreshAt) {
+            return;
+        }
+        var ageSec = Math.max(0, Math.floor((new Date() - window.dashboardLastRefreshAt) / 1000));
+        var refreshSeconds = window.dashboardRefreshSeconds || 30;
+        var chip = $('#ops-data-age').closest('.ops-chip');
+        $('#ops-data-age').text(ageSec + 's');
+        chip.removeClass('ops-chip-neutral ops-chip-warn ops-chip-danger');
+        if (ageSec <= refreshSeconds) {
+            chip.addClass('ops-chip-neutral');
+        } else if (ageSec <= refreshSeconds * 2) {
+            chip.addClass('ops-chip-warn');
+        } else {
+            chip.addClass('ops-chip-danger');
+        }
+    }
+
     function refresh_cards() {
-        var overlay = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
-        var water = '<div class="overlay"><i class="fas fa-2x fa-water"></i></div>';
+        var overlay = '<div class="overlay refresh-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
+        var cardsUrl = $('#myForm').data('cards-url');
+        var signatures = window.dashboardCardSignatures || {};
+        window.dashboardCardSignatures = signatures;
+        var cardSignatureDebug = false;
+        var changedCards = [];
+        var trapPage = window.trapCardPage || 1;
+        var simulateMode = window.dashboardSimulateMode === true;
+
+        // Enable debug logging with either:
+        // 1) URL param: ?cardSigDebug=1
+        // 2) localStorage: dashboardCardSignatureDebug=1
+        if (window.location.search.indexOf('cardSigDebug=1') !== -1) {
+            cardSignatureDebug = true;
+        }
+        try {
+            if (window.localStorage && window.localStorage.getItem('dashboardCardSignatureDebug') === '1') {
+                cardSignatureDebug = true;
+            }
+        } catch (e) {
+            // Ignore localStorage access errors
+        }
 
         // Close any open popovers before refreshing the display
         $(".popover").popover('hide');
 
-        $('.event-card').each(function (index) {
-            var id = this.id;
-            $('#' + id ).show();
-            var url = $(this).data("url");
-            var body = $(this).find(".card-body");
-            var body_clone = body.clone();
+        $('.event-card').each(function () {
+            var body = $(this).find('.card-body');
+            body.data('previous-html', body.html());
             body.append(overlay);
+        });
 
-            $.ajax({
-                type: "GET",
-                url: url,
-                dataType: "html",
-                data: {},
-                success: function (result, status, xhr) {
-                    body.html(result);
-                    var len = $('#' + id + ' tr').length;
-                    //console.log("Table " + id + " row count " + len);
-                    if ( len < 2 ) {
-                        $('#' + id ).hide();
-                        // body.append(water);
-                    }
-                    if (id == "trap_card") {
-                        refresh_duplicates();
-                    }
-                },
-                error: function (xhr, status, error) {
-                    body.replaceWith(body_clone);
-                    body.append('<div class="overlay text-danger">Failed to get update: ' + error + '</div>');
+        $.ajax({
+            type: 'GET',
+            url: cardsUrl,
+            dataType: 'json',
+            data: {
+                trap_page: trapPage,
+                simulate: simulateMode ? 1 : 0
+            },
+            success: function (result) {
+                var cards = result['cards'] || {};
+                var newSignatures = result['signatures'] || {};
+
+                if (cards.trap_card && cards.trap_card.page) {
+                    window.trapCardPage = cards.trap_card.page;
                 }
-            });
+
+                $('.event-card').each(function () {
+                    var id = this.id;
+                    var body = $(this).find('.card-body');
+                    var card = cards[id] || { rows: [], has_rows: false };
+                    var signature = newSignatures[id] || '';
+
+                    if (signatures[id] !== signature) {
+                        body.html(renderCardHtml(id, card));
+                        changedCards.push(id);
+                        signatures[id] = signature;
+                        $('#' + id).addClass('card-refresh-changed');
+                        window.setTimeout((function (cardId) {
+                            return function () {
+                                $('#' + cardId).removeClass('card-refresh-changed');
+                            };
+                        })(id), 700);
+                    }
+
+                    if (id === 'bldg_card' || card.has_rows) {
+                        $('#' + id).show();
+                    } else {
+                        $('#' + id).hide();
+                    }
+                });
+
+                if (cardSignatureDebug) {
+                    if (changedCards.length > 0) {
+                        console.log('Dashboard card signatures changed:', changedCards.join(', '));
+                    } else {
+                        console.log('Dashboard card signatures unchanged');
+                    }
+                }
+
+                updateCardMeta(cards, changedCards);
+                updateOpsStrip(cards, changedCards, 30);
+
+                refresh_duplicates();
+            },
+            error: function (xhr, status, error) {
+                $('.event-card').each(function () {
+                    var body = $(this).find('.card-body');
+                    var previous = body.data('previous-html') || '';
+                    body.html(previous);
+                    body.append('<div class="overlay refresh-overlay text-danger">Failed to get update: ' + error + '</div>');
+                });
+            },
+            complete: function () {
+                $('.event-card .card-body').each(function () {
+                    $(this).find('.overlay').remove();
+                    $(this).removeData('previous-html');
+                });
+            }
         });
 
         // voice_alert();
@@ -250,8 +1395,35 @@
     $(document).ready(function () {
         var refresh_seconds = 30;
         var auto_refresh = true;
+        window.trapCardPage = 1;
+        window.dashboardSimulateMode = (window.location.search.indexOf('simulate=1') !== -1);
+        $('#ops-simulate-chip').toggle(window.dashboardSimulateMode);
+        var hasRefreshToggle = $('#refresh-toggle').length > 0;
 
         var csrfToken = getCookie('csrftoken');
+
+        $('#compact-toggle').change(function () {
+            if (this.checked) {
+                $('body').addClass('dashboard-compact');
+                window.localStorage.setItem('dashboardCompactMode', '1');
+            } else {
+                $('body').removeClass('dashboard-compact');
+                window.localStorage.setItem('dashboardCompactMode', '0');
+            }
+        });
+        var compactEnabled = window.dashboardHudMode ? true : true;
+        try {
+            if (!window.dashboardHudMode && window.localStorage && window.localStorage.getItem('dashboardCompactMode') === '0') {
+                compactEnabled = false;
+            }
+        } catch (e) {
+            // Ignore localStorage access errors
+        }
+        if ($('#compact-toggle').length) {
+            $('#compact-toggle').prop('checked', compactEnabled).trigger('change');
+        } else if (compactEnabled) {
+            $('body').addClass('dashboard-compact');
+        }
 
         // Bind to the document so dynamically added content will still work
         // Configure the comment edit field
@@ -295,7 +1467,7 @@
                 });
                 if (comment) {
                     //$(this).closest('.summary-comment').text(comment);
-                    $(this).closest('.summary-comment').html('<br>' + comment);
+                    $(this).closest('.summary-comment').html(comment);
                 } else {
                     $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
                 }
@@ -321,7 +1493,7 @@
             });
             if (comment) {
                 //$(this).closest('.summary-comment').text(comment);
-                $(this).closest('.summary-comment').html('<br>' + comment);
+                $(this).closest('.summary-comment').html(comment);
             } else {
                 $(this).closest('.summary-comment').html('<i class="fas fa-comment-medical text-primary"></i>');
             }
@@ -330,6 +1502,17 @@
         // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for events
         $(document).on('change', 'input.ack-switch', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Acknowledgement actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                this.checked = !this.checked;
+                return;
+            }
             var url = $(this).data("url");
             if (this.checked) {
                 console.log("ack checkbox on");
@@ -343,6 +1526,17 @@
         // Bind to the document so dynamically added content will still work
         // Configure the ACK switch for traps
         $(document).on('change', 'input.ack-trap', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Acknowledgement actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                this.checked = !this.checked;
+                return;
+            }
             var url = $(this).data("url");
             if (this.checked) {
                 console.log("ack checkbox on");
@@ -356,6 +1550,16 @@
         // Bind to the document so dynamically added content will still work
         // Configure the Clear Trap button for traps
         $(document).on('click', 'button.trap-clear', function () {
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Clear actions are disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
+                });
+                return;
+            }
             //$(this).prop('disabled', true);
             var tr = $(this).closest('tr');
             var url = $(this).data("url");
@@ -365,6 +1569,38 @@
             tr.fadeOut(400, function () {
                 tr.remove();
             });
+        });
+
+        $(document).on('click', '.trap-page-btn', function (e) {
+            e.preventDefault();
+            var requestedPage = parseInt($(this).data('page'), 10);
+            if (isNaN(requestedPage) || requestedPage < 1) {
+                return;
+            }
+            window.trapCardPage = requestedPage;
+            refresh_cards();
+        });
+
+        // Collapse/expand hierarchy groups in Tier / Building card
+        $(document).on('click', '.bldg-group-toggle', function (e) {
+            e.preventDefault();
+            var group = $(this).data('group');
+            var expanded = $(this).attr('aria-expanded') === 'true';
+            var nextExpanded = !expanded;
+            $(this).attr('aria-expanded', nextExpanded ? 'true' : 'false');
+            $(this).attr('title', nextExpanded ? 'Collapse section' : 'Expand section');
+            $(this).find('i').toggleClass('fa-chevron-down', nextExpanded).toggleClass('fa-chevron-right', !nextExpanded);
+            $('.bldg-child-of-' + group).toggle(nextExpanded);
+        });
+
+        $('#bldg-expand-all').on('click', function (e) {
+            e.preventDefault();
+            setBldgGroupsExpanded(true);
+        });
+
+        $('#bldg-collapse-all').on('click', function (e) {
+            e.preventDefault();
+            setBldgGroupsExpanded(false);
         });
 
         // Bind to the document so dynamically added content will still work
@@ -378,17 +1614,46 @@
         // Configure the Clear All Traps button for traps
         // $(document).on('click', 'button.clear_all_traps', function () {
         $('#clear_all_traps').click(function () {
-            // var url = $(this).data("url");
-            // $.get(url, {})
-            $('.trap-clear').each(function (index) {
-                var tr = $(this).closest('tr');
-                var url = $(this).data("url");
-                console.log("clearing trap with " + url)
-                $.get(url, {})
-                tr.css("background-color", "#FF3700");
-                tr.fadeOut(400, function () {
-                    tr.remove();
+            if (window.dashboardSimulateMode) {
+                showToast({
+                    class: 'bg-secondary',
+                    title: 'Simulate Mode',
+                    body: 'Clear-all is disabled while simulate=1 is enabled.',
+                    autohide: true,
+                    delay: 3500
                 });
+                return;
+            }
+            var btn = $(this);
+            var url = btn.data("url");
+            btn.prop('disabled', true);
+            $.ajax({
+                type: 'GET',
+                url: url,
+                dataType: 'json',
+                success: function (result) {
+                    showToast({
+                        class: 'bg-info',
+                        title: 'Clear All Traps',
+                        body: 'Cleared ' + (result.cleared_count || 0) + ' open traps.',
+                        autohide: true,
+                        delay: 5000
+                    });
+                    window.trapCardPage = 1;
+                    refresh_cards();
+                },
+                error: function () {
+                    showToast({
+                        class: 'bg-danger',
+                        title: 'Clear All Traps',
+                        body: 'Failed to clear all traps. Please try again.',
+                        autohide: true,
+                        delay: 6000
+                    });
+                },
+                complete: function () {
+                    btn.prop('disabled', false);
+                }
             });
         });
 
@@ -396,7 +1661,7 @@
         $('#incident_button').click(function () {
             checked = $("input[name=event]:checked").length;
             if (!checked) {
-                $(document).Toasts('create', {
+                showToast({
                     class: 'bg-warning',
                     title: 'Manage Incident',
                     body: 'Please select one or more summaries (or traps) to continue with incidents.',
@@ -441,7 +1706,7 @@
                     } else {
                         message += "Device sync already running<br>"
                     }
-                    $(document).Toasts('create', {
+                    showToast({
                         class: 'bg-info',
                         title: 'AKiPS Status Refresh',
                         body: message,
@@ -466,26 +1731,45 @@
         // Populate the page content for the first time
         refresh_cards();
         enable_alert_toggle();
-        var chart = setup_chart();
+        var chart = null;
+        if ($('#barChart').length) {
+            chart = setup_chart();
+            window.dashboardChart = chart;
+        }
+
+        if (window.MutationObserver && chart) {
+            var bodyClassObserver = new MutationObserver(function (mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    if (mutations[i].attributeName === 'class') {
+                        syncChartThemeNow();
+                        break;
+                    }
+                }
+            });
+            bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        }
 
         // Update the refresh counter
         var max_remaining = refresh_seconds;
         var remaining = max_remaining;
         var remainingId = setInterval(function() {
             remaining = remaining - 1;
-            if ( $('#refresh-toggle').is(':checked') ) {
+            if (!hasRefreshToggle || $('#refresh-toggle').is(':checked')) {
                 $('#time-remain').text(remaining);
             } else {
                 $('#time-remain').text('no');
             }
+            updateDataFreshnessBadge();
         }, 1000);
 
         // Update the dynamic page content on a refresh interval
         var intervalId = window.setInterval(function () {
             remaining = max_remaining;
-            if ( $('#refresh-toggle').is(':checked') && $("input[name=comment_text]:focus").length == 0 ) {
+            if ( (!hasRefreshToggle || $('#refresh-toggle').is(':checked')) && $("input[name=comment_text]:focus").length == 0 ) {
                 refresh_cards();
-                refresh_chart(chart);
+                if (chart) {
+                    refresh_chart(chart);
+                }
             }
         }, refresh_seconds * 1000);
 

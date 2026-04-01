@@ -1,25 +1,31 @@
 import logging
 import json
 import re
+import hashlib
+import os
+import tempfile
+import uuid
 from datetime import datetime, timedelta
 from secrets import compare_digest
 import math
 
 from django.conf import settings
+from django.core.cache import cache
+from django.core.management import call_command
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 #from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.sessions.models import Session
 from django.template.loader import render_to_string
 from django.contrib import messages
 from django.utils import timezone
 
-#from django.db.models import Count
-#from django.db.models.functions import TruncHour
+from django.db.models import Count, Q
+from django.db.models.functions import TruncHour
 
 #from django.utils.decorators import method_decorator
 from django.db.transaction import atomic, non_atomic_requests
@@ -28,9 +34,9 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident
-from .forms import IncidentForm, HibernateForm, PreferencesForm
-from .task import refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm
+from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
@@ -59,9 +65,33 @@ logger = logging.getLogger(__name__)
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
+    hud_font_scale_default = 1.0
+    hud_font_scale_min = 1.0
+    hud_font_scale_max = 1.9
+
+    def _get_hud_font_scale(self, request, hud_mode):
+        if not hud_mode:
+            return 1.0
+
+        raw_scale = str(request.GET.get('scale', '')).strip()
+        if not raw_scale:
+            return self.hud_font_scale_default
+
+        try:
+            scale = float(raw_scale)
+        except (TypeError, ValueError):
+            return self.hud_font_scale_default
+
+        return max(self.hud_font_scale_min, min(self.hud_font_scale_max, scale))
 
     def get(self, request, *args, **kwargs):
-        context = {}
+        forced_hud_mode = bool(self.kwargs.get('hud_mode', False))
+        hud_mode = forced_hud_mode or str(request.GET.get('hud', '')).strip().lower() in ('1', 'true', 'yes', 'on')
+        hud_font_scale = self._get_hud_font_scale(request, hud_mode)
+        context = {
+            'hud_mode': hud_mode,
+            'hud_font_scale': hud_font_scale,
+        }
 
         # akips = AKIPS()
         # #device_name = akips.get_device_by_ip('152.19.187.21')
@@ -81,6 +111,9 @@ class About(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
+        now = timezone.now()
+        since_24h = now - timedelta(hours=24)
+        since_7d = now - timedelta(days=7)
 
         try:
             last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
@@ -94,6 +127,97 @@ class About(LoginRequiredMixin, View):
             last_device_sync = None
         context['last_akips_sync'] = last_device_sync
 
+        def get_task_duration(task):
+            if not task or not task.date_created or not task.date_done:
+                return 'In progress'
+            return pretty_duration((task.date_done - task.date_created).total_seconds())
+
+        context['last_akips_sync_duration'] = get_task_duration(last_device_sync)
+        context['last_inventory_sync_duration'] = get_task_duration(last_inventory_sync)
+
+        data_points = [
+            last_device_sync.date_done if last_device_sync and last_device_sync.date_done else None,
+            last_inventory_sync.date_done if last_inventory_sync and last_inventory_sync.date_done else None,
+        ]
+        latest_data_point = max([d for d in data_points if d is not None], default=None)
+        if latest_data_point:
+            freshness_seconds = max((now - latest_data_point).total_seconds(), 0)
+            context['data_freshness'] = pretty_duration(freshness_seconds)
+            if freshness_seconds <= 1800:
+                context['freshness_level'] = 'success'
+                context['freshness_label'] = 'Fresh'
+            elif freshness_seconds <= 7200:
+                context['freshness_level'] = 'warning'
+                context['freshness_label'] = 'Aging'
+            else:
+                context['freshness_level'] = 'danger'
+                context['freshness_label'] = 'Stale'
+            context['last_data_update'] = latest_data_point
+        else:
+            context['data_freshness'] = 'Unknown'
+            context['freshness_level'] = 'secondary'
+            context['freshness_label'] = 'Unknown'
+            context['last_data_update'] = None
+
+        context['device_total'] = Device.objects.count()
+        context['device_active'] = Device.objects.filter(maintenance=False, hibernate=False).count()
+        context['open_unreachables'] = Unreachable.objects.filter(status='Open').count()
+        context['open_traps'] = Trap.objects.filter(status='Open').count()
+        context['open_summaries'] = Summary.objects.filter(status='Open').count()
+        context['logged_in_users_7d'] = User.objects.filter(last_login__gte=since_7d).count()
+
+        unreachable_24h = Unreachable.objects.filter(event_start__gte=since_24h).count()
+        trap_24h = Trap.objects.filter(created_at__gte=since_24h).count()
+        unreachable_7d = Unreachable.objects.filter(event_start__gte=since_7d).count()
+        trap_7d = Trap.objects.filter(created_at__gte=since_7d).count()
+
+        context['unreachable_24h'] = unreachable_24h
+        context['trap_24h'] = trap_24h
+        context['events_processed_24h'] = unreachable_24h + trap_24h
+        context['unreachable_7d'] = unreachable_7d
+        context['trap_7d'] = trap_7d
+        context['events_processed_7d'] = unreachable_7d + trap_7d
+
+        chart_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
+        unreachable_hourly = {
+            row['hour']: row['total']
+            for row in (
+                Unreachable.objects.filter(event_start__gte=chart_start)
+                .annotate(hour=TruncHour('event_start'))
+                .values('hour')
+                .annotate(total=Count('id'))
+                .order_by('hour')
+            )
+        }
+        trap_hourly = {
+            row['hour']: row['total']
+            for row in (
+                Trap.objects.filter(created_at__gte=chart_start)
+                .annotate(hour=TruncHour('created_at'))
+                .values('hour')
+                .annotate(total=Count('id'))
+                .order_by('hour')
+            )
+        }
+        chart_hours = [chart_start + timedelta(hours=offset) for offset in range(24)]
+        context['events_24h_labels'] = [hour.strftime('%H:%M') for hour in chart_hours]
+        context['events_24h_totals'] = [unreachable_hourly.get(hour, 0) + trap_hourly.get(hour, 0) for hour in chart_hours]
+
+        context['top_buildings'] = (
+            Unreachable.objects.filter(status='Open')
+            .exclude(device__building_name='')
+            .values('device__building_name')
+            .annotate(total=Count('id'))
+            .order_by('-total')[:5]
+        )
+        context['top_tiers'] = (
+            Unreachable.objects.filter(status='Open')
+            .exclude(device__tier='')
+            .values('device__tier')
+            .annotate(total=Count('id'))
+            .order_by('-total')[:5]
+        )
+
         return render(request, self.template_name, context=context)
 
 class Devices(LoginRequiredMixin, View):
@@ -102,16 +226,76 @@ class Devices(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = {}
-
-        # list = ['SWITCH','AP','UPS','ROUTER']
-        # devices = Device.objects.exclude(type__in=list)
-        devices = Device.objects.all()
-        context['devices'] = devices
+        context['search'] = request.GET.get('search', '').strip()
 
         # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
         # context['last_device_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)
+
+
+class DevicesDataAPI(LoginRequiredMixin, View):
+    ''' API view for server-side DataTables device listing '''
+
+    columns = ['name', 'ip4addr', 'sysName', 'group', 'type']
+    order_columns = ['ip4addr', 'ip4addr', 'sysName', 'group', 'type']
+    total_count_cache_key = 'devices_data_total_count'
+    total_count_cache_ttl = 60
+
+    def _parse_int(self, value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get(self, request, *args, **kwargs):
+        draw = self._parse_int(request.GET.get('draw'), 1)
+        start = max(self._parse_int(request.GET.get('start'), 0), 0)
+        length = self._parse_int(request.GET.get('length'), 25)
+        if length <= 0:
+            length = 25
+        length = min(length, 500)
+
+        search_value = request.GET.get('search[value]', '').strip()
+        order_index = self._parse_int(request.GET.get('order[0][column]'), 0)
+        order_dir = request.GET.get('order[0][dir]', 'asc')
+        if order_index < 0 or order_index >= len(self.order_columns):
+            order_index = 0
+
+        order_field = self.order_columns[order_index]
+        order_by = f'-{order_field}' if order_dir == 'desc' else order_field
+
+        records_total = cache.get(self.total_count_cache_key)
+        if records_total is None:
+            records_total = Device.objects.count()
+            cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
+
+        base_qs = Device.objects.all()
+
+        if search_value:
+            base_qs = base_qs.filter(
+                Q(name__icontains=search_value)
+                | Q(ip4addr__icontains=search_value)
+                | Q(sysName__icontains=search_value)
+                | Q(group__icontains=search_value)
+                | Q(type__icontains=search_value)
+            )
+
+        records_filtered = records_total if not search_value else base_qs.count()
+
+        rows = base_qs.order_by(order_by).values(*self.columns)[start:start + length]
+        data = []
+        for row in rows:
+            row_data = dict(row)
+            row_data['device_url'] = reverse('device', args=[row['name']])
+            data.append(row_data)
+
+        return JsonResponse({
+            'draw': draw,
+            'recordsTotal': records_total,
+            'recordsFiltered': records_filtered,
+            'data': data,
+        })
 
 class UPSProblems(LoginRequiredMixin, View):
     ''' List UPS current in a problem state '''
@@ -142,11 +326,17 @@ class Users(LoginRequiredMixin, View):
             logger.debug("session {}".format( s.get_decoded() ))
             logger.debug("session expire {}".format( s.expire_date ))
             logger.debug("session start {}".format( session_start ))
-            sessions.append({ 
-                'user': User.objects.get(id=s_decoded['_auth_user_id']),
-                'expire': s.expire_date,
-                'start': session_start,
-                })
+            # Skip sessions where the associated user no longer exists (e.g., after import)
+            try:
+                user = User.objects.get(id=s_decoded['_auth_user_id'])
+                sessions.append({ 
+                    'user': user,
+                    'expire': s.expire_date,
+                    'start': session_start,
+                    })
+            except User.DoesNotExist:
+                logger.debug(f"Session references non-existent user ID: {s_decoded.get('_auth_user_id')}")
+                continue
         context['session_list'] = sessions
 
 
@@ -176,64 +366,816 @@ class UserPreferences(LoginRequiredMixin, View):
             user.profile.alert_enabled = form.cleaned_data.get('alert_enabled')
             user.profile.voice_enabled = form.cleaned_data.get('voice_enabled')
             user.save()
-            messages.success(request, "{}'s preferences were saved".format(user.username))
+            messages.success(request, "{}'s preferences were saved.".format(user.username))
         else:
             pass
 
         return render(request, self.template_name, context=context)
 
+
+class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
+    ''' Admin-only settings scaffold page '''
+    template_name = 'akips/settings.html'
+    fixture_labels = SNAPSHOT_FIXTURE_LABELS
+    fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
+    snapshot_import_dir = os.path.join(settings.BASE_DIR, 'tmp', 'snapshot_imports')
+    tdx_form_prefix = 'tdx'
+    inventory_form_prefix = 'inventory'
+    akips_form_prefix = 'akips'
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def _get_import_form(self, data=None, files=None):
+        return AppSnapshotImportForm(data=data, files=files)
+
+    def _get_tdx_config(self):
+        return TDXConfiguration.get_solo()
+
+    def _get_tdx_form(self, data=None, instance=None):
+        return TDXSettingsForm(
+            data=data,
+            instance=instance or self._get_tdx_config(),
+            prefix=self.tdx_form_prefix,
+        )
+
+    def _get_inventory_config(self):
+        return InventoryConfiguration.get_solo()
+
+    def _get_inventory_form(self, data=None, instance=None):
+        return InventorySettingsForm(
+            data=data,
+            instance=instance or self._get_inventory_config(),
+            prefix=self.inventory_form_prefix,
+        )
+
+    def _get_akips_config(self):
+        return AKIPSConfiguration.get_solo()
+
+    def _get_akips_form(self, data=None, instance=None):
+        return AKIPSSettingsForm(
+            data=data,
+            instance=instance or self._get_akips_config(),
+            prefix=self.akips_form_prefix,
+        )
+
+    def _queue_inventory_sync(self):
+        config = self._get_inventory_config()
+        if not config.enabled:
+            messages.warning(self.request, 'Inventory sync was not started because the external inventory feed is disabled.')
+            return
+
+        pending = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='PENDING').count()
+        started = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='STARTED').count()
+        if pending == 0 and started == 0:
+            refresh_inventory.delay()
+            messages.success(self.request, 'Inventory sync was queued.')
+        else:
+            messages.warning(self.request, 'Inventory sync is already in progress.')
+
+    def _queue_akips_sync_task(self, task_name, task_callable, display_name):
+        config = self._get_akips_config()
+        if not config.enabled:
+            messages.warning(self.request, f'{display_name} was not started because AKIPS integration is disabled.')
+            return
+
+        pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
+        started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
+        if pending == 0 and started == 0:
+            task_callable.delay()
+            messages.success(self.request, f'{display_name} was queued.')
+        else:
+            messages.warning(self.request, f'{display_name} is already in progress.')
+
+    def _queue_akips_status_sync(self):
+        config = self._get_akips_config()
+        if not config.enabled:
+            messages.warning(self.request, 'AKIPS status sync was not started because AKIPS integration is disabled.')
+            return
+
+        status_tasks = [
+            ('akips.task.refresh_ping_status', refresh_ping_status),
+            ('akips.task.refresh_snmp_status', refresh_snmp_status),
+            ('akips.task.refresh_ups_status', refresh_ups_status),
+            ('akips.task.refresh_battery_test_status', refresh_battery_test_status),
+        ]
+
+        queued_count = 0
+        already_running_count = 0
+        for task_name, task_callable in status_tasks:
+            pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
+            started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
+            if pending == 0 and started == 0:
+                task_callable.delay()
+                queued_count += 1
+            else:
+                already_running_count += 1
+
+        if queued_count:
+            messages.success(self.request, f'AKIPS status sync queued {queued_count} task(s).')
+        if already_running_count:
+            messages.warning(self.request, f'{already_running_count} AKIPS status task(s) were already in progress.')
+
+    def _get_last_snapshot_import_task(self):
+        return (
+            TaskResult.objects
+            .filter(task_name='akips.task.import_snapshot_task')
+            .order_by('-date_created')
+            .first()
+        )
+
+    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None):
+        return {
+            'import_form': import_form or self._get_import_form(),
+            'tdx_form': tdx_form or self._get_tdx_form(),
+            'inventory_form': inventory_form or self._get_inventory_form(),
+            'akips_form': akips_form or self._get_akips_form(),
+            'last_import_task': self._get_last_snapshot_import_task(),
+        }
+
+    def _export_snapshot_response(self):
+        with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
+            snapshot_path = tmp.name
+
+        try:
+            dump_args = list(self.fixture_labels)
+            dump_kwargs = {
+                'indent': 2,
+                'use_natural_foreign_keys': True,
+                'use_natural_primary_keys': True,
+                'output': snapshot_path,
+                'exclude': list(self.fixture_excludes),
+            }
+            call_command('dumpdata', *dump_args, **dump_kwargs)
+
+            with open(snapshot_path, 'rb') as snapshot_file:
+                payload = snapshot_file.read()
+
+            timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
+            filename = f'ocnes-snapshot-{timestamp}.json'
+            response = HttpResponse(payload, content_type='application/json')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        finally:
+            if os.path.exists(snapshot_path):
+                os.remove(snapshot_path)
+
+    def _persist_uploaded_snapshot(self, uploaded_file):
+        suffix = '.json.gz' if uploaded_file.name.lower().endswith('.json.gz') else '.json'
+        os.makedirs(self.snapshot_import_dir, exist_ok=True)
+        snapshot_filename = f"snapshot-{uuid.uuid4()}{suffix}"
+        snapshot_path = os.path.join(self.snapshot_import_dir, snapshot_filename)
+        with open(snapshot_path, 'wb') as fh:
+            for chunk in uploaded_file.chunks():
+                fh.write(chunk)
+        return snapshot_path
+
+    def get(self, request, *args, **kwargs):
+        context = self._build_context()
+        return render(request, self.template_name, context=context)
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action', '').strip()
+
+        if action == 'export_snapshot':
+            try:
+                return self._export_snapshot_response()
+            except Exception as exc:
+                logger.exception('Settings export failed')
+                messages.error(request, f'Export failed: {exc}')
+                return render(request, self.template_name, context=self._build_context())
+
+        if action == 'import_snapshot':
+            import_form = self._get_import_form(data=request.POST, files=request.FILES)
+            if not import_form.is_valid():
+                messages.error(request, 'Import failed: please provide a valid snapshot file.')
+                return render(request, self.template_name, context=self._build_context(import_form=import_form))
+
+            try:
+                snapshot_file = import_form.cleaned_data['snapshot_file']
+                clear_existing_data = import_form.cleaned_data.get('clear_existing_data', False)
+                snapshot_path = self._persist_uploaded_snapshot(snapshot_file)
+                task_result = import_snapshot_task.delay(snapshot_path, clear_existing_data=clear_existing_data)
+                messages.success(request, f'Snapshot import started in the background (task: {task_result.id}). Refresh this page to track progress.')
+                return HttpResponseRedirect(reverse('settings'))
+            except Exception as exc:
+                logger.exception('Settings import failed')
+                messages.error(request, f'Import failed: {exc}')
+                return render(request, self.template_name, context=self._build_context(import_form=import_form))
+
+        if action == 'save_tdx_settings':
+            config = self._get_tdx_config()
+            tdx_form = self._get_tdx_form(data=request.POST, instance=config)
+            if tdx_form.is_valid():
+                tdx_form.save()
+                messages.success(request, 'TDX settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'TDX settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(tdx_form=tdx_form))
+
+        if action == 'save_inventory_settings':
+            config = self._get_inventory_config()
+            inventory_form = self._get_inventory_form(data=request.POST, instance=config)
+            if inventory_form.is_valid():
+                inventory_form.save()
+                messages.success(request, 'Inventory feed settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'Inventory feed settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(inventory_form=inventory_form))
+
+        if action == 'save_akips_settings':
+            config = self._get_akips_config()
+            akips_form = self._get_akips_form(data=request.POST, instance=config)
+            if akips_form.is_valid():
+                akips_form.save()
+                messages.success(request, 'AKIPS settings saved.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'AKIPS settings could not be saved. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(akips_form=akips_form))
+
+        if action == 'run_inventory_sync':
+            self._queue_inventory_sync()
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_akips_devices':
+            self._queue_akips_sync_task('akips.task.refresh_akips_devices', refresh_akips_devices, 'AKIPS device sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_akips_status_sync':
+            self._queue_akips_status_sync()
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_ping_status':
+            self._queue_akips_sync_task('akips.task.refresh_ping_status', refresh_ping_status, 'AKIPS ping status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_snmp_status':
+            self._queue_akips_sync_task('akips.task.refresh_snmp_status', refresh_snmp_status, 'AKIPS SNMP status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_ups_status':
+            self._queue_akips_sync_task('akips.task.refresh_ups_status', refresh_ups_status, 'AKIPS UPS status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        if action == 'run_refresh_battery_test_status':
+            self._queue_akips_sync_task('akips.task.refresh_battery_test_status', refresh_battery_test_status, 'AKIPS battery test status sync')
+            return HttpResponseRedirect(reverse('settings'))
+
+        messages.error(request, 'Unknown Settings action requested.')
+        return render(request, self.template_name, context=self._build_context())
+
+
+CARD_REFRESH_CONFIG = {
+    'crit_card': {
+        'template_name': 'akips/card_refresh_crit.html',
+        'cache_key': 'crit_card_data',
+        'data_cache_key': 'crit_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type='Critical', status='Open').select_related('sn_incident').prefetch_related('unreachables__device').order_by('name'),
+        'context_key': 'summaries',
+    },
+    'bldg_card': {
+        'template_name': 'akips/card_refresh_bldg.html',
+        'cache_key': 'bldg_card_data',
+        'data_cache_key': 'bldg_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Distribution', 'Building'], status='Open').select_related('sn_incident').order_by('tier', '-type', 'name'),
+        'context_key': 'summaries',
+    },
+    'spec_card': {
+        'template_name': 'akips/card_refresh_special.html',
+        'cache_key': 'spec_card_data',
+        'data_cache_key': 'spec_card_json_data',
+        'queryset': lambda: Summary.objects.filter(type__in=['Specialty'], status='Open').select_related('sn_incident').order_by('name'),
+        'context_key': 'summaries',
+    },
+    'trap_card': {
+        'template_name': 'akips/card_refresh_trap.html',
+        'cache_key': 'trap_card_data',
+        'data_cache_key': 'trap_card_json_data',
+        'queryset': lambda: Trap.objects.filter(status='Open').select_related('device', 'sn_incident').order_by('-dup_last', '-tt'),
+        'context_key': 'traps',
+    },
+}
+
+
+def _fmt_dt(value):
+    if not value:
+        return ''
+    return timezone.localtime(value).strftime('%m-%d %H:%M:%S')
+
+
+def _summary_incident(summary):
+    if summary.tdx_incident:
+        return {
+            'id': str(summary.tdx_incident),
+            'url': f"https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={summary.tdx_incident}",
+        }
+    if summary.sn_incident:
+        sn_number = str(summary.sn_incident)
+        return {
+            'id': sn_number,
+            'url': f"https://{summary.sn_incident.instance}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={sn_number}",
+        }
+    return None
+
+
+def _serialize_summary_base(summary):
+    return {
+        'id': summary.id,
+        'summary_url': reverse('summary', args=[summary.id]),
+        'ack_url': reverse('ack', args=[summary.id]),
+        'comment_url': reverse('set_comment', args=[summary.id]),
+        'ack': summary.ack,
+        'ack_by': summary.ack_by or '',
+        'ack_at': _fmt_dt(summary.ack_at),
+        'comment': summary.comment or '',
+        'last_event': _fmt_dt(summary.last_event),
+        'trend': summary.trend or '',
+        'incident': _summary_incident(summary),
+    }
+
+
+def _serialize_crit_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        first_unreachable = summary.unreachables.all().first()
+        device = first_unreachable.device if first_unreachable else None
+        row.update({
+            'device_name': device.sysName if device else summary.name,
+            'device_ip4addr': device.ip4addr if device else '',
+            'device_descr': device.sysDescr if device else '',
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+    }
+
+
+def _serialize_bldg_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        row.update({
+            'type': summary.type,
+            'name': summary.name,
+            'switch_count': summary.switch_count,
+            'ap_count': summary.ap_count,
+            'ups_count': summary.ups_count,
+            'ups_battery': summary.ups_battery,
+            'percent_down': round((summary.percent_down or 0) * 100),
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+        'empty_message': 'Tier 1 and Building events are currently clear',
+    }
+
+
+def _serialize_spec_data(summaries):
+    rows = []
+    for summary in summaries:
+        row = _serialize_summary_base(summary)
+        row.update({
+            'name': summary.name,
+            'total_count': summary.total_count,
+            'percent_down': round((summary.percent_down or 0) * 100),
+        })
+        rows.append(row)
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+    }
+
+
+def _trap_incident(trap):
+    if trap.tdx_incident:
+        return {
+            'id': str(trap.tdx_incident),
+            'url': f"https://tdx.unc.edu/TDNext/Apps/34/Tickets/TicketDet.aspx?TicketID={trap.tdx_incident}",
+        }
+    if trap.sn_incident:
+        sn_number = str(trap.sn_incident)
+        return {
+            'id': sn_number,
+            'url': f"https://{trap.sn_incident.instance}.service-now.com/nav_to.do?uri=task.do?sysparm_query=number={sn_number}",
+        }
+    return None
+
+
+def _serialize_trap_data(traps, page=1, page_size=50):
+    if page_size <= 0:
+        page_size = 50
+
+    if hasattr(traps, 'count'):
+        total_open = traps.count()
+    else:
+        total_open = len(traps)
+
+    total_pages = max(1, math.ceil(total_open / page_size))
+    page = min(max(page, 1), total_pages)
+    start = (page - 1) * page_size
+    end = start + page_size
+
+    rows = []
+    for trap in traps[start:end]:
+        rows.append({
+            'id': trap.id,
+            'ack': trap.ack,
+            'ack_by': trap.ack_by or '',
+            'ack_at': _fmt_dt(trap.ack_at),
+            'ack_url': reverse('ack_trap', args=[trap.id]),
+            'device_name': trap.device.sysName,
+            'device_url': reverse('device', args=[trap.device.name]),
+            'trap_oid': trap.trap_oid,
+            'trap_url': reverse('trap', args=[trap.id]),
+            'dup_count': trap.dup_count,
+            'dup_last_iso': trap.dup_last.isoformat() if trap.dup_last else '',
+            'last_event': _fmt_dt(trap.dup_last or trap.tt),
+            'incident': _trap_incident(trap),
+            'clear_url': reverse('clear_trap', args=[trap.id]),
+        })
+    return {
+        'rows': rows,
+        'has_rows': len(rows) > 0,
+        'total_open': total_open,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': total_pages,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+    }
+
+
+CARD_SERIALIZERS = {
+    'crit_card': _serialize_crit_data,
+    'bldg_card': _serialize_bldg_data,
+    'spec_card': _serialize_spec_data,
+    'trap_card': _serialize_trap_data,
+}
+
+
+def _as_bool(value):
+    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _simulate_dashboard_cards(trap_page=1, trap_page_size=50):
+    crit_rows = [
+        {
+            'id': 90001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': 'Intermittent uplink packet loss',
+            'last_event': '03-25 09:08:12',
+            'trend': 'Flat',
+            'incident': None,
+            'device_name': 'CORE-SW-01',
+            'device_ip4addr': '10.42.0.10',
+            'device_descr': 'Core switch aggregation pair',
+        },
+        {
+            'id': 90002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'devops',
+            'ack_at': '03-25 09:10:01',
+            'comment': '',
+            'last_event': '03-25 09:12:44',
+            'trend': 'Increasing',
+            'incident': {
+                'id': 'INC0012345',
+                'url': '#',
+            },
+            'device_name': 'DIST-BLDG-ALPHA',
+            'device_ip4addr': '10.42.3.17',
+            'device_descr': 'Distribution switch stack',
+        },
+    ]
+
+    bldg_rows = [
+        {
+            'id': 91001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': '',
+            'last_event': '03-25 09:11:05',
+            'trend': '',
+            'incident': None,
+            'type': 'Distribution',
+            'name': 'Tier 1 North',
+            'switch_count': 0,
+            'ap_count': 0,
+            'ups_count': 0,
+            'ups_battery': 0,
+            'percent_down': 0,
+        },
+        {
+            'id': 91002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': 'Power event in MDF',
+            'last_event': '03-25 09:12:20',
+            'trend': 'Increasing',
+            'incident': None,
+            'type': 'Building',
+            'name': 'Bldg-Alpha',
+            'switch_count': 4,
+            'ap_count': 26,
+            'ups_count': 2,
+            'ups_battery': 1,
+            'percent_down': 18,
+        },
+        {
+            'id': 91003,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'noc',
+            'ack_at': '03-25 09:13:00',
+            'comment': '',
+            'last_event': '03-25 09:13:45',
+            'trend': 'Flat',
+            'incident': {
+                'id': 'INC0012346',
+                'url': '#',
+            },
+            'type': 'Building',
+            'name': 'Bldg-Beta',
+            'switch_count': 1,
+            'ap_count': 7,
+            'ups_count': 0,
+            'ups_battery': 0,
+            'percent_down': 7,
+        },
+    ]
+
+    # Keep distribution-level simulated totals consistent with child buildings.
+    child_rows = [row for row in bldg_rows if row.get('type') != 'Distribution']
+    if child_rows:
+        bldg_rows[0]['switch_count'] = sum(row.get('switch_count', 0) for row in child_rows)
+        bldg_rows[0]['ap_count'] = sum(row.get('ap_count', 0) for row in child_rows)
+        bldg_rows[0]['ups_count'] = sum(row.get('ups_count', 0) for row in child_rows)
+        bldg_rows[0]['ups_battery'] = sum(row.get('ups_battery', 0) for row in child_rows)
+
+    spec_rows = [
+        {
+            'id': 92001,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': False,
+            'ack_by': '',
+            'ack_at': '',
+            'comment': '',
+            'last_event': '03-25 09:14:02',
+            'trend': 'Increasing',
+            'incident': None,
+            'name': 'Research Labs',
+            'total_count': 33,
+            'percent_down': 12,
+        },
+        {
+            'id': 92002,
+            'summary_url': '#',
+            'ack_url': '#',
+            'comment_url': '#',
+            'ack': True,
+            'ack_by': 'devops',
+            'ack_at': '03-25 09:13:31',
+            'comment': 'Planned maintenance overlap',
+            'last_event': '03-25 09:14:15',
+            'trend': 'Flat',
+            'incident': {
+                'id': 'INC0012347',
+                'url': '#',
+            },
+            'name': 'Clinical IoT',
+            'total_count': 14,
+            'percent_down': 9,
+        },
+    ]
+
+    total_traps = 125
+    total_pages = max(1, math.ceil(total_traps / trap_page_size))
+    trap_page = min(max(trap_page, 1), total_pages)
+    start = (trap_page - 1) * trap_page_size
+    end = min(start + trap_page_size, total_traps)
+    trap_rows = []
+    for idx in range(start, end):
+        trap_id = 93000 + idx + 1
+        octet = 10 + (idx % 200)
+        trap_rows.append({
+            'id': trap_id,
+            'ack': (idx % 4 == 0),
+            'ack_by': 'noc' if idx % 4 == 0 else '',
+            'ack_at': '03-25 09:12:55' if idx % 4 == 0 else '',
+            'ack_url': '#',
+            'device_name': f'EDGE-SW-{idx + 1:03d}',
+            'device_url': '#',
+            'trap_oid': 'IF-MIB.ifOperStatus',
+            'trap_url': '#',
+            'dup_count': idx % 5,
+            'dup_last_iso': '2026-03-25T09:14:00-04:00',
+            'last_event': '03-25 09:14:00',
+            'incident': None,
+            'clear_url': '#',
+        })
+
+    return {
+        'crit_card': {
+            'rows': crit_rows,
+            'has_rows': True,
+        },
+        'bldg_card': {
+            'rows': bldg_rows,
+            'has_rows': True,
+            'empty_message': 'Tier 1 and Building events are currently clear',
+        },
+        'spec_card': {
+            'rows': spec_rows,
+            'has_rows': True,
+        },
+        'trap_card': {
+            'rows': trap_rows,
+            'has_rows': len(trap_rows) > 0,
+            'total_open': total_traps,
+            'page': trap_page,
+            'page_size': trap_page_size,
+            'total_pages': total_pages,
+            'has_prev': trap_page > 1,
+            'has_next': trap_page < total_pages,
+        },
+    }
+
+
+def render_card_fragment(card_id, cache_timeout=60):
+    """Render one dashboard card fragment with cache reuse."""
+    config = CARD_REFRESH_CONFIG[card_id]
+    cached_html = cache.get(config['cache_key'])
+    if cached_html is not None:
+        logger.debug(f"Cache HIT for {config['cache_key']}")
+        return cached_html
+
+    logger.debug(f"Cache MISS for {config['cache_key']}")
+    context = {
+        config['context_key']: config['queryset'](),
+    }
+    html = render_to_string(config['template_name'], context)
+    cache.set(config['cache_key'], html, cache_timeout)
+    return html
+
+
+def get_card_data(card_id, cache_timeout=15, serializer_kwargs=None, cache_variant=None):
+    """Return one dashboard card data payload with cache reuse."""
+    config = CARD_REFRESH_CONFIG[card_id]
+    cache_key = config['data_cache_key']
+    if cache_variant:
+        cache_key = f"{cache_key}:{cache_variant}"
+
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        logger.debug(f"Cache HIT for {cache_key}")
+        return cached_data
+
+    logger.debug(f"Cache MISS for {cache_key}")
+    queryset = config['queryset']()
+    serializer = CARD_SERIALIZERS[card_id]
+    if serializer_kwargs:
+        data = serializer(queryset, **serializer_kwargs)
+    else:
+        data = serializer(list(queryset))
+
+    cache.set(cache_key, data, cache_timeout)
+    return data
+
+
+class DashboardCardsView(LoginRequiredMixin, View):
+    ''' Return all dashboard cards as JSON in one request '''
+    pretty_print = True
+
+    def _parse_int(self, value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get(self, request, *args, **kwargs):
+        trap_page = max(self._parse_int(request.GET.get('trap_page'), 1), 1)
+        trap_page_size = 50
+        simulate = _as_bool(request.GET.get('simulate', '0')) and request.user.is_staff
+
+        if simulate:
+            cards = _simulate_dashboard_cards(trap_page=trap_page, trap_page_size=trap_page_size)
+            result = {'cards': cards, 'signatures': {}}
+            for card_id, card_data in cards.items():
+                card_json = json.dumps(card_data, sort_keys=True, default=str)
+                result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
+            if self.pretty_print:
+                return JsonResponse(result, json_dumps_params={'indent': 4})
+            return JsonResponse(result)
+
+        result = {'cards': {}, 'signatures': {}}
+        for card_id in CARD_REFRESH_CONFIG:
+            serializer_kwargs = None
+            cache_variant = None
+            if card_id == 'trap_card':
+                serializer_kwargs = {
+                    'page': trap_page,
+                    'page_size': trap_page_size,
+                }
+                cache_variant = f"p{trap_page}:s{trap_page_size}"
+
+            card_data = get_card_data(card_id, serializer_kwargs=serializer_kwargs, cache_variant=cache_variant)
+            result['cards'][card_id] = card_data
+            card_json = json.dumps(card_data, sort_keys=True, default=str)
+            result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
+
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        return JsonResponse(result)
+
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_crit.html'
+    cache_key = 'crit_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        context['summaries'] = Summary.objects.filter(type='Critical', status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_card_fragment('crit_card', cache_timeout=self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class TierCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_tier.html'
+    cache_key = 'tier_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_html = cache.get(self.cache_key)
+        if cached_html is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            return HttpResponse(cached_html, content_type='text/html')
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
         context['summaries'] = Summary.objects.filter(type='Distribution', status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_to_string(self.template_name, context)
+        
+        # Store in cache
+        cache.set(self.cache_key, html, self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class BuildingCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_bldg.html'
+    cache_key = 'bldg_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        #context['summaries'] = Summary.objects.filter(type='Building',status='Open').order_by('name')
-        types = ['Distribution', 'Building']
-        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('tier', '-type', 'name')
-        return render(request, self.template_name, context=context)
+        html = render_card_fragment('bldg_card', cache_timeout=self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_special.html'
+    cache_key = 'spec_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        types = ['Specialty']
-        context['summaries'] = Summary.objects.filter(type__in=types, status='Open').order_by('name')
-        return render(request, self.template_name, context=context)
+        html = render_card_fragment('spec_card', cache_timeout=self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 class TrapCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
     template_name = 'akips/card_refresh_trap.html'
+    cache_key = 'trap_card_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        context['traps'] = Trap.objects.filter(
-            status='Open').order_by('-dup_last','-tt')
-            # status='Open').order_by('-tt')
-            # status='Open').order_by('-tt')[:50]
-        return render(request, self.template_name, context=context)
+        html = render_card_fragment('trap_card', cache_timeout=self.cache_timeout)
+        return HttpResponse(html, content_type='text/html')
 
 
 class UnreachableView(LoginRequiredMixin, View):
@@ -436,9 +1378,9 @@ class HibernateView(LoginRequiredMixin, View):
                     }
                 )
                 if created:
-                    messages.success(request, "Hibernation request created for device {}".format( device.name ))
+                    messages.success(request, "Hibernation request created for device {}.".format( device.name ))
                 elif hibernate_request:
-                    messages.success(request, "Hibernation request updated for device {}".format( device.name ))
+                    messages.success(request, "Hibernation request updated for device {}.".format( device.name ))
 
                 # Update local device record
                 device.hibernate = True
@@ -829,6 +1771,28 @@ class ClearTrapView(LoginRequiredMixin, View):
             return JsonResponse(result)
 
 
+class ClearAllTrapsView(LoginRequiredMixin, View):
+    ''' API view '''
+    pretty_print = True
+
+    def get(self, request, *args, **kwargs):
+        now = timezone.now()
+        cleared_count = Trap.objects.filter(status='Open').update(
+            status='Closed',
+            cleared_by=request.user.username,
+            cleared_at=now,
+        )
+        logger.info("Cleared %s open traps via clear-all", cleared_count)
+
+        result = {
+            'status': 'Closed',
+            'cleared_count': cleared_count,
+        }
+        if self.pretty_print:
+            return JsonResponse(result, json_dumps_params={'indent': 4})
+        return JsonResponse(result)
+
+
 class AckTrapView(LoginRequiredMixin, View):
     ''' API view '''
     pretty_print = True
@@ -934,6 +1898,13 @@ class UserAlertView(LoginRequiredMixin, View):
         last_notified_cookie = request.COOKIES.get('last_notified',None)
         logger.debug("cookie last_notified cookie value {}".format(last_notified_cookie))
 
+        last_notified = None
+        if last_notified_cookie is not None:
+            try:
+                last_notified = datetime.fromisoformat(last_notified_cookie)
+            except ValueError:
+                logger.warning("Invalid last_notified cookie value; resetting notification window")
+
         # Define the times we care about
         now = timezone.now()
         cutoff_hours = 2
@@ -947,7 +1918,7 @@ class UserAlertView(LoginRequiredMixin, View):
             'voice_enabled': self.request.user.profile.voice_enabled,
         }
 
-        if last_notified_cookie is None or datetime.fromisoformat(last_notified_cookie) < old_session_time:
+        if last_notified is None or last_notified < old_session_time:
             # user has no notification history or it is an old session
             times = []
             tmp_messages = []
@@ -1011,7 +1982,6 @@ class UserAlertView(LoginRequiredMixin, View):
             # user has a typical active session
             times = []
             tmp_messages = []
-            last_notified = datetime.fromisoformat(last_notified_cookie)
             #result['messages'].append("User has an active session")
 
             # unreachables = Unreachable.objects.filter(event_start__gt=last_notified,status='Open').order_by('event_start')
@@ -1075,7 +2045,7 @@ class UserAlertView(LoginRequiredMixin, View):
             response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             response = JsonResponse(result)
-        response.set_cookie('last_notified', result['last_notified'])
+        response.set_cookie('last_notified', result['last_notified'].isoformat())
         return response
 
 class ChartDataView(LoginRequiredMixin, View):
@@ -1083,17 +2053,27 @@ class ChartDataView(LoginRequiredMixin, View):
     pretty_print = True
     hours = 2
     period_minutes = 5
+    cache_key = 'chart_data'
+    cache_timeout = 60  # seconds
 
     def get(self, request, *args, **kwargs):
+        # Try to get from cache first
+        cached_result = cache.get(self.cache_key)
+        if cached_result is not None:
+            logger.debug(f"Cache HIT for {self.cache_key}")
+            if self.pretty_print:
+                return JsonResponse(cached_result, json_dumps_params={'indent': 4})
+            else:
+                return JsonResponse(cached_result)
+
+        logger.debug(f"Cache MISS for {self.cache_key}")
         now = timezone.now()
         oldest = now - timedelta(hours=self.hours)
 
         # Define graph time periods
         max_label = self.round_dt_down(now, timedelta(minutes= self.period_minutes ))
         min_label = max_label - timedelta(hours=self.hours)
-        # keyList = [ timezone.localtime(dt).strftime('%-I:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
         keyList = [ timezone.localtime(dt).strftime('%H:%M') for dt in self.datetime_range( min_label, max_label, timedelta(minutes= self.period_minutes)) ]
-        #logger.debug("time stamps {}".format(keyList))
 
         # Initialize the graph time periods
         event_data = {}
@@ -1108,7 +2088,6 @@ class ChartDataView(LoginRequiredMixin, View):
         unreachables = Unreachable.objects.filter(event_start__gte=min_label).order_by('event_start')
         for unreachable in unreachables:
             slot = self.round_dt_down( unreachable.event_start, timedelta(minutes= self.period_minutes) ) 
-            # this_label = timezone.localtime(slot).strftime('%-I:%M')
             this_label = timezone.localtime(slot).strftime('%H:%M')
             event_data[this_label] += 1
 
@@ -1116,7 +2095,6 @@ class ChartDataView(LoginRequiredMixin, View):
         traps = Trap.objects.filter(tt__gte=min_label).order_by('tt')
         for trap in traps:
             slot = self.round_dt_down( trap.tt, timedelta(minutes= self.period_minutes) ) 
-            # this_label = timezone.localtime(slot).strftime('%-I:%M')
             this_label = timezone.localtime(slot).strftime('%H:%M')
             trap_data[this_label] += 1
 
@@ -1130,9 +2108,6 @@ class ChartDataView(LoginRequiredMixin, View):
             this_label = timezone.localtime(slot).strftime('%H:%M')
             battery_data[this_label] += 1
 
-        #logger.debug("periods {}".format(event_data.keys()))
-        #logger.debug("event values {}".format(event_data.values()))
-        #logger.debug("trap values {}".format(trap_data.values()))
         result = {
             'chart_labels': list( event_data.keys() ),
             'chart_event_data': list( event_data.values() ),
@@ -1147,6 +2122,9 @@ class ChartDataView(LoginRequiredMixin, View):
             result['above_max_unreachable'] = True
         else:
             result['above_max_unreachable'] = False
+
+        # Store in cache
+        cache.set(self.cache_key, result, self.cache_timeout)
 
         # Return the results
         if self.pretty_print:
@@ -1188,24 +2166,32 @@ class SetUserProfileView(LoginRequiredMixin, View):
     pretty_print = True
 
     def get(self, request, *args, **kwargs):
-        logger.debug("Preference update for {}")
+        logger.debug("Preference update for %s", request.user.username)
         alert_enabled = request.GET.get('alert_enabled', None)
         voice_enabled = request.GET.get('voice_enabled', None)
 
         user = request.user
+        changed = False
         if alert_enabled is not None:
             if alert_enabled == 'False':
                 user.profile.alert_enabled = False
             else:
                 user.profile.alert_enabled = True
+            changed = True
         if voice_enabled is not None:
             if voice_enabled == 'False':
                 user.profile.voice_enabled = False
             else:
                 user.profile.voice_enabled = True
-        user.save()
+            changed = True
 
-        result = {"voice_enabled": user.profile.voice_enabled }
+        if changed:
+            user.save()
+
+        result = {
+            "alert_enabled": user.profile.alert_enabled,
+            "voice_enabled": user.profile.voice_enabled,
+        }
         # Return the results
         if self.pretty_print:
             return JsonResponse(result, json_dumps_params={'indent': 4})

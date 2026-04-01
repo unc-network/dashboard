@@ -4,6 +4,8 @@ from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
+
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
     remember_me = forms.BooleanField(required=False)  # and add the remember_me field
@@ -152,3 +154,82 @@ class PreferencesForm(forms.Form):
     #     max_value=2,
     #     widget=forms.NumberInput(attrs={'step': "0.1"})
     # )
+
+
+class AppSnapshotImportForm(forms.Form):
+    clear_existing_data = forms.BooleanField(
+        label='Clear existing app data before import',
+        required=False,
+        initial=True,
+        help_text='Recommended when restoring from another environment to avoid duplicate key conflicts.',
+        widget=forms.CheckboxInput(attrs={'class': 'custom-control-input'})
+    )
+
+    snapshot_file = forms.FileField(
+        label='Snapshot file',
+        help_text='Upload a JSON fixture exported from this app.',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'})
+    )
+
+    def clean_snapshot_file(self):
+        snapshot_file = self.cleaned_data['snapshot_file']
+        name = snapshot_file.name.lower()
+        if not (name.endswith('.json') or name.endswith('.json.gz')):
+            raise ValidationError('Snapshot file must end with .json or .json.gz')
+        return snapshot_file
+
+
+class TDXSettingsForm(forms.ModelForm):
+    class Meta:
+        model = TDXConfiguration
+        fields = ['enabled', 'api_url', 'flow_url', 'username', 'password', 'apikey']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'api_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'flow_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'password': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+            'apikey': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+        }
+        labels = {
+            'enabled': 'Enable TDX updates',
+            'api_url': 'API URL',
+            'flow_url': 'Flow URL',
+            'apikey': 'API key',
+        }
+
+
+class InventorySettingsForm(forms.ModelForm):
+    class Meta:
+        model = InventoryConfiguration
+        fields = ['enabled', 'inventory_url', 'inventory_token']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'inventory_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'inventory_token': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+        }
+        labels = {
+            'enabled': 'Enable inventory feed',
+            'inventory_url': 'Inventory URL',
+            'inventory_token': 'Inventory token',
+        }
+
+
+class AKIPSSettingsForm(forms.ModelForm):
+    class Meta:
+        model = AKIPSConfiguration
+        fields = ['enabled', 'server', 'username', 'password', 'verify_ssl']
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'server': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'akips.example.com'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'password': forms.PasswordInput(attrs={'class': 'form-control'}, render_value=True),
+            'verify_ssl': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+        }
+        labels = {
+            'enabled': 'Enable AKIPS',
+            'server': 'AKIPS Server',
+            'username': 'Username',
+            'password': 'Password',
+            'verify_ssl': 'Verify SSL Certificate',
+        }

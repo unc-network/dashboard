@@ -6,6 +6,7 @@ urlpatterns = [
 
     # Main Views
     path('', views.Home.as_view(), name='home'),
+    path('hud/', views.Home.as_view(), {'hud_mode': True}, name='home_hud'),
     path('about/', views.About.as_view(), name='about'),
     path('unreachable/', views.UnreachableView.as_view(), name='unreachable'),
     path('summary/<id>/', views.SummaryView.as_view(), name='summary'),
@@ -16,6 +17,7 @@ urlpatterns = [
     path('batteries/', views.UPSProblems.as_view(), name='ups_problems'),
     path('users/', views.Users.as_view(), name='users'),
     path('preferences/', views.UserPreferences.as_view(), name='user_preferences'),
+    path('settings/', views.Settings.as_view(), name='settings'),
 
     # Event Focus Views
     #path('tier/<tier>/', views.TierView.as_view(), name='tier'),
@@ -25,6 +27,7 @@ urlpatterns = [
     path('recent/traps', views.RecentTrapsView.as_view(), name='recent_traps'),
 
     # Dynamic Content AJAX Views
+    path('ajax/cards/', views.DashboardCardsView.as_view(), name='dashboard_cards'),
     path('ajax/critcard/', views.CritCard.as_view(), name='crit_card'),
     path('ajax/tiercard/', views.TierCard.as_view(), name='tier_card'),
     path('ajax/bldgcard/', views.BuildingCard.as_view(), name='bldg_card'),
@@ -33,6 +36,7 @@ urlpatterns = [
 
     # Device API
     path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
+    path('api/devices/data/', views.DevicesDataAPI.as_view(), name='devices_data_api'),
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/set_notification_mode', views.SetNotificationView.as_view(), name='set_notification'),
 
@@ -53,7 +57,7 @@ urlpatterns = [
     # Trap API
     path('api/trap/<trap_id>/ack', views.AckTrapView.as_view(), name='ack_trap'),
     path('api/trap/<trap_id>/clear', views.ClearTrapView.as_view(), name='clear_trap'),
-    # path('api/trap/clear-all', views.ClearTrapView.as_view(), name='clear_trap_all'),
+    path('api/trap/clear-all', views.ClearAllTrapsView.as_view(), name='clear_trap_all'),
 
     # UX API
     path('api/chart/', views.ChartDataView.as_view(), name='chart_data'),
