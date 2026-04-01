@@ -11,6 +11,9 @@
 <div class="card">
     <div class="card-body">
         <p>Below you will find data for all devices learned from the AKiPS device inventory.</p>
+        {% if search %}
+        <p class="text-muted mb-2">Filtered by search term: <span class="font-weight-bold">{{ search }}</span></p>
+        {% endif %}
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
@@ -23,18 +26,7 @@
                     <th>Type</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for device in devices %}
-                <tr>
-                    <td><a href="{% url 'device' device.name %}">{{ device.name }}</a></td>
-                    <td>{{ device.ip4addr }}</td>
-                    <td>{{ device.sysName }}</td>
-                    <!-- <td><span class="d-inline-block text-truncate" style="max-width: 150px">{{ device.sysDescr }}</span></td> -->
-                    <td>{{ device.group }}</td>
-                    <td>{{ device.type }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tbody></tbody>
         </table>
 
         </div>
@@ -51,25 +43,47 @@
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/jszip/jszip.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/pdfmake.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/pdfmake/vfs_fonts.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'admin-lte/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
         // Setup Alerting
         refresh_alerts();
         enable_alert_toggle();
 
+        function escapeHtml(value) {
+            return $('<div/>').text(value || '').html();
+        }
+
         $("#myTable").DataTable({
-          "responsive": true, "lengthChange": false, "autoWidth": false,
-          "buttons": ["copy", "csv", "excel", "pdf", "print"],
-          "pageLength": 25,
-        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+            "responsive": true,
+            "processing": true,
+            "serverSide": true,
+            "deferRender": true,
+            "autoWidth": false,
+            "pageLength": 25,
+            "lengthMenu": [[25, 50, 100], [25, 50, 100]],
+            "searchDelay": 300,
+            "search": {"search": "{{ search|escapejs }}"},
+            "order": [[0, "asc"]],
+            "ajax": {
+                "url": "{% url 'devices_data_api' %}",
+                "type": "GET"
+            },
+            "columns": [
+                {
+                    "data": "name",
+                    "render": function (data, type, row) {
+                        if (type === 'display') {
+                            return '<a href="' + row.device_url + '">' + escapeHtml(data) + '</a>';
+                        }
+                        return data;
+                    }
+                },
+                {"data": "ip4addr"},
+                {"data": "sysName"},
+                {"data": "group"},
+                {"data": "type"}
+            ]
+        });
 
     })
 </script>

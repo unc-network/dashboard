@@ -1,5 +1,7 @@
 // Basic functions for the OCNES site.
 
+const OCNES_VOICE_SETTINGS_KEY = 'ocnes_voice';
+
 // Get the token to support AJAX POST
 // function getCookie(name) {
 //     var cookieValue = null;
@@ -49,6 +51,60 @@ function deleteCookie(cname) {
     document.cookie = cname + "= ;" + expires + ";path=/";
 }
 
+// Voice settings are stored in localStorage, with cookie fallback for migration.
+function getVoiceSettingsRaw() {
+    try {
+        var local = window.localStorage.getItem(OCNES_VOICE_SETTINGS_KEY);
+        if (local) {
+            return local;
+        }
+    } catch (e) {
+        // Ignore storage access errors
+    }
+
+    var legacyCookie = getCookie(OCNES_VOICE_SETTINGS_KEY);
+    if (legacyCookie) {
+        try {
+            window.localStorage.setItem(OCNES_VOICE_SETTINGS_KEY, legacyCookie);
+        } catch (e) {
+            // Ignore storage access errors
+        }
+        deleteCookie(OCNES_VOICE_SETTINGS_KEY);
+        return legacyCookie;
+    }
+
+    return "";
+}
+
+function getVoiceSettings() {
+    var speech_json = getVoiceSettingsRaw();
+    if (!speech_json) {
+        return null;
+    }
+    try {
+        return JSON.parse(speech_json);
+    } catch (e) {
+        return null;
+    }
+}
+
+function setVoiceSettings(speech) {
+    try {
+        window.localStorage.setItem(OCNES_VOICE_SETTINGS_KEY, JSON.stringify(speech));
+    } catch (e) {
+        // Ignore storage access errors
+    }
+}
+
+function clearVoiceSettings() {
+    try {
+        window.localStorage.removeItem(OCNES_VOICE_SETTINGS_KEY);
+    } catch (e) {
+        // Ignore storage access errors
+    }
+    deleteCookie(OCNES_VOICE_SETTINGS_KEY);
+}
+
 function refresh_alerts() {
     // Periodically check for user alerts.
     var refresh_seconds = 30000;
@@ -61,8 +117,12 @@ function refresh_alerts() {
 
 function alert_user() {
     // Poll for alerts and notify the user if needed.
-    var alert_toggle = $('#alert-toggle').prop('checked') // Boolean
-    var alert_url = $('#alert-toggle').data('alert-url')
+    var toggle = $('#alert-toggle');
+    var alert_url = toggle.data('alert-url');
+
+    if (!alert_url) {
+        return;
+    }
 
     // console.log("Alerting user if necessary.");
 
@@ -87,11 +147,10 @@ function alert_user() {
                 if ( data.voice_enabled ) {
                     var msg = new SpeechSynthesisUtterance(long_msg);
                     // console.log("total voices " + voices.length);
-                    var speech_json = getCookie('ocnes_voice');
-                    if (speech_json) {
-                        // Get user preferences from cookie
-                        var speech = JSON.parse(speech_json);
-                        console.log("Using cookie setting for voice " + speech.voice + " with rate " + speech.rate + " and pitch " + speech.pitch);
+                    var speech = getVoiceSettings();
+                    if (speech) {
+                        // Get user preferences from local storage
+                        console.log("Using saved voice setting for voice " + speech.voice + " with rate " + speech.rate + " and pitch " + speech.pitch);
                         msg.rate = speech.rate;
                         msg.pitch = speech.pitch;
                         msg.voice = voices.filter(function(voice) { return voice.name == speech.voice; })[0];
@@ -116,16 +175,54 @@ function alert_user() {
     })
 }
 
+function set_alert_toggle_state(enabled) {
+    var toggle = $('#alert-toggle');
+    if (!toggle.length) {
+        return;
+    }
+
+    toggle.data('enabled', !!enabled);
+    toggle.attr('aria-pressed', !!enabled ? 'true' : 'false');
+    toggle.attr('title', !!enabled ? 'Notifications: On' : 'Notifications: Off');
+
+    var icon = $('#alert-toggle-icon');
+    if (icon.length) {
+        icon.removeClass('fa-volume-up fa-volume-mute');
+        icon.addClass(enabled ? 'fa-volume-up' : 'fa-volume-mute');
+    }
+}
+
+function get_alert_toggle_state() {
+    var toggle = $('#alert-toggle');
+    if (!toggle.length) {
+        return true;
+    }
+    var enabled = toggle.data('enabled');
+    return typeof enabled === 'undefined' ? true : !!enabled;
+}
+
 function enable_alert_toggle() {
-    // Configure the user preference switch
-    $(document).on('change', 'input.alert-toggle', function () {
-        var url = $(this).data("url");
-        if (this.checked) {
-            console.log("alert checkbox on");
-            $.get(url, { "alert_enabled": 'True' })
-        } else {
-            console.log("alert checkbox off")
-            $.get(url, { "alert_enabled": 'False' })
+    // Initialize from user profile API so templates do not need to query profile directly.
+    var toggle = $('#alert-toggle');
+    var url = toggle.data('url');
+    if (toggle.length && url) {
+        $.get(url, function (data) {
+            if (typeof data.alert_enabled !== 'undefined') {
+                set_alert_toggle_state(!!data.alert_enabled);
+            }
+        });
+    }
+
+    // Configure the user preference icon toggle.
+    $(document).off('click.alertToggle', '#alert-toggle').on('click.alertToggle', '#alert-toggle', function (e) {
+        e.preventDefault();
+        var current = get_alert_toggle_state();
+        var next = !current;
+        set_alert_toggle_state(next);
+
+        var endpoint = $(this).data('url');
+        if (endpoint) {
+            $.get(endpoint, { "alert_enabled": next ? 'True' : 'False' });
         }
     });
 }

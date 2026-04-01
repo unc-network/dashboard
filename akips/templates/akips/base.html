@@ -7,8 +7,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta name="description" content="OCNES dashboard for AKiPS" />
+        <meta name="description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
     <meta name="author" content="devops@office.unc.edu" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="OCNES Dashboard" />
+        <meta property="og:description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
+        <meta property="og:site_name" content="OCNES Dashboard" />
+        <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" />
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'akips/img/dashboard.png' %}" />
+        <meta property="og:image:alt" content="OCNES dashboard preview" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="OCNES Dashboard" />
+        <meta name="twitter:description" content="OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination." />
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'akips/img/dashboard.png' %}" />
     {% endblock %}
 
     {% block title_outer %}
@@ -26,6 +39,43 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="hold-transition {% block body_class %}{% block bodyclass %}layout-top-nav{% endblock %}{% endblock %}">
+<script type="text/javascript">
+    (function () {
+        function resolveSystemTheme() {
+            try {
+                if (window.matchMedia) {
+                    var media = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (media && media.media !== 'not all') {
+                        return media.matches ? 'dark' : 'light';
+                    }
+                }
+            } catch (e) {
+                // Ignore matchMedia access errors
+            }
+
+            // Fallback when system preference is unavailable.
+            return 'light';
+        }
+
+        var mode = 'system';
+        try {
+            var stored = window.localStorage.getItem('ocnesThemeMode');
+            if (stored === 'light' || stored === 'dark' || stored === 'system') {
+                mode = stored;
+            }
+        } catch (e) {
+            // Ignore storage access errors
+        }
+
+        var resolved = mode;
+        if (mode === 'system') {
+            resolved = resolveSystemTheme();
+        }
+
+        document.body.classList.add('theme-' + resolved);
+        document.body.setAttribute('data-theme-mode', mode);
+    })();
+</script>
 
 {% block body %}
     <div class="wrapper">
@@ -87,6 +137,117 @@
 {% include 'akips/_scripts.html' %}
 {% block js %}{% endblock %}
 {% endblock %}
+
+<script type="text/javascript">
+    (function () {
+        var THEME_KEY = 'ocnesThemeMode';
+        var MODES = ['light', 'dark', 'system'];
+
+        function getSystemTheme() {
+            try {
+                if (window.matchMedia) {
+                    var media = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (media && media.media !== 'not all') {
+                        return media.matches ? 'dark' : 'light';
+                    }
+                }
+            } catch (e) {
+                // Ignore matchMedia access errors
+            }
+
+            // Fallback when system preference is unavailable.
+            return 'light';
+        }
+
+        function getStoredMode() {
+            try {
+                var stored = window.localStorage.getItem(THEME_KEY);
+                if (MODES.indexOf(stored) !== -1) {
+                    return stored;
+                }
+            } catch (e) {
+                // Ignore storage access errors
+            }
+            return 'system';
+        }
+
+        function setStoredMode(mode) {
+            try {
+                window.localStorage.setItem(THEME_KEY, mode);
+            } catch (e) {
+                // Ignore storage access errors
+            }
+        }
+
+        function updateThemeToggleUi(mode, resolved) {
+            var icon = document.getElementById('theme-toggle-icon');
+            var link = document.getElementById('theme-toggle');
+            if (!icon || !link) {
+                return;
+            }
+            var resolvedMode = resolved || (mode === 'system' ? getSystemTheme() : mode);
+            var modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
+            var resolvedLabel = resolvedMode.charAt(0).toUpperCase() + resolvedMode.slice(1);
+            icon.className = 'fas ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
+            if (mode === 'system') {
+                link.setAttribute('title', 'Theme: ' + modeLabel + ' -> ' + resolvedLabel + ' (click to cycle Light, Dark, System)');
+            } else {
+                link.setAttribute('title', 'Theme: ' + modeLabel + ' (click to cycle Light, Dark, System)');
+            }
+        }
+
+        function applyTheme(mode) {
+            var resolved = mode === 'system' ? getSystemTheme() : mode;
+            document.body.classList.remove('theme-light', 'theme-dark');
+            document.body.classList.add('theme-' + resolved);
+            document.body.setAttribute('data-theme-mode', mode);
+            document.body.setAttribute('data-theme-resolved', resolved);
+            updateThemeToggleUi(mode, resolved);
+        }
+
+        function cycleThemeMode() {
+            var current = document.body.getAttribute('data-theme-mode') || getStoredMode();
+            var idx = MODES.indexOf(current);
+            var next = MODES[(idx + 1) % MODES.length];
+            setStoredMode(next);
+            applyTheme(next);
+        }
+
+        function initializeTheme() {
+            applyTheme(getStoredMode());
+
+            var toggle = document.getElementById('theme-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    cycleThemeMode();
+                });
+            }
+
+            if (window.matchMedia) {
+                var media = window.matchMedia('(prefers-color-scheme: dark)');
+                var onThemeChange = function () {
+                    var mode = document.body.getAttribute('data-theme-mode') || 'system';
+                    if (mode === 'system') {
+                        applyTheme('system');
+                    }
+                };
+
+                if (typeof media.addEventListener === 'function') {
+                    media.addEventListener('change', onThemeChange);
+                } else if (typeof media.addListener === 'function') {
+                    media.addListener(onThemeChange);
+                }
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeTheme);
+        } else {
+            initializeTheme();
+        }
+    })();
+</script>
 
 {% block extra_js %}{% endblock %}
 

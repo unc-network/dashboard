@@ -87,7 +87,7 @@
                 <div class="controls text-center">
                     <button id="play" type="button" class="btn btn-primary">Play</button>
                     <!-- <button type="button" id="save_cookie" class="btn btn-primary">Save Speech Options</button> -->
-                    <button type="button" id="reset_cookie" class="btn btn-primary">Restore Default Options</button>
+                    <button type="button" id="reset_voice_settings" class="btn btn-primary">Restore Default Options</button>
                 </div>
             </div>
         </div> <!-- end of row -->
@@ -129,9 +129,8 @@
         });
 
         // Reset voice settings
-        $('#reset_cookie').click(function () {
-            //console.log("Deleting cookie");
-            deleteCookie('ocnes_voice');
+        $('#reset_voice_settings').click(function () {
+            clearVoiceSettings();
             $('#options').submit()
         });
     });
@@ -142,8 +141,7 @@
         speech.rate = $("#rate").val();
         speech.pitch = $("#pitch").val();
         speech.voice = $("#voice").find(":selected").data("name");   // selected name attribute
-        var jsonString = JSON.stringify(speech);
-        setCookie('ocnes_voice', jsonString, 365);
+        setVoiceSettings(speech);
         // console.log("Saving rate " + speech.rate + ", pitch " + speech.pitch + ", and voice " + speech.voice);
     }
 
@@ -198,10 +196,9 @@
             }
             voiceSelect.selectedIndex = selectedIndex;
 
-            // Load voice options from cookie
-            var speech_json = getCookie('ocnes_voice');
-            if (speech_json) {
-                var speech = JSON.parse(speech_json);
+            // Load voice options from localStorage (with cookie fallback migration)
+            var speech = getVoiceSettings();
+            if (speech) {
                 $("#rate").val(speech.rate);
                 $("#pitch").val(speech.pitch);
                 $("#voice option[data-name='" + speech.voice + "']").prop("selected", true);

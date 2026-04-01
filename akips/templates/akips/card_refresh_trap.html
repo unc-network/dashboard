@@ -13,7 +13,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for trap in traps|slice:":30" %}
+        {% for trap in traps %}
         <tr>
             <td>
                 <div class="form-group float-left m-0">
@@ -65,5 +65,4 @@
         {% endfor %}
     </tbody>
 </table>
-{% if traps|length > 30 %}<p class="text-center">Only displaying 30 of the most recent {{ traps|length }} open traps. <a href="{% url 'recent_traps' %}">View all traps.</a></p>{% endif %}
 {% endblock %}

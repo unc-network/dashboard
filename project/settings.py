@@ -15,6 +15,7 @@ import sys
 from datetime import timedelta
 import ldap
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+from project.__version__ import VERSION
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,7 +54,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'debug_toolbar',
     'welcome',
 
     'adminlte3',
@@ -75,8 +75,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+if DEBUG:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'project.urls'
 
@@ -91,6 +94,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                           'akips.context_processors.app_version',
             ],
         },
     },
@@ -114,14 +118,27 @@ DATABASES = {
     'default': database.config()
 }
 
+# Harden database connection reuse for long-running workers and transient
+# disconnects (for example DB failover/proxy idle timeouts).
+DATABASES['default']['CONN_MAX_AGE'] = int(os.getenv('DB_CONN_MAX_AGE', '60'))
+DATABASES['default']['CONN_HEALTH_CHECKS'] = os.getenv('DB_CONN_HEALTH_CHECKS', 'True').lower() == 'true'
+
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql_psycopg2':
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = os.getenv('DB_DISABLE_SERVER_SIDE_CURSORS', 'True').lower() == 'true'
+
 # https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-# Django's cache framework
+# Django cache framework
+# Keep cache traffic separate from Celery broker traffic by using
+# a dedicated Redis DB/index for Django cache (default /1).
+DJANGO_CACHE_URL = os.getenv('DJANGO_CACHE_URL', 'redis://127.0.0.1:6379/1')
+DJANGO_CACHE_KEY_PREFIX = os.getenv('DJANGO_CACHE_KEY_PREFIX', 'dashboard')
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'my_cache_table',
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': DJANGO_CACHE_URL,
+        'KEY_PREFIX': DJANGO_CACHE_KEY_PREFIX,
     }
 }
 
@@ -238,8 +255,9 @@ DEFAULT_FROM_EMAIL = 'devops@office.unc.edu'
 SERVER_EMAIL = 'devops@office.unc.edu'
 
 # Session settings
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 1209600    # default 2 weeks, in seconds
+SESSION_SAVE_EVERY_REQUEST = True       # sliding activity-based expiration
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # prompt for login after browser is closed
+SESSION_COOKIE_AGE = 86400              # 24 hours operational window
 
 # Logging configuration
 LOGGING = {
@@ -310,6 +328,7 @@ ADMINS = [
 GROUPER_PREFIX='unc:app:its:net:routerproxy'
 
 # CELERY related settings
+# Keep Celery broker on its own Redis DB/index (default /0).
 BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0') 
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -370,11 +389,12 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(minutes=1),
         'description': 'Review hibernate device requests and update device status if needed.'
     },
-    'Refresh ServiceNow': {
-        'task': 'akips.task.refresh_incidents',
-        'schedule': timedelta(minutes=10),
-        'description': 'Refresh our ServiceNow incident status if needed.'
-    },
+    # Disabled: Migrated to TDX
+    # 'Refresh ServiceNow': {
+    #     'task': 'akips.task.refresh_incidents',
+    #     'schedule': timedelta(minutes=10),
+    #     'description': 'Refresh our ServiceNow incident status if needed.'
+    # },
     'Cleanup Dashboard Data': {
         'task': 'akips.task.cleanup_dashboard_data',
         'schedule': timedelta(hours=1),
