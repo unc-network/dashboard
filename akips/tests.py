@@ -2,14 +2,16 @@ import json
 import os
 import tempfile
 
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import patch
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, create_profile, save_profile
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, create_profile, save_profile
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
     import_snapshot_task,
@@ -277,6 +279,58 @@ class SettingsViewTests(TestCase):
         self.assertEqual(config.inventory_url, 'https://inventory.example.edu/full_dump.json')
         self.assertEqual(config.inventory_token, 'inventory-secret-token')
 
+    def test_settings_page_shows_api_key_card(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'API Access Keys')
+        self.assertContains(response, 'Create API Key')
+
+    def test_staff_can_create_api_key(self):
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'create_api_key',
+                'name': 'Reporting integration',
+                'allowed_endpoints': [APIAccessKey.Endpoint.SUMMARIES_READ],
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Store this key now')
+        access_key = APIAccessKey.objects.get(name='Reporting integration')
+        self.assertEqual(access_key.created_by, self.staff_user)
+        self.assertEqual(access_key.allowed_endpoints, [APIAccessKey.Endpoint.SUMMARIES_READ])
+        self.assertTrue(access_key.is_active)
+        self.assertNotEqual(access_key.hashed_key, '')
+        self.assertNotEqual(access_key.hashed_key, access_key.key_prefix)
+        self.assertContains(response, access_key.key_prefix)
+
+    def test_staff_can_revoke_api_key(self):
+        self.client.force_login(self.staff_user)
+        access_key, _raw_key = APIAccessKey.create_with_generated_key(
+            name='Legacy reporting integration',
+            allowed_endpoints=[APIAccessKey.Endpoint.SUMMARIES_READ],
+            created_by=self.staff_user,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'revoke_api_key',
+                'api_key_id': access_key.id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        access_key.refresh_from_db()
+        self.assertFalse(access_key.is_active)
+
     @patch('akips.views.refresh_inventory.delay')
     def test_staff_can_queue_inventory_sync(self, mock_delay):
         config = InventoryConfiguration.get_solo()
@@ -520,3 +574,94 @@ class SettingsViewTests(TestCase):
         save_profile(sender=User, instance=user, raw=True)
 
         self.assertEqual(mock_create.call_count, 0)
+
+
+class SummariesAPITests(TestCase):
+    def setUp(self):
+        self.url = reverse('summary_all')
+        cache_delete_patcher = patch('akips.signals.cache.delete')
+        self.mock_cache_delete = cache_delete_patcher.start()
+        self.addCleanup(cache_delete_patcher.stop)
+        self.user = User.objects.create_user(username='api-user', password='testpass123')
+        self.summary = Summary.objects.create(
+            type='Critical',
+            name='Critical routers',
+            ack=False,
+            first_event=timezone.now(),
+            last_event=timezone.now(),
+            trend='New',
+            status='Open',
+        )
+
+    def test_authenticated_session_can_access_summaries(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['name'], 'Critical routers')
+
+    def test_api_key_can_access_allowed_endpoint(self):
+        access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Summaries consumer',
+            allowed_endpoints=[APIAccessKey.Endpoint.SUMMARIES_READ],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        access_key.refresh_from_db()
+        self.assertIsNotNone(access_key.last_used_at)
+        self.assertTrue(check_password(raw_key, access_key.hashed_key))
+
+    def test_api_key_without_scope_is_forbidden(self):
+        _access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Unscoped consumer',
+            allowed_endpoints=[],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['detail'], 'API key does not have access to this endpoint.')
+
+    def test_missing_credentials_returns_unauthorized(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
+
+    def test_invalid_api_key_returns_unauthorized(self):
+        response = self.client.get(self.url, HTTP_X_API_KEY='not-a-real-key')
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Invalid API key.')
+
+
+class DashboardCardsViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse('dashboard_cards')
+        self.user = User.objects.create_user(username='dashboard-user', password='testpass123')
+
+    @patch('akips.views.get_card_data')
+    def test_dashboard_cards_returns_signatures(self, mock_get_card_data):
+        self.client.force_login(self.user)
+        mock_get_card_data.side_effect = [
+            {'rows': [], 'has_rows': False},
+            {'rows': [], 'has_rows': False},
+            {'rows': [], 'has_rows': False},
+            {'rows': [], 'has_rows': False},
+        ]
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn('cards', payload)
+        self.assertIn('signatures', payload)
+        self.assertEqual(set(payload['cards'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})
+        self.assertEqual(set(payload['signatures'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})

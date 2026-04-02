@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
 
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
@@ -233,3 +233,22 @@ class AKIPSSettingsForm(forms.ModelForm):
             'password': 'Password',
             'verify_ssl': 'Verify SSL Certificate',
         }
+
+
+class APIAccessKeyCreateForm(forms.Form):
+    name = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Reporting integration'}),
+        help_text='Use a descriptive name so you can identify the integration later.'
+    )
+    allowed_endpoints = forms.MultipleChoiceField(
+        choices=APIAccessKey.endpoint_choices(),
+        widget=forms.CheckboxSelectMultiple,
+        help_text='Choose which API endpoints this key may call.'
+    )
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if APIAccessKey.objects.filter(name__iexact=name).exists():
+            raise ValidationError('An API key with this name already exists.')
+        return name

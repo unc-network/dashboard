@@ -34,8 +34,8 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
 from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
@@ -43,6 +43,58 @@ from akips.tdx import TDX
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
+
+
+class SessionOrAPIKeyRequiredMixin:
+    api_key_endpoint = None
+
+    def _get_api_key_token(self, request):
+        header_token = request.headers.get('X-API-Key', '').strip()
+        if header_token:
+            return header_token
+
+        authorization = request.headers.get('Authorization', '').strip()
+        if not authorization:
+            return ''
+
+        parts = authorization.split(None, 1)
+        if len(parts) != 2:
+            return ''
+
+        scheme, token = parts
+        if scheme.lower() not in ('api-key', 'bearer'):
+            return ''
+        return token.strip()
+
+    def _authenticate_api_key(self, request):
+        raw_key = self._get_api_key_token(request)
+        if not raw_key:
+            return None, None
+
+        access_key = APIAccessKey.authenticate(raw_key)
+        if access_key is None:
+            return None, JsonResponse({'detail': 'Invalid API key.'}, status=401)
+
+        if not access_key.allows_endpoint(self.api_key_endpoint):
+            return None, JsonResponse({'detail': 'API key does not have access to this endpoint.'}, status=403)
+
+        access_key.last_used_at = timezone.now()
+        access_key.save(update_fields=['last_used_at'])
+        request.api_access_key = access_key
+        return access_key, None
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        _access_key, error_response = self._authenticate_api_key(request)
+        if error_response is not None:
+            return error_response
+
+        if getattr(request, 'api_access_key', None) is None:
+            return JsonResponse({'detail': 'Authentication credentials were not provided.'}, status=401)
+
+        return super().dispatch(request, *args, **kwargs)
 
 # Create your views here.
 
@@ -419,6 +471,15 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             prefix=self.akips_form_prefix,
         )
 
+    def _get_api_key_form(self, data=None):
+        return APIAccessKeyCreateForm(data=data)
+
+    def _get_api_keys(self):
+        return APIAccessKey.objects.select_related('created_by').order_by('name')
+
+    def _pop_generated_api_key(self):
+        return self.request.session.pop('generated_api_key', None)
+
     def _queue_inventory_sync(self):
         config = self._get_inventory_config()
         if not config.enabled:
@@ -484,12 +545,15 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             .first()
         )
 
-    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None):
+    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None, api_key_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
             'tdx_form': tdx_form or self._get_tdx_form(),
             'inventory_form': inventory_form or self._get_inventory_form(),
             'akips_form': akips_form or self._get_akips_form(),
+            'api_key_form': api_key_form or self._get_api_key_form(),
+            'api_keys': self._get_api_keys(),
+            'generated_api_key': self._pop_generated_api_key(),
             'last_import_task': self._get_last_snapshot_import_task(),
         }
 
@@ -595,6 +659,29 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
             messages.error(request, 'AKIPS settings could not be saved. Please review the form.')
             return render(request, self.template_name, context=self._build_context(akips_form=akips_form))
+
+        if action == 'create_api_key':
+            api_key_form = self._get_api_key_form(data=request.POST)
+            if api_key_form.is_valid():
+                access_key, raw_key = APIAccessKey.create_with_generated_key(
+                    name=api_key_form.cleaned_data['name'],
+                    allowed_endpoints=api_key_form.cleaned_data['allowed_endpoints'],
+                    created_by=request.user,
+                )
+                request.session['generated_api_key'] = raw_key
+                messages.success(request, f'API key "{access_key.name}" created.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'API key could not be created. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(api_key_form=api_key_form))
+
+        if action == 'revoke_api_key':
+            api_key_id = request.POST.get('api_key_id', '').strip()
+            access_key = get_object_or_404(APIAccessKey, pk=api_key_id)
+            access_key.is_active = False
+            access_key.save(update_fields=['is_active'])
+            messages.success(request, f'API key "{access_key.name}" was revoked.')
+            return HttpResponseRedirect(reverse('settings'))
 
         if action == 'run_inventory_sync':
             self._queue_inventory_sync()
@@ -1628,8 +1715,9 @@ class UnreachablesAPI(View):
         else:
             return JsonResponse(result)
 
-class SummariesAPI(LoginRequiredMixin, View):
+class SummariesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export all current summary data'''
+    api_key_endpoint = APIAccessKey.Endpoint.SUMMARIES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
