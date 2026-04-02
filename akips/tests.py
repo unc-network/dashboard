@@ -6,7 +6,7 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
-from django.test import RequestFactory, SimpleTestCase, TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import patch
@@ -210,6 +210,28 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Snapshot file must end with .json or .json.gz')
+
+    @override_settings(SNAPSHOT_IMPORT_MAX_BYTES=3)
+    def test_import_rejects_oversized_snapshot_file(self):
+        self.client.force_login(self.staff_user)
+        upload = SimpleUploadedFile('snapshot.json', b'1234', content_type='application/json')
+
+        response = self.client.post(
+            self.url,
+            {'action': 'import_snapshot', 'snapshot_file': upload},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Snapshot file exceeds the maximum allowed size')
+
+    @override_settings(SNAPSHOT_IMPORT_MAX_BYTES=3)
+    def test_import_form_displays_snapshot_size_limit(self):
+        self.client.force_login(self.staff_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Maximum size: 3 bytes')
 
     def test_settings_page_shows_tdx_card(self):
         self.client.force_login(self.staff_user)

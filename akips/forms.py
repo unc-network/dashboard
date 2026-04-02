@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.forms import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
@@ -171,11 +172,36 @@ class AppSnapshotImportForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'})
     )
 
+    @staticmethod
+    def _format_bytes(num_bytes):
+        if num_bytes < 1024:
+            return f'{num_bytes} bytes'
+        if num_bytes < 1024 * 1024:
+            kilobytes = num_bytes / 1024
+            if kilobytes.is_integer():
+                return f'{int(kilobytes)} KB'
+            return f'{kilobytes:.1f} KB'
+        megabytes = num_bytes / (1024 * 1024)
+        if megabytes.is_integer():
+            return f'{int(megabytes)} MB'
+        return f'{megabytes:.1f} MB'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        max_size_label = self._format_bytes(settings.SNAPSHOT_IMPORT_MAX_BYTES)
+        self.fields['snapshot_file'].help_text = (
+            f'Upload a JSON fixture exported from this app. Maximum size: {max_size_label}.'
+        )
+
     def clean_snapshot_file(self):
         snapshot_file = self.cleaned_data['snapshot_file']
         name = snapshot_file.name.lower()
         if not (name.endswith('.json') or name.endswith('.json.gz')):
             raise ValidationError('Snapshot file must end with .json or .json.gz')
+        if snapshot_file.size > settings.SNAPSHOT_IMPORT_MAX_BYTES:
+            raise ValidationError(
+                f'Snapshot file exceeds the maximum allowed size of {self._format_bytes(settings.SNAPSHOT_IMPORT_MAX_BYTES)}'
+            )
         return snapshot_file
 
 

@@ -259,6 +259,9 @@ SESSION_SAVE_EVERY_REQUEST = True       # sliding activity-based expiration
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # prompt for login after browser is closed
 SESSION_COOKIE_AGE = 86400              # 24 hours operational window
 
+# Snapshot import settings
+SNAPSHOT_IMPORT_MAX_BYTES = int(os.getenv('SNAPSHOT_IMPORT_MAX_BYTES', str(25 * 1024 * 1024)))
+
 # Logging configuration
 LOGGING = {
     'version': 1,
