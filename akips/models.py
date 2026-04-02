@@ -239,6 +239,8 @@ class Profile(models.Model):
 
 class APIAccessKey(models.Model):
     class Endpoint(models.TextChoices):
+        DEVICES_READ = 'devices.read', 'Devices export (/api/devices/)'
+        UNREACHABLES_READ = 'unreachables.read', 'Unreachables export (/api/unreachables/)'
         SUMMARIES_READ = 'summaries.read', 'Summaries export (/api/summaries/)'
 
     name = models.CharField(max_length=255, unique=True)

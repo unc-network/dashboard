@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import patch
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, create_profile, save_profile
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Unreachable, create_profile, save_profile
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
     import_snapshot_task,
@@ -286,6 +286,17 @@ class SettingsViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'API Access Keys')
         self.assertContains(response, 'Create API Key')
+
+    def test_settings_page_defaults_api_key_scopes_to_all_endpoints(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['api_key_form']
+        self.assertCountEqual(
+            form['allowed_endpoints'].value(),
+            [choice[0] for choice in APIAccessKey.endpoint_choices()],
+        )
 
     def test_staff_can_create_api_key(self):
         self.client.force_login(self.staff_user)
@@ -640,6 +651,129 @@ class SummariesAPITests(TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()['detail'], 'Invalid API key.')
+
+
+class DevicesAPITests(TestCase):
+    def setUp(self):
+        self.url = reverse('devices_all')
+        self.user = User.objects.create_user(username='devices-user', password='testpass123')
+        Device.objects.create(
+            name='device-a',
+            ip4addr='192.0.2.10',
+            sysName='device-a.example.edu',
+            sysDescr='Example device',
+            group='default',
+            tier='Tier 1',
+            building_name='ITS',
+            critical=False,
+            type='Switch',
+            maintenance=False,
+            hibernate=False,
+            inventory_url='https://inventory.example.edu/device-a',
+            last_refresh=timezone.now(),
+        )
+
+    def test_authenticated_session_can_access_devices(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['name'], 'device-a')
+
+    def test_api_key_can_access_devices(self):
+        _access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Devices consumer',
+            allowed_endpoints=[APIAccessKey.Endpoint.DEVICES_READ],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['sysName'], 'device-a.example.edu')
+
+    def test_devices_api_rejects_key_without_scope(self):
+        _access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Wrong devices scope',
+            allowed_endpoints=[APIAccessKey.Endpoint.SUMMARIES_READ],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['detail'], 'API key does not have access to this endpoint.')
+
+
+class UnreachablesAPITests(TestCase):
+    def setUp(self):
+        self.url = reverse('unreachables_all')
+        self.user = User.objects.create_user(username='unreachables-user', password='testpass123')
+        cache_delete_patcher = patch('akips.signals.cache.delete')
+        self.mock_cache_delete = cache_delete_patcher.start()
+        self.addCleanup(cache_delete_patcher.stop)
+        self.device = Device.objects.create(
+            name='device-b',
+            ip4addr='192.0.2.20',
+            sysName='device-b.example.edu',
+            sysDescr='Example unreachable device',
+            group='default',
+            tier='Tier 2',
+            building_name='Genome',
+            critical=False,
+            type='Switch',
+            maintenance=False,
+            hibernate=False,
+            inventory_url='',
+            last_refresh=timezone.now(),
+        )
+        Unreachable.objects.create(
+            device=self.device,
+            child='Ping',
+            attribute='icmpEcho',
+            ping_state='down',
+            snmp_state='up',
+            event_start=timezone.now(),
+            status='Open',
+            last_refresh=timezone.now(),
+        )
+
+    def test_authenticated_session_can_access_unreachables(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['device__name'], 'device-b')
+
+    def test_api_key_can_access_unreachables(self):
+        _access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Unreachables consumer',
+            allowed_endpoints=[APIAccessKey.Endpoint.UNREACHABLES_READ],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['device__sysName'], 'device-b.example.edu')
+
+    def test_unreachables_api_rejects_key_without_scope(self):
+        _access_key, raw_key = APIAccessKey.create_with_generated_key(
+            name='Wrong unreachable scope',
+            allowed_endpoints=[APIAccessKey.Endpoint.DEVICES_READ],
+        )
+
+        response = self.client.get(self.url, HTTP_X_API_KEY=raw_key)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['detail'], 'API key does not have access to this endpoint.')
 
 
 class DashboardCardsViewTests(TestCase):

@@ -247,6 +247,14 @@ class APIAccessKeyCreateForm(forms.Form):
         help_text='Choose which API endpoints this key may call.'
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial.setdefault(
+                'allowed_endpoints',
+                [choice[0] for choice in APIAccessKey.endpoint_choices()],
+            )
+
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
         if APIAccessKey.objects.filter(name__iexact=name).exists():

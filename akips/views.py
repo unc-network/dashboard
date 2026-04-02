@@ -1600,8 +1600,9 @@ class CreateIncidentView(LoginRequiredMixin, View):
             context['form'] = form
         return render(request, self.template_name, context=context)
 
-class DevicesAPI(View):
+class DevicesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export device definitions'''
+    api_key_endpoint = APIAccessKey.Endpoint.DEVICES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
@@ -1700,8 +1701,9 @@ class SetNotificationView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
-class UnreachablesAPI(View):
+class UnreachablesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export unreachable definitions'''
+    api_key_endpoint = APIAccessKey.Endpoint.UNREACHABLES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
