@@ -429,7 +429,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     ''' Admin-only settings scaffold page '''
     template_name = 'akips/settings.html'
     fixture_labels = SNAPSHOT_FIXTURE_LABELS
-    fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
+    fixture_excludes = ('akips.apiaccesskey', 'contenttypes', 'admin.logentry', 'sessions')
     tdx_form_prefix = 'tdx'
     inventory_form_prefix = 'inventory'
     akips_form_prefix = 'akips'

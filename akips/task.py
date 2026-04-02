@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 SNAPSHOT_FIXTURE_LABELS = ('akips', 'welcome', 'auth.group', 'auth.user')
 SNAPSHOT_IMPORT_EXCLUDED_MODELS = {
+    'akips.apiaccesskey',
     'admin.logentry',
     'auth.permission',
     'contenttypes.contenttype',
@@ -60,6 +61,8 @@ def get_snapshot_import_models(fixture_labels=SNAPSHOT_FIXTURE_LABELS):
 
         for model in candidate_models:
             model_label = model._meta.label_lower
+            if model_label in SNAPSHOT_IMPORT_EXCLUDED_MODELS:
+                continue
             if model_label in seen_labels:
                 continue
             seen_labels.add(model_label)

@@ -14,6 +14,7 @@ from unittest.mock import patch
 from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Unreachable, create_profile, save_profile
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
+    get_snapshot_import_models,
     import_snapshot_task,
     materialize_snapshot_import_source,
     refresh_inventory,
@@ -154,6 +155,7 @@ class SettingsViewTests(TestCase):
         self.assertEqual(mock_call_command.call_count, 1)
         self.assertEqual(mock_call_command.call_args[0][0], 'dumpdata')
         self.assertEqual(mock_call_command.call_args[0][1:], SNAPSHOT_FIXTURE_LABELS)
+        self.assertIn('akips.apiaccesskey', mock_call_command.call_args.kwargs['exclude'])
 
     @patch('akips.views.import_snapshot_task.delay')
     @patch('akips.views.Settings._cache_uploaded_snapshot')
@@ -520,7 +522,8 @@ class SettingsViewTests(TestCase):
         with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as snapshot_file:
             json.dump([
                 {'model': 'auth.permission', 'pk': 1, 'fields': {'name': 'Ignore me'}},
-                {'model': 'akips.device', 'pk': 2, 'fields': {'name': 'keep-me'}},
+                {'model': 'akips.apiaccesskey', 'pk': 2, 'fields': {'name': 'Imported key'}},
+                {'model': 'akips.device', 'pk': 3, 'fields': {'name': 'keep-me'}},
             ], snapshot_file)
             snapshot_path = snapshot_file.name
 
@@ -534,6 +537,11 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(len(sanitized_records), 1)
         self.assertEqual(sanitized_records[0]['model'], 'akips.device')
+
+    def test_get_snapshot_import_models_skips_api_access_keys(self):
+        model_labels = [model._meta.label_lower for model in get_snapshot_import_models()]
+
+        self.assertNotIn('akips.apiaccesskey', model_labels)
 
     def test_sanitize_snapshot_for_import_strips_permission_fields(self):
         with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as snapshot_file:

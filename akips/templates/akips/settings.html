@@ -384,6 +384,7 @@
                 <ul class="mb-3">
                     <li>Includes core application data, users, groups, and permissions.</li>
                     <li>Excludes active sessions and admin log entries.</li>
+                    <li>Excludes API access keys, which must be created separately in each environment.</li>
                 </ul>
                 <form method="post" action="">
                     {% csrf_token %}
@@ -406,6 +407,7 @@
                 <div class="alert alert-warning" role="alert">
                     <strong>Sensitive data:</strong> Imported snapshots may contain live credentials and other protected configuration values from another environment.
                 </div>
+                <p class="text-muted">API access keys are not imported from snapshots. Existing local keys remain managed separately on this environment.</p>
                 <p class="text-warning"><strong>Warning:</strong> Importing data can overwrite existing records with matching IDs.</p>
                 <form method="post" action="" enctype="multipart/form-data">
                     {% csrf_token %}
