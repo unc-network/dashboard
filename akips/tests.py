@@ -15,6 +15,7 @@ from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
     import_snapshot_task,
+    materialize_snapshot_import_source,
     refresh_inventory,
     refresh_akips_devices,
     refresh_unreachable,
@@ -155,10 +156,10 @@ class SettingsViewTests(TestCase):
         self.assertEqual(mock_call_command.call_args[0][1:], SNAPSHOT_FIXTURE_LABELS)
 
     @patch('akips.views.import_snapshot_task.delay')
-    @patch('akips.views.Settings._persist_uploaded_snapshot')
-    def test_staff_can_import_snapshot(self, mock_persist_snapshot, mock_import_delay):
+    @patch('akips.views.Settings._cache_uploaded_snapshot')
+    def test_staff_can_import_snapshot(self, mock_cache_uploaded_snapshot, mock_import_delay):
         self.client.force_login(self.staff_user)
-        mock_persist_snapshot.return_value = '/tmp/mock-snapshot.json'
+        mock_cache_uploaded_snapshot.return_value = 'snapshot-import-cache-key'
         upload = SimpleUploadedFile('snapshot.json', b'[]', content_type='application/json')
 
         response = self.client.post(
@@ -168,16 +169,16 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], self.url)
-        self.assertEqual(mock_persist_snapshot.call_count, 1)
+        self.assertEqual(mock_cache_uploaded_snapshot.call_count, 1)
         self.assertEqual(mock_import_delay.call_count, 1)
-        self.assertEqual(mock_import_delay.call_args.args, ('/tmp/mock-snapshot.json',))
+        self.assertEqual(mock_import_delay.call_args.args, ('snapshot-import-cache-key',))
         self.assertEqual(mock_import_delay.call_args.kwargs, {'clear_existing_data': False})
 
     @patch('akips.views.import_snapshot_task.delay')
-    @patch('akips.views.Settings._persist_uploaded_snapshot')
-    def test_import_can_clear_existing_data(self, mock_persist_snapshot, mock_import_delay):
+    @patch('akips.views.Settings._cache_uploaded_snapshot')
+    def test_import_can_clear_existing_data(self, mock_cache_uploaded_snapshot, mock_import_delay):
         self.client.force_login(self.staff_user)
-        mock_persist_snapshot.return_value = '/tmp/mock-snapshot.json'
+        mock_cache_uploaded_snapshot.return_value = 'snapshot-import-cache-key'
         upload = SimpleUploadedFile('snapshot.json', b'[]', content_type='application/json')
 
         response = self.client.post(
@@ -191,9 +192,9 @@ class SettingsViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], self.url)
-        self.assertEqual(mock_persist_snapshot.call_count, 1)
+        self.assertEqual(mock_cache_uploaded_snapshot.call_count, 1)
         self.assertEqual(mock_import_delay.call_count, 1)
-        self.assertEqual(mock_import_delay.call_args.args, ('/tmp/mock-snapshot.json',))
+        self.assertEqual(mock_import_delay.call_args.args, ('snapshot-import-cache-key',))
         self.assertEqual(mock_import_delay.call_args.kwargs, {'clear_existing_data': True})
 
     def test_import_rejects_non_json_file(self):
@@ -435,25 +436,44 @@ class SettingsViewTests(TestCase):
         messages = [message.message for message in get_messages(response.wsgi_request)]
         self.assertIn('AKIPS device sync was not started because AKIPS integration is disabled.', messages)
 
-    @patch('akips.task.os.path.exists', return_value=False)
     @patch('akips.task.cache.delete')
     @patch('akips.task.call_command')
     @patch('akips.task.clear_snapshot_import_targets')
     @patch('akips.task.sanitize_snapshot_for_import', return_value='/tmp/mock-snapshot-sanitized.json')
+    @patch('akips.task.materialize_snapshot_import_source', return_value=('/tmp/mock-snapshot.json', 'snapshot-import-cache-key'))
     @patch('akips.task.cache.add', return_value=True)
-    def test_import_snapshot_task_uses_lock(self, mock_cache_add, mock_sanitize_snapshot, mock_clear_targets, mock_call_command, mock_cache_delete, mock_exists):
-        import_snapshot_task.run('/tmp/mock-snapshot.json', clear_existing_data=True)
+    @patch('akips.task.os.path.exists', return_value=False)
+    def test_import_snapshot_task_uses_lock(self, mock_exists, mock_cache_add, mock_materialize, mock_sanitize_snapshot, mock_clear_targets, mock_call_command, mock_cache_delete):
+        import_snapshot_task.run('snapshot-import-cache-key', clear_existing_data=True)
 
         self.assertEqual(mock_cache_add.call_count, 1)
         self.assertEqual(mock_cache_add.call_args.args, ('snapshot_import_task', True, 14400))
+        self.assertEqual(mock_materialize.call_count, 1)
+        self.assertEqual(mock_materialize.call_args.args, ('snapshot-import-cache-key',))
         self.assertEqual(mock_sanitize_snapshot.call_count, 1)
         self.assertEqual(mock_sanitize_snapshot.call_args.args, ('/tmp/mock-snapshot.json',))
         self.assertEqual(mock_sanitize_snapshot.call_args.kwargs, {'clear_existing_data': True})
         self.assertEqual(mock_clear_targets.call_count, 1)
         self.assertEqual(mock_call_command.call_count, 1)
         self.assertEqual(mock_call_command.call_args.args, ('loaddata', '/tmp/mock-snapshot-sanitized.json'))
-        self.assertEqual(mock_cache_delete.call_count, 1)
-        self.assertEqual(mock_cache_delete.call_args.args, ('snapshot_import_task',))
+        self.assertEqual(mock_cache_delete.call_count, 2)
+        mock_cache_delete.assert_any_call('snapshot_import_task')
+        mock_cache_delete.assert_any_call('snapshot-import-cache-key')
+
+    @patch('akips.task.cache.get')
+    def test_materialize_snapshot_import_source_reads_cached_payload(self, mock_cache_get):
+        mock_cache_get.return_value = {
+            'payload': b'[]',
+            'suffix': '.json',
+        }
+
+        snapshot_path, cache_key = materialize_snapshot_import_source('snapshot-import-cache-key')
+        self.addCleanup(lambda: os.path.exists(snapshot_path) and os.remove(snapshot_path))
+
+        self.assertEqual(cache_key, 'snapshot-import-cache-key')
+        self.assertTrue(os.path.exists(snapshot_path))
+        with open(snapshot_path, 'rb') as snapshot_file:
+            self.assertEqual(snapshot_file.read(), b'[]')
 
     @patch('akips.task.call_command')
     @patch('akips.task.cache.add', return_value=False)

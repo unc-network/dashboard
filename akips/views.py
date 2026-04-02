@@ -36,7 +36,7 @@ from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
 from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
-from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
+from .task import SNAPSHOT_FIXTURE_LABELS, SNAPSHOT_IMPORT_CACHE_PREFIX, SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
@@ -430,7 +430,6 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     template_name = 'akips/settings.html'
     fixture_labels = SNAPSHOT_FIXTURE_LABELS
     fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
-    snapshot_import_dir = os.path.join(settings.BASE_DIR, 'tmp', 'snapshot_imports')
     tdx_form_prefix = 'tdx'
     inventory_form_prefix = 'inventory'
     akips_form_prefix = 'akips'
@@ -584,15 +583,19 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             if os.path.exists(snapshot_path):
                 os.remove(snapshot_path)
 
-    def _persist_uploaded_snapshot(self, uploaded_file):
+    def _cache_uploaded_snapshot(self, uploaded_file):
         suffix = '.json.gz' if uploaded_file.name.lower().endswith('.json.gz') else '.json'
-        os.makedirs(self.snapshot_import_dir, exist_ok=True)
-        snapshot_filename = f"snapshot-{uuid.uuid4()}{suffix}"
-        snapshot_path = os.path.join(self.snapshot_import_dir, snapshot_filename)
-        with open(snapshot_path, 'wb') as fh:
-            for chunk in uploaded_file.chunks():
-                fh.write(chunk)
-        return snapshot_path
+        snapshot_cache_key = f"{SNAPSHOT_IMPORT_CACHE_PREFIX}:{uuid.uuid4()}"
+        payload = b''.join(chunk for chunk in uploaded_file.chunks())
+        cache.set(
+            snapshot_cache_key,
+            {
+                'payload': payload,
+                'suffix': suffix,
+            },
+            SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT,
+        )
+        return snapshot_cache_key
 
     def get(self, request, *args, **kwargs):
         context = self._build_context()
@@ -618,8 +621,8 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             try:
                 snapshot_file = import_form.cleaned_data['snapshot_file']
                 clear_existing_data = import_form.cleaned_data.get('clear_existing_data', False)
-                snapshot_path = self._persist_uploaded_snapshot(snapshot_file)
-                task_result = import_snapshot_task.delay(snapshot_path, clear_existing_data=clear_existing_data)
+                snapshot_cache_key = self._cache_uploaded_snapshot(snapshot_file)
+                task_result = import_snapshot_task.delay(snapshot_cache_key, clear_existing_data=clear_existing_data)
                 messages.success(request, f'Snapshot import started in the background (task: {task_result.id}). Refresh this page to track progress.')
                 return HttpResponseRedirect(reverse('settings'))
             except Exception as exc:
