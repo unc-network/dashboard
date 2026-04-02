@@ -20,6 +20,71 @@ It also runs under Docker, refer to [Docker Readme](Docker.md).
 
 Most recently work has been to build a K3s setup.
 
+## API Usage
+
+OCNES supports programmatic access to selected read-only API endpoints.
+
+Interactive users still authenticate through the normal web login flow, which is typically backed by LDAP in production. For service integrations, staff users can now create scoped API keys from the Settings page and limit each key to specific endpoints.
+
+### Create an API Key
+
+1. Sign in as a staff user.
+2. Open the Settings page.
+3. In the `API Access Keys` section, create a key and select the allowed endpoint scopes.
+4. Copy the generated key when it is shown. The full secret is only displayed once.
+
+### Supported Authentication Headers
+
+The current read-only summaries export accepts either of these headers:
+
+- `X-API-Key: YOUR_NEW_KEY_HERE`
+- `Authorization: Api-Key YOUR_NEW_KEY_HERE`
+
+### Summaries API
+
+Current endpoint:
+
+- `/api/summaries/`
+
+Example request using `X-API-Key`:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/"
+```
+
+Example request with pretty-printed JSON:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/?pretty_print=1"
+```
+
+Example request filtered to open critical summaries:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/?type=Critical&status=Open&pretty_print=1"
+```
+
+Example request using the `Authorization` header instead:
+
+```bash
+curl \
+	-H "Authorization: Api-Key YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/"
+```
+
+### Notes
+
+- API keys only work for endpoints explicitly allowed when the key is created.
+- Requests to endpoints outside that allowlist return `403 Forbidden`.
+- Missing or invalid keys return `401 Unauthorized`.
+- Existing session-based browser access continues to work unchanged.
+
 ## Dashboard and HUD Mode
 
 OCNES has two primary viewing modes:
