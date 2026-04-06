@@ -298,19 +298,35 @@ class About(LoginRequiredMixin, View):
 
 class Devices(LoginRequiredMixin, View):
     ''' Generic first view '''
+    blank_type_filter_value = '__blank__'
+    blank_type_filter_label = '(blank)'
     template_name = 'akips/devices.html'
     page_title = 'All Devices'
     page_description = 'Below you will find data for all devices learned from the AKiPS device inventory.'
     data_api_url_name = 'devices_data_api'
     show_grouping_problem_columns = False
+    show_type_filter = False
+
+    def get_filter_type_options(self):
+        return []
+
+    def get_selected_type_label(self, selected_type):
+        if selected_type == self.blank_type_filter_value:
+            return self.blank_type_filter_label
+        return selected_type
 
     def get(self, request, *args, **kwargs):
+        selected_type = request.GET.get('type', '').strip()
         context = {
             'search': request.GET.get('search', '').strip(),
+            'selected_type': selected_type,
+            'selected_type_label': self.get_selected_type_label(selected_type),
             'page_title': self.page_title,
             'page_description': self.page_description,
             'data_api_url_name': self.data_api_url_name,
             'show_grouping_problem_columns': self.show_grouping_problem_columns,
+            'show_type_filter': self.show_type_filter,
+            'type_filter_options': self.get_filter_type_options(),
         }
 
         # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
@@ -324,6 +340,26 @@ class GroupingProblemsView(Devices):
     page_description = 'These devices do not match any expected AKiPS grouping category: Critical, Tier plus Building, Specialty grouping, or notify disabled.'
     data_api_url_name = 'devices_grouping_problems_data_api'
     show_grouping_problem_columns = True
+    show_type_filter = True
+
+    def get_filter_type_options(self):
+        options = []
+        queryset = get_grouping_problem_devices_queryset()
+
+        if queryset.filter(type='').exists():
+            options.append({
+                'value': self.blank_type_filter_value,
+                'label': self.blank_type_filter_label,
+            })
+
+        options.extend(
+            {
+                'value': device_type,
+                'label': device_type,
+            }
+            for device_type in queryset.exclude(type='').order_by('type').values_list('type', flat=True).distinct()
+        )
+        return options
 
 
 class DevicesDataAPI(LoginRequiredMixin, View):
@@ -368,6 +404,18 @@ class DevicesDataAPI(LoginRequiredMixin, View):
             query |= Q(**{f'{field_name}__icontains': search_value})
         return queryset.filter(query)
 
+    def apply_type_filter(self, queryset, request):
+        selected_type = request.GET.get('type', '').strip()
+        if not selected_type:
+            return queryset
+        if selected_type == Devices.blank_type_filter_value:
+            return queryset.filter(type='')
+        return queryset.filter(type__iexact=selected_type)
+
+    def apply_filters(self, queryset, request, search_value):
+        queryset = self.apply_type_filter(queryset, request)
+        return self.apply_search(queryset, search_value)
+
     def serialize_row(self, row):
         row_data = dict(row)
         row_data['device_url'] = reverse('device', args=[row['name']])
@@ -391,9 +439,9 @@ class DevicesDataAPI(LoginRequiredMixin, View):
         order_by = f'-{order_field}' if order_dir == 'desc' else order_field
 
         records_total = self.get_total_count()
-        base_qs = self.apply_search(self.get_base_queryset(), search_value)
+        base_qs = self.apply_filters(self.get_base_queryset(), request, search_value)
 
-        records_filtered = records_total if not search_value else base_qs.count()
+        records_filtered = base_qs.count()
 
         rows = base_qs.order_by(order_by).values(*self.columns)[start:start + length]
         data = [self.serialize_row(row) for row in rows]
@@ -407,8 +455,8 @@ class DevicesDataAPI(LoginRequiredMixin, View):
 
 
 class GroupingProblemsDataAPI(DevicesDataAPI):
-    columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'notify', 'type']
-    order_columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'notify', 'type']
+    columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+    order_columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
     total_count_cache_key = 'devices_grouping_problems_total_count'
     search_fields = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
 

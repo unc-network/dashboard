@@ -774,7 +774,7 @@ class GroupingProblemsViewTests(TestCase):
             tier='',
             building_name='',
             critical=False,
-            type='Switch',
+            type='',
             maintenance=False,
             hibernate=False,
             notify=True,
@@ -870,6 +870,9 @@ class GroupingProblemsViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Grouping Problems')
         self.assertContains(response, 'Tier plus Building')
+        self.assertContains(response, 'All types')
+        self.assertContains(response, 'AP')
+        self.assertContains(response, '(blank)')
 
     def test_grouping_problems_api_returns_only_uncategorized_devices(self):
         self.client.force_login(self.user)
@@ -902,6 +905,44 @@ class GroupingProblemsViewTests(TestCase):
         self.assertEqual(payload['recordsTotal'], 2)
         self.assertEqual(payload['recordsFiltered'], 1)
         self.assertEqual([row['name'] for row in payload['data']], ['problem-building-missing'])
+
+    def test_grouping_problems_api_type_filters_results(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            self.api_url,
+            {
+                'draw': 1,
+                'start': 0,
+                'length': 25,
+                'type': 'AP',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['recordsTotal'], 2)
+        self.assertEqual(payload['recordsFiltered'], 1)
+        self.assertEqual([row['name'] for row in payload['data']], ['problem-building-missing'])
+
+    def test_grouping_problems_api_blank_type_filters_results(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            self.api_url,
+            {
+                'draw': 1,
+                'start': 0,
+                'length': 25,
+                'type': '__blank__',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['recordsTotal'], 2)
+        self.assertEqual(payload['recordsFiltered'], 1)
+        self.assertEqual([row['name'] for row in payload['data']], ['problem-both-missing'])
 
 
 class UnreachablesAPITests(TestCase):
