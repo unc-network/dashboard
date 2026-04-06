@@ -13,6 +13,7 @@ urlpatterns = [
     path('trap/<trap_id>/', views.TrapView.as_view(), name='trap'),
     path('device/<name>/', views.DeviceView.as_view(), name='device'),
     path('devices/', views.Devices.as_view(), name='devices'),
+    path('devices/grouping-problems/', views.GroupingProblemsView.as_view(), name='devices_grouping_problems'),
     path('devices/maintenance', views.MaintenanceView.as_view(), name='maintenance'),
     path('batteries/', views.UPSProblems.as_view(), name='ups_problems'),
     path('users/', views.Users.as_view(), name='users'),
@@ -37,6 +38,7 @@ urlpatterns = [
     # Device API
     path('api/devices/', views.DevicesAPI.as_view(), name='devices_all'),
     path('api/devices/data/', views.DevicesDataAPI.as_view(), name='devices_data_api'),
+    path('api/devices/grouping-problems/data/', views.GroupingProblemsDataAPI.as_view(), name='devices_grouping_problems_data_api'),
     path('api/set_maintenance_mode', views.SetMaintenanceView.as_view(), name='set_maintenance'),
     path('api/set_notification_mode', views.SetNotificationView.as_view(), name='set_notification'),
 

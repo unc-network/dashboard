@@ -39,11 +39,12 @@
             </div>
         </li>
         <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle{% if current_url == 'hibernate_requests' or current_url == 'maintenance' or current_url == 'devices' or current_url == 'device' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
+                        <a class="nav-link dropdown-toggle{% if current_url == 'hibernate_requests' or current_url == 'maintenance' or current_url == 'devices' or current_url == 'device' or current_url == 'devices_grouping_problems' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <a class="dropdown-item{% if current_url == 'hibernate_requests' %} active{% endif %}" href="{% url 'hibernate_requests' %}">Hibernate Mode</a>
                             <a class="dropdown-item{% if current_url == 'maintenance' %} active{% endif %}" href="{% url 'maintenance' %}">Maintenance Mode</a>
                             <a class="dropdown-item{% if current_url == 'devices' or current_url == 'device' %} active{% endif %}" href="{% url 'devices' %}">All Devices</a>
+                            <a class="dropdown-item{% if current_url == 'devices_grouping_problems' %} active{% endif %}" href="{% url 'devices_grouping_problems' %}">Grouping Problems</a>
             </div>
         </li>
         <li class="nav-item">

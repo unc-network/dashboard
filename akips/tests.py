@@ -758,6 +758,152 @@ class DevicesAPITests(TestCase):
         self.assertEqual(response.json()['detail'], 'API key does not have access to this endpoint.')
 
 
+class GroupingProblemsViewTests(TestCase):
+    def setUp(self):
+        self.page_url = reverse('devices_grouping_problems')
+        self.api_url = reverse('devices_grouping_problems_data_api')
+        self.user = User.objects.create_user(username='grouping-user', password='testpass123')
+        now = timezone.now()
+
+        Device.objects.create(
+            name='problem-both-missing',
+            ip4addr='192.0.2.30',
+            sysName='problem-both-missing.example.edu',
+            sysDescr='Needs grouping',
+            group='default',
+            tier='',
+            building_name='',
+            critical=False,
+            type='Switch',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        Device.objects.create(
+            name='problem-building-missing',
+            ip4addr='192.0.2.31',
+            sysName='problem-building-missing.example.edu',
+            sysDescr='Needs building grouping',
+            group='default',
+            tier='Tier 2',
+            building_name='',
+            critical=False,
+            type='AP',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        Device.objects.create(
+            name='valid-critical',
+            ip4addr='192.0.2.40',
+            sysName='valid-critical.example.edu',
+            sysDescr='Critical device',
+            group='Critical',
+            tier='',
+            building_name='',
+            critical=True,
+            type='Switch',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        Device.objects.create(
+            name='valid-tier-building',
+            ip4addr='192.0.2.41',
+            sysName='valid-tier-building.example.edu',
+            sysDescr='Fully grouped device',
+            group='default',
+            tier='Tier 1',
+            building_name='ITS',
+            critical=False,
+            type='Switch',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        Device.objects.create(
+            name='valid-special',
+            ip4addr='192.0.2.42',
+            sysName='valid-special.example.edu',
+            sysDescr='Special grouping device',
+            group='Servers',
+            tier='',
+            building_name='',
+            critical=False,
+            type='Server',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        Device.objects.create(
+            name='valid-no-notify',
+            ip4addr='192.0.2.43',
+            sysName='valid-no-notify.example.edu',
+            sysDescr='Notifications disabled',
+            group='default',
+            tier='',
+            building_name='',
+            critical=False,
+            type='Router',
+            maintenance=False,
+            hibernate=False,
+            notify=False,
+            last_refresh=now,
+        )
+
+    def test_grouping_problems_page_requires_login(self):
+        response = self.client.get(self.page_url)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response['Location'])
+
+    def test_grouping_problems_page_renders(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.page_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Grouping Problems')
+        self.assertContains(response, 'Tier plus Building')
+
+    def test_grouping_problems_api_returns_only_uncategorized_devices(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.api_url, {'draw': 1, 'start': 0, 'length': 25})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['recordsTotal'], 2)
+        self.assertEqual(payload['recordsFiltered'], 2)
+        self.assertEqual([row['name'] for row in payload['data']], ['problem-both-missing', 'problem-building-missing'])
+        self.assertEqual(payload['data'][0]['grouping_issue'], 'Missing tier and building')
+        self.assertEqual(payload['data'][1]['grouping_issue'], 'Missing building')
+
+    def test_grouping_problems_api_search_filters_results(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            self.api_url,
+            {
+                'draw': 1,
+                'start': 0,
+                'length': 25,
+                'search[value]': 'Tier 2',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['recordsTotal'], 2)
+        self.assertEqual(payload['recordsFiltered'], 1)
+        self.assertEqual([row['name'] for row in payload['data']], ['problem-building-missing'])
+
+
 class UnreachablesAPITests(TestCase):
     def setUp(self):
         self.url = reverse('unreachables_all')

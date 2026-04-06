@@ -45,6 +45,30 @@ from akips.tdx import TDX
 logger = logging.getLogger(__name__)
 
 
+def get_grouping_problem_devices_queryset():
+    has_tier_and_building = Q(tier__gt='') & Q(building_name__gt='')
+    has_special_grouping = Q(group__gt='') & ~Q(group__in=['default', 'Critical'])
+
+    return (
+        Device.objects.filter(critical=False, notify=True)
+        .exclude(has_tier_and_building)
+        .exclude(has_special_grouping)
+    )
+
+
+def get_grouping_problem_label(device_row):
+    tier = (device_row.get('tier') or '').strip()
+    building_name = (device_row.get('building_name') or '').strip()
+
+    if not tier and not building_name:
+        return 'Missing tier and building'
+    if not tier:
+        return 'Missing tier'
+    if not building_name:
+        return 'Missing building'
+    return 'Review grouping'
+
+
 class SessionOrAPIKeyRequiredMixin:
     api_key_endpoint = None
 
@@ -275,15 +299,31 @@ class About(LoginRequiredMixin, View):
 class Devices(LoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/devices.html'
+    page_title = 'All Devices'
+    page_description = 'Below you will find data for all devices learned from the AKiPS device inventory.'
+    data_api_url_name = 'devices_data_api'
+    show_grouping_problem_columns = False
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        context['search'] = request.GET.get('search', '').strip()
+        context = {
+            'search': request.GET.get('search', '').strip(),
+            'page_title': self.page_title,
+            'page_description': self.page_description,
+            'data_api_url_name': self.data_api_url_name,
+            'show_grouping_problem_columns': self.show_grouping_problem_columns,
+        }
 
         # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
         # context['last_device_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)
+
+
+class GroupingProblemsView(Devices):
+    page_title = 'Grouping Problems'
+    page_description = 'These devices do not match any expected AKiPS grouping category: Critical, Tier plus Building, Specialty grouping, or notify disabled.'
+    data_api_url_name = 'devices_grouping_problems_data_api'
+    show_grouping_problem_columns = True
 
 
 class DevicesDataAPI(LoginRequiredMixin, View):
@@ -293,12 +333,45 @@ class DevicesDataAPI(LoginRequiredMixin, View):
     order_columns = ['ip4addr', 'ip4addr', 'sysName', 'group', 'type']
     total_count_cache_key = 'devices_data_total_count'
     total_count_cache_ttl = 60
+    search_fields = ['name', 'ip4addr', 'sysName', 'group', 'type']
 
     def _parse_int(self, value, default):
         try:
             return int(value)
         except (TypeError, ValueError):
             return default
+
+    def get_base_queryset(self):
+        return Device.objects.all()
+
+    def get_total_count(self):
+        try:
+            records_total = cache.get(self.total_count_cache_key)
+        except Exception as exc:
+            logger.warning('Unable to read cache key %s: %s', self.total_count_cache_key, exc)
+            records_total = None
+
+        if records_total is None:
+            records_total = self.get_base_queryset().count()
+            try:
+                cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
+            except Exception as exc:
+                logger.warning('Unable to write cache key %s: %s', self.total_count_cache_key, exc)
+        return records_total
+
+    def apply_search(self, queryset, search_value):
+        if not search_value:
+            return queryset
+
+        query = Q()
+        for field_name in self.search_fields:
+            query |= Q(**{f'{field_name}__icontains': search_value})
+        return queryset.filter(query)
+
+    def serialize_row(self, row):
+        row_data = dict(row)
+        row_data['device_url'] = reverse('device', args=[row['name']])
+        return row_data
 
     def get(self, request, *args, **kwargs):
         draw = self._parse_int(request.GET.get('draw'), 1)
@@ -317,30 +390,13 @@ class DevicesDataAPI(LoginRequiredMixin, View):
         order_field = self.order_columns[order_index]
         order_by = f'-{order_field}' if order_dir == 'desc' else order_field
 
-        records_total = cache.get(self.total_count_cache_key)
-        if records_total is None:
-            records_total = Device.objects.count()
-            cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
-
-        base_qs = Device.objects.all()
-
-        if search_value:
-            base_qs = base_qs.filter(
-                Q(name__icontains=search_value)
-                | Q(ip4addr__icontains=search_value)
-                | Q(sysName__icontains=search_value)
-                | Q(group__icontains=search_value)
-                | Q(type__icontains=search_value)
-            )
+        records_total = self.get_total_count()
+        base_qs = self.apply_search(self.get_base_queryset(), search_value)
 
         records_filtered = records_total if not search_value else base_qs.count()
 
         rows = base_qs.order_by(order_by).values(*self.columns)[start:start + length]
-        data = []
-        for row in rows:
-            row_data = dict(row)
-            row_data['device_url'] = reverse('device', args=[row['name']])
-            data.append(row_data)
+        data = [self.serialize_row(row) for row in rows]
 
         return JsonResponse({
             'draw': draw,
@@ -348,6 +404,21 @@ class DevicesDataAPI(LoginRequiredMixin, View):
             'recordsFiltered': records_filtered,
             'data': data,
         })
+
+
+class GroupingProblemsDataAPI(DevicesDataAPI):
+    columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'notify', 'type']
+    order_columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'notify', 'type']
+    total_count_cache_key = 'devices_grouping_problems_total_count'
+    search_fields = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+
+    def get_base_queryset(self):
+        return get_grouping_problem_devices_queryset()
+
+    def serialize_row(self, row):
+        row_data = super().serialize_row(row)
+        row_data['grouping_issue'] = get_grouping_problem_label(row)
+        return row_data
 
 class UPSProblems(LoginRequiredMixin, View):
     ''' List UPS current in a problem state '''

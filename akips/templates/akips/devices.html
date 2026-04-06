@@ -1,7 +1,8 @@
 {% extends 'akips/base.html' %}
 {% load static %}
 
-{% block title %}OCNES Devices{% endblock %}
+{% block title %}OCNES {{ page_title }}{% endblock %}
+{% block page_name %}{{ page_title }}{% endblock %}
 
 {% block style_sheets %}
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
@@ -10,7 +11,7 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
-        <p>Below you will find data for all devices learned from the AKiPS device inventory.</p>
+        <p>{{ page_description }}</p>
         {% if search %}
         <p class="text-muted mb-2">Filtered by search term: <span class="font-weight-bold">{{ search }}</span></p>
         {% endif %}
@@ -22,7 +23,15 @@
                     <th>Device</th>
                     <th>IP</th>
                     <th>sysName</th>
+                    {% if show_grouping_problem_columns %}
                     <th>Grouping</th>
+                    <th>Tier</th>
+                    <th>Building</th>
+                    <th>Notify</th>
+                    <th>Issue</th>
+                    {% else %}
+                    <th>Grouping</th>
+                    {% endif %}
                     <th>Type</th>
                 </tr>
             </thead>
@@ -65,7 +74,7 @@
             "search": {"search": "{{ search|escapejs }}"},
             "order": [[0, "asc"]],
             "ajax": {
-                "url": "{% url 'devices_data_api' %}",
+                "url": "{% url data_api_url_name %}",
                 "type": "GET"
             },
             "columns": [
@@ -80,7 +89,23 @@
                 },
                 {"data": "ip4addr"},
                 {"data": "sysName"},
+                {% if show_grouping_problem_columns %}
                 {"data": "group"},
+                {"data": "tier"},
+                {"data": "building_name"},
+                {
+                    "data": "notify",
+                    "render": function (data, type) {
+                        if (type === 'display') {
+                            return data ? 'true' : 'false';
+                        }
+                        return data;
+                    }
+                },
+                {"data": "grouping_issue"},
+                {% else %}
+                {"data": "group"},
+                {% endif %}
                 {"data": "type"}
             ]
         });
