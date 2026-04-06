@@ -9,6 +9,7 @@ from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from django_celery_results.models import TaskResult
 from unittest.mock import patch
 
 from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Unreachable, create_profile, save_profile
@@ -119,6 +120,23 @@ class SettingsViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 302)
         self.assertIn('/accounts/login/', response['Location'])
+
+    def _create_task_result(self, **kwargs):
+        date_created = kwargs.pop('date_created', None)
+        date_done = kwargs.pop('date_done', None)
+        task_result = TaskResult.objects.create(**kwargs)
+
+        update_fields = {}
+        if date_created is not None:
+            update_fields['date_created'] = date_created
+        if date_done is not None:
+            update_fields['date_done'] = date_done
+
+        if update_fields:
+            TaskResult.objects.filter(pk=task_result.pk).update(**update_fields)
+            task_result.refresh_from_db()
+
+        return task_result
 
     def test_non_superuser_is_forbidden(self):
         self.client.force_login(self.user)
@@ -406,6 +424,74 @@ class SettingsViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], self.url)
         self.assertEqual(mock_delay.call_count, 1)
+
+    @patch('akips.views.refresh_akips_devices.delay')
+    def test_stale_akips_device_sync_record_does_not_block_queue(self, mock_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = True
+        config.save()
+        self.client.force_login(self.staff_user)
+        stale_started = timezone.now() - timezone.timedelta(hours=2)
+        self._create_task_result(
+            task_id='stale-akips-sync',
+            task_name='akips.task.refresh_akips_devices',
+            status='STARTED',
+            date_created=stale_started,
+            date_done=stale_started,
+        )
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_devices'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], self.url)
+        self.assertEqual(mock_delay.call_count, 1)
+
+    @patch('akips.views.refresh_akips_devices.delay')
+    def test_recent_akips_device_sync_record_blocks_queue(self, mock_delay):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = True
+        config.save()
+        self.client.force_login(self.staff_user)
+        recent_started = timezone.now() - timezone.timedelta(minutes=5)
+        self._create_task_result(
+            task_id='recent-akips-sync',
+            task_name='akips.task.refresh_akips_devices',
+            status='STARTED',
+            date_created=recent_started,
+            date_done=recent_started,
+        )
+
+        response = self.client.post(self.url, {'action': 'run_refresh_akips_devices'}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_delay.call_count, 0)
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertIn('AKIPS device sync is already in progress.', messages)
+
+    def test_about_page_ignores_stale_inflight_akips_sync(self):
+        self.client.force_login(self.staff_user)
+        completed_at = timezone.now() - timezone.timedelta(hours=1)
+        self._create_task_result(
+            task_id='completed-akips-sync',
+            task_name='akips.task.refresh_akips_devices',
+            status='SUCCESS',
+            date_created=completed_at - timezone.timedelta(minutes=1),
+            date_done=completed_at,
+        )
+        stale_started = timezone.now() - timezone.timedelta(hours=2)
+        self._create_task_result(
+            task_id='stale-inflight-akips-sync',
+            task_name='akips.task.refresh_akips_devices',
+            status='STARTED',
+            date_created=stale_started,
+            date_done=stale_started,
+        )
+
+        response = self.client.get(reverse('about'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SUCCESS')
+        self.assertNotContains(response, 'In progress')
 
     @patch('akips.views.refresh_battery_test_status.delay')
     @patch('akips.views.refresh_ups_status.delay')
@@ -756,6 +842,66 @@ class DevicesAPITests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()['detail'], 'API key does not have access to this endpoint.')
+
+
+class DeviceViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='device-viewer', password='testpass123')
+        now = timezone.now()
+        self.special_device = Device.objects.create(
+            name='special-device',
+            ip4addr='192.0.2.50',
+            sysName='special-device.example.edu',
+            sysDescr='Special grouping example',
+            sysLocation='Campus',
+            group='Servers',
+            tier='Tier 3',
+            building_name='Manning',
+            critical=False,
+            type='SERVER',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+        self.critical_device = Device.objects.create(
+            name='critical-device',
+            ip4addr='192.0.2.51',
+            sysName='critical-device.example.edu',
+            sysDescr='Critical grouping example',
+            sysLocation='Datacenter',
+            group='Critical',
+            tier='',
+            building_name='',
+            critical=True,
+            type='ROUTER',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=now,
+        )
+
+    def test_device_view_shows_special_grouping_value(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('device', args=[self.special_device.name]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Critical')
+        self.assertContains(response, 'No')
+        self.assertContains(response, 'Special Grouping')
+        self.assertContains(response, 'Servers')
+
+    def test_device_view_shows_critical_value_and_no_special_grouping(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('device', args=[self.critical_device.name]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Critical')
+        self.assertContains(response, 'Yes')
+        self.assertContains(response, 'Special Grouping')
+        self.assertContains(response, 'None')
 
 
 class GroupingProblemsViewTests(TestCase):

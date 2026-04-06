@@ -44,6 +44,33 @@ from akips.tdx import TDX
 # Get a instance of logger
 logger = logging.getLogger(__name__)
 
+ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
+ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
+
+
+def get_recent_active_task_queryset(task_name, now=None, stale_after=ACTIVE_TASK_STALE_AFTER):
+    now = now or timezone.now()
+    return TaskResult.objects.filter(
+        task_name=task_name,
+        status__in=ACTIVE_TASK_STATUSES,
+        date_created__gte=now - stale_after,
+    )
+
+
+def get_latest_task_result_for_display(task_name, now=None):
+    now = now or timezone.now()
+    active_task = get_recent_active_task_queryset(task_name, now=now).order_by('-date_created').first()
+    if active_task is not None:
+        return active_task
+
+    return (
+        TaskResult.objects
+        .filter(task_name=task_name)
+        .exclude(status__in=ACTIVE_TASK_STATUSES)
+        .order_by('-date_done', '-date_created')
+        .first()
+    )
+
 
 def get_grouping_problem_devices_queryset():
     has_tier_and_building = Q(tier__gt='') & Q(building_name__gt='')
@@ -67,6 +94,12 @@ def get_grouping_problem_label(device_row):
     if not building_name:
         return 'Missing building'
     return 'Review grouping'
+
+
+def get_special_grouping_label(device):
+    if device.group in ('', 'default', 'Critical'):
+        return ''
+    return device.group
 
 
 class SessionOrAPIKeyRequiredMixin:
@@ -191,16 +224,10 @@ class About(LoginRequiredMixin, View):
         since_24h = now - timedelta(hours=24)
         since_7d = now - timedelta(days=7)
 
-        try:
-            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
-        except TaskResult.DoesNotExist:
-            last_inventory_sync = None
+        last_inventory_sync = get_latest_task_result_for_display('akips.task.refresh_inventory', now=now)
         context['last_inventory_sync'] = last_inventory_sync
 
-        try:
-            last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices').latest('date_done')
-        except TaskResult.DoesNotExist:
-            last_device_sync = None
+        last_device_sync = get_latest_task_result_for_display('akips.task.refresh_akips_devices', now=now)
         context['last_akips_sync'] = last_device_sync
 
         def get_task_duration(task):
@@ -604,9 +631,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             messages.warning(self.request, 'Inventory sync was not started because the external inventory feed is disabled.')
             return
 
-        pending = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='PENDING').count()
-        started = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='STARTED').count()
-        if pending == 0 and started == 0:
+        if not get_recent_active_task_queryset('akips.task.refresh_inventory').exists():
             refresh_inventory.delay()
             messages.success(self.request, 'Inventory sync was queued.')
         else:
@@ -618,9 +643,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             messages.warning(self.request, f'{display_name} was not started because AKIPS integration is disabled.')
             return
 
-        pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
-        started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
-        if pending == 0 and started == 0:
+        if not get_recent_active_task_queryset(task_name).exists():
             task_callable.delay()
             messages.success(self.request, f'{display_name} was queued.')
         else:
@@ -642,9 +665,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
         queued_count = 0
         already_running_count = 0
         for task_name, task_callable in status_tasks:
-            pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
-            started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
-            if pending == 0 and started == 0:
+            if not get_recent_active_task_queryset(task_name).exists():
                 task_callable.delay()
                 queued_count += 1
             else:
@@ -1508,6 +1529,8 @@ class DeviceView(LoginRequiredMixin, View):
         device = get_object_or_404(Device, name=device_name)
         #device = Device.objects.get(name=device_name)
         context['device'] = device
+        context['critical_label'] = 'Yes' if device.critical else 'No'
+        context['special_grouping_label'] = get_special_grouping_label(device) or 'None'
 
         #unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
         unreachables = Unreachable.objects.filter( device=device).order_by('-last_refresh')
@@ -2062,33 +2085,25 @@ class RequestSync(LoginRequiredMixin,View):
             "device_sync_started": True,
         }
         
-        ping_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='PENDING').count()
-        ping_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='STARTED').count()
-        if (ping_tasks_pending == 0 and ping_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_ping_status').exists():
             refresh_ping_status.delay()
         else:
             result['ping_sync_started'] = False
             logger.debug("Ping status sync is already in progress")
 
-        snmp_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='PENDING').count()
-        snmp_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='STARTED').count()
-        if (snmp_tasks_pending == 0 and snmp_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_snmp_status').exists():
             refresh_snmp_status.delay()
         else:
             result['snmp_sync_started'] = False
             logger.debug("SNMP status sync is already in progress")
 
-        ups_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='PENDING').count()
-        ups_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='STARTED').count()
-        if (ups_tasks_pending == 0 and ups_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_ups_status').exists():
             refresh_ups_status.delay()
         else:
             result['ups_sync_started'] = False
             logger.debug("UPS status sync is already in progress")
 
-        device_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='PENDING').count()
-        device_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='STARTED').count()
-        if (device_tasks_pending == 0 and device_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_akips_devices').exists():
             refresh_akips_devices.delay()
         else:
             result['device_sync_started'] = False
