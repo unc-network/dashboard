@@ -40,12 +40,13 @@
                     <th>IP</th>
                     <th>sysName</th>
                     {% if show_grouping_problem_columns %}
-                    <th>Grouping</th>
                     <th>Tier</th>
                     <th>Building</th>
                     <th>Issue</th>
                     {% else %}
+                    {% if show_group_column %}
                     <th>Grouping</th>
+                    {% endif %}
                     {% endif %}
                     <th>Type</th>
                 </tr>
@@ -110,12 +111,13 @@
                 {"data": "ip4addr"},
                 {"data": "sysName"},
                 {% if show_grouping_problem_columns %}
-                {"data": "group"},
                 {"data": "tier"},
                 {"data": "building_name"},
                 {"data": "grouping_issue"},
                 {% else %}
+                {% if show_group_column %}
                 {"data": "group"},
+                {% endif %}
                 {% endif %}
                 {"data": "type"}
             ]

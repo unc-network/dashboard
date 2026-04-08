@@ -1153,6 +1153,7 @@ class GroupingProblemsViewTests(TestCase):
         self.assertContains(response, 'All types')
         self.assertContains(response, 'AP')
         self.assertContains(response, '(blank)')
+        self.assertNotContains(response, '<th>Grouping</th>', html=True)
 
     def test_grouping_problems_api_returns_only_uncategorized_devices(self):
         self.client.force_login(self.user)

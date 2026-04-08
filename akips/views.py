@@ -371,6 +371,7 @@ class Devices(LoginRequiredMixin, View):
     page_description = 'Below you will find data for all devices learned from the AKiPS device inventory.'
     data_api_url_name = 'devices_data_api'
     show_grouping_problem_columns = False
+    show_group_column = True
     show_type_filter = False
 
     def get_filter_type_options(self):
@@ -391,6 +392,7 @@ class Devices(LoginRequiredMixin, View):
             'page_description': self.page_description,
             'data_api_url_name': self.data_api_url_name,
             'show_grouping_problem_columns': self.show_grouping_problem_columns,
+            'show_group_column': self.show_group_column,
             'show_type_filter': self.show_type_filter,
             'type_filter_options': self.get_filter_type_options(),
         }
@@ -406,6 +408,7 @@ class GroupingProblemsView(Devices):
     page_description = 'These devices do not match any expected AKiPS grouping category: Critical, Tier plus Building, Specialty grouping, or notify disabled.'
     data_api_url_name = 'devices_grouping_problems_data_api'
     show_grouping_problem_columns = True
+    show_group_column = False
     show_type_filter = True
 
     def get_filter_type_options(self):
@@ -521,10 +524,10 @@ class DevicesDataAPI(LoginRequiredMixin, View):
 
 
 class GroupingProblemsDataAPI(DevicesDataAPI):
-    columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
-    order_columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+    columns = ['name', 'ip4addr', 'sysName', 'tier', 'building_name', 'type']
+    order_columns = ['name', 'ip4addr', 'sysName', 'tier', 'building_name', 'type']
     total_count_cache_key = 'devices_grouping_problems_total_count'
-    search_fields = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+    search_fields = ['name', 'ip4addr', 'sysName', 'tier', 'building_name', 'type']
 
     def get_base_queryset(self):
         return get_grouping_problem_devices_queryset()
