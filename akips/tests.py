@@ -618,6 +618,53 @@ class SettingsViewTests(TestCase):
         self.assertEqual(mock_import_in_progress.call_count, 1)
         self.assertEqual(mock_akips.call_count, 0)
 
+    @patch('akips.task.time.sleep')
+    @patch('akips.task.AKIPS')
+    @patch('akips.task.is_snapshot_import_in_progress', return_value=False)
+    def test_refresh_akips_devices_resets_stale_critical_group(self, mock_import_in_progress, mock_akips, mock_sleep):
+        config = AKIPSConfiguration.get_solo()
+        config.enabled = True
+        config.save()
+        device = Device.objects.create(
+            name='med-phillips-gateway.net.unc.edu',
+            ip4addr='172.27.255.132',
+            sysName='med-phillips-gateway.net.unc.edu',
+            sysDescr='Gateway',
+            sysLocation='Medical',
+            group='Critical',
+            tier='',
+            building_name='',
+            critical=True,
+            type='Gateway',
+            maintenance=False,
+            hibernate=False,
+            notify=True,
+            last_refresh=timezone.now() - timedelta(days=1),
+        )
+
+        mock_akips_instance = mock_akips.return_value
+        mock_akips_instance.get_devices.return_value = {
+            device.name: {
+                'ip4addr': '172.27.255.132',
+                'SNMPv2-MIB.sysName': 'med-phillips-gateway.net.unc.edu',
+                'SNMPv2-MIB.sysDescr': 'Gateway',
+                'SNMPv2-MIB.sysLocation': 'Medical',
+            }
+        }
+        mock_akips_instance.get_maintenance_mode.return_value = []
+        mock_akips_instance.get_group_membership.return_value = {
+            device.name: ['2-Medical', '4-Phillips']
+        }
+
+        refresh_akips_devices.run()
+
+        device.refresh_from_db()
+        self.assertFalse(device.critical)
+        self.assertEqual(device.group, 'default')
+        self.assertEqual(device.tier, 'Medical')
+        self.assertEqual(device.building_name, 'Phillips')
+        self.assertTrue(device.notify)
+
     @patch('akips.task.EventManager')
     @patch('akips.task.is_snapshot_import_in_progress', return_value=False)
     def test_refresh_unreachable_skips_when_akips_disabled(self, mock_import_in_progress, mock_event_manager):
@@ -1106,6 +1153,7 @@ class GroupingProblemsViewTests(TestCase):
         self.assertContains(response, 'All types')
         self.assertContains(response, 'AP')
         self.assertContains(response, '(blank)')
+        self.assertNotContains(response, '<th>Grouping</th>', html=True)
 
     def test_grouping_problems_api_returns_only_uncategorized_devices(self):
         self.client.force_login(self.user)
