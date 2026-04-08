@@ -36,6 +36,7 @@ from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
 from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
+from .session_tracking import SESSION_LOGIN_AT_KEY, get_last_activity_from_expiry, normalize_aware_datetime, parse_session_timestamp
 from .task import SNAPSHOT_FIXTURE_LABELS, SNAPSHOT_IMPORT_CACHE_PREFIX, SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
@@ -70,6 +71,44 @@ def get_latest_task_result_for_display(task_name, now=None):
         .order_by('-date_done', '-date_created')
         .first()
     )
+
+
+def build_recent_user_sessions(now=None):
+    now = now or timezone.now()
+    session_list = Session.objects.filter(expire_date__gte=now).order_by('-expire_date')
+    sessions = []
+
+    for session in session_list:
+        session_data = session.get_decoded()
+        user_id = session_data.get('_auth_user_id')
+        if not user_id:
+            continue
+
+        try:
+            user = User.objects.select_related('profile').get(id=user_id)
+        except User.DoesNotExist:
+            logger.debug(f"Session references non-existent user ID: {user_id}")
+            continue
+
+        login_at = parse_session_timestamp(session_data.get(SESSION_LOGIN_AT_KEY))
+        if login_at is None:
+            login_at = normalize_aware_datetime(user.last_login)
+
+        last_activity = get_last_activity_from_expiry(session.expire_date)
+        duration_display = None
+        if login_at is not None and last_activity >= login_at:
+            duration_display = pretty_duration((last_activity - login_at).total_seconds())
+
+        sessions.append({
+            'user': user,
+            'login_at': login_at,
+            'last_activity': last_activity,
+            'expire': session.expire_date,
+            'duration_display': duration_display,
+        })
+
+    sessions.sort(key=lambda row: row['last_activity'], reverse=True)
+    return sessions
 
 
 def get_grouping_problem_devices_queryset():
@@ -512,32 +551,10 @@ class Users(LoginRequiredMixin, View):
     template_name = 'akips/recent_users.html'
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        date_from = timezone.now() - timedelta(days=7)
-        context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
-
-        session_list = Session.objects.filter(expire_date__gte=timezone.now()).order_by('-expire_date')
-        sessions = []
-        for s in session_list:
-            s_decoded = s.get_decoded()
-            session_start = s.expire_date - timedelta(seconds=settings.SESSION_COOKIE_AGE)
-            logger.debug("session {}".format( s.get_decoded() ))
-            logger.debug("session expire {}".format( s.expire_date ))
-            logger.debug("session start {}".format( session_start ))
-            # Skip sessions where the associated user no longer exists (e.g., after import)
-            try:
-                user = User.objects.get(id=s_decoded['_auth_user_id'])
-                sessions.append({ 
-                    'user': user,
-                    'expire': s.expire_date,
-                    'start': session_start,
-                    })
-            except User.DoesNotExist:
-                logger.debug(f"Session references non-existent user ID: {s_decoded.get('_auth_user_id')}")
-                continue
-        context['session_list'] = sessions
-
-
+        context = {
+            'session_list': build_recent_user_sessions(),
+            'session_timeout_hours': int(settings.SESSION_COOKIE_AGE / 3600),
+        }
         return render(request, self.template_name, context=context)
 
 class UserPreferences(LoginRequiredMixin, View):

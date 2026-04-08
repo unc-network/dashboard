@@ -1,9 +1,11 @@
 import json
 import os
 import tempfile
+from datetime import timedelta
 
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.sessions.backends.db import SessionStore
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -23,7 +25,8 @@ from .task import (
     refresh_unreachable,
     sanitize_snapshot_for_import,
 )
-from .views import Home
+from .session_tracking import SESSION_LOGIN_AT_KEY
+from .views import Home, Users
 
 class HomeHudScaleTests(SimpleTestCase):
     def setUp(self):
@@ -529,6 +532,7 @@ class SettingsViewTests(TestCase):
         self.assertEqual(mock_snmp_delay.call_count, 0)
         self.assertEqual(mock_ups_delay.call_count, 0)
         self.assertEqual(mock_battery_delay.call_count, 0)
+
         messages = [message.message for message in get_messages(response.wsgi_request)]
         self.assertIn('AKIPS status sync was not started because AKIPS integration is disabled.', messages)
 
@@ -902,6 +906,89 @@ class DeviceViewTests(TestCase):
         self.assertContains(response, 'Yes')
         self.assertContains(response, 'Special Grouping')
         self.assertContains(response, 'None')
+
+
+class RecentUsersViewTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.view = Users.as_view()
+        self.viewer = User.objects.create_user(username='viewer', password='testpass123')
+        self.recent_user = User.objects.create_user(username='recent-user', password='testpass123')
+
+    def _create_session(self, session_data, expire_date):
+        session = SessionStore()
+        session.update(session_data)
+        session.set_expiry(expire_date)
+        session.save()
+        return session
+
+    def test_recent_users_uses_recorded_login_timestamp(self):
+        now = timezone.now()
+        login_at = now - timedelta(hours=2)
+        last_activity = now - timedelta(minutes=15)
+        expire_date = last_activity + timedelta(seconds=86400)
+        self._create_session(
+            {
+                '_auth_user_id': str(self.recent_user.id),
+                SESSION_LOGIN_AT_KEY: login_at.isoformat(),
+            },
+            expire_date,
+        )
+
+        request = self.factory.get(reverse('users'))
+        request.user = self.viewer
+
+        with patch('akips.views.timezone.now', return_value=now), patch('akips.views.render') as mock_render:
+            mock_render.return_value = object()
+            self.view(request)
+            context = mock_render.call_args.kwargs['context']
+
+        self.assertEqual(len(context['session_list']), 1)
+        row = context['session_list'][0]
+        self.assertEqual(row['user'], self.recent_user)
+        self.assertEqual(row['login_at'], login_at)
+        self.assertEqual(row['last_activity'], last_activity)
+        self.assertEqual(row['duration_display'], '1 hour, 45 minutes, 0 seconds')
+
+    def test_recent_users_falls_back_to_user_last_login(self):
+        now = timezone.now()
+        last_login = now - timedelta(hours=3)
+        User.objects.filter(pk=self.recent_user.pk).update(last_login=last_login)
+        self.recent_user.refresh_from_db()
+        last_activity = now - timedelta(minutes=30)
+        expire_date = last_activity + timedelta(seconds=86400)
+        self._create_session(
+            {'_auth_user_id': str(self.recent_user.id)},
+            expire_date,
+        )
+
+        request = self.factory.get(reverse('users'))
+        request.user = self.viewer
+
+        with patch('akips.views.timezone.now', return_value=now), patch('akips.views.render') as mock_render:
+            mock_render.return_value = object()
+            self.view(request)
+            context = mock_render.call_args.kwargs['context']
+
+        row = context['session_list'][0]
+        self.assertEqual(row['login_at'], last_login)
+        self.assertEqual(row['last_activity'], last_activity)
+        self.assertEqual(row['duration_display'], '2 hours, 30 minutes, 0 seconds')
+
+    def test_recent_users_skips_non_authenticated_sessions(self):
+        now = timezone.now()
+        expire_date = now + timedelta(hours=1)
+        self._create_session({'some_key': 'some-value'}, expire_date)
+
+        request = self.factory.get(reverse('users'))
+        request.user = self.viewer
+
+        with patch('akips.views.timezone.now', return_value=now), patch('akips.views.render') as mock_render:
+            mock_render.return_value = object()
+            self.view(request)
+            context = mock_render.call_args.kwargs['context']
+
+        self.assertEqual(context['session_list'], [])
 
 
 class GroupingProblemsViewTests(TestCase):

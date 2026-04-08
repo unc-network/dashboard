@@ -11,30 +11,35 @@
 {% block content %}
 <div class="card card-primary">
     <div class="card-body table-responsive">
+        <p class="text-muted mb-3">
+            This page now separates the original login time from session activity. Login At shows when the user authenticated, Last Activity is estimated from the most recent session refresh, Active Span shows the time between those two points, and Session Expires shows when the current {{ session_timeout_hours }}-hour idle timeout will end if there is no further activity.
+        </p>
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
         <table id="myTable" class="table table-hover dataTable table-sm">
             <thead>
                 <tr>
                     <th>Onyen</th>
-                    <th>Session Start</th>
-                    <th>Session Expire</th>
+                    <th>Logged In</th>
+                    <th>Last Active</th>
+                    <th>Time Active</th>
+                    <th>Expires</th>
                     <th>Superuser</th>
                     <th>Alert Enabled</th>
                     <th>Use Voice</th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for u in session_list %}
                 <tr>
                     <td>{{ u.user.username }}</td>
-                    <td>{{ u.start|date:'m-d H:i:s' }}</td>
+                    <td>{{ u.login_at|date:'m-d H:i:s'|default:'-' }}</td>
+                    <td>{{ u.last_activity|date:'m-d H:i:s' }}</td>
+                    <td>{{ u.duration_display|default:'-' }}</td>
                     <td>{{ u.expire|date:'m-d H:i:s' }}</td>
                     <td>{{ u.user.is_superuser }}</td>
                     <td>{{ u.user.profile.alert_enabled }}</td>
                     <td>{{ u.user.profile.voice_enabled }}</td>
-                    <td>{{ u.session_keys }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
