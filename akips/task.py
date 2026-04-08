@@ -322,6 +322,7 @@ def refresh_akips_devices():
             critical = False
             tier = ''
             bldg = ''
+            current_group = 'default'
             notify = True
             for group_name in value:
                 logger.debug("group {} and device {}".format(
@@ -333,20 +334,20 @@ def refresh_akips_devices():
                         g_match.group('index'), g_match.group('label')))
                     if g_match.group('index') == '0':
                         critical = True
-                        device.group = 'Critical'
+                        current_group = 'Critical'
                     elif g_match.group('index') == '1':
                         critical = True
-                        device.group = 'Critical'
+                        current_group = 'Critical'
                     elif g_match.group('index') == '2':
                         tier = g_match.group('label')
-                        device.group = 'default'
+                        current_group = 'default'
                     elif g_match.group('index') == '3':
-                        device.group = 'default'
+                        current_group = 'default'
                     elif g_match.group('index') == '4':
                         bldg = g_match.group('label')
-                        device.group = 'default'
+                        current_group = 'default'
                     elif g_match.group('index') == '5':
-                        device.group = g_match.group('label')
+                        current_group = g_match.group('label')
                     elif g_match.group('index') == '6':
                         notify = False
                     # elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
@@ -354,6 +355,7 @@ def refresh_akips_devices():
             device.critical = critical
             device.tier = tier
             device.building_name = bldg
+            device.group = current_group
             device.notify = notify
             device.save()
             logger.debug("Set {} to critical {}, tier {}, and building {}".format(
