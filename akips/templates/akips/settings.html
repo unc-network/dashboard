@@ -232,6 +232,114 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
+                <h3 class="card-title">API Access Keys</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Create scoped API keys for service integrations that should access selected read-only endpoints without LDAP credentials.</p>
+
+                {% if generated_api_key %}
+                <div class="alert alert-warning" role="alert">
+                    <strong>Store this key now:</strong> it will only be shown once.
+                    <div class="mt-2"><code>{{ generated_api_key }}</code></div>
+                </div>
+                {% endif %}
+
+                <form method="post" action="" class="mb-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_api_key">
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ api_key_form.name.label_tag }}
+                            {{ api_key_form.name }}
+                            {% if api_key_form.name.help_text %}
+                            <small class="form-text text-muted">{{ api_key_form.name.help_text }}</small>
+                            {% endif %}
+                            {% for error in api_key_form.name.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>{{ api_key_form.allowed_endpoints.label }}</label>
+                            <div class="border rounded p-3">
+                                {{ api_key_form.allowed_endpoints }}
+                            </div>
+                            {% if api_key_form.allowed_endpoints.help_text %}
+                            <small class="form-text text-muted">{{ api_key_form.allowed_endpoints.help_text }}</small>
+                            {% endif %}
+                            {% for error in api_key_form.allowed_endpoints.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-key mr-1"></i> Create API Key
+                    </button>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Prefix</th>
+                                <th>Allowed Endpoints</th>
+                                <th>Created By</th>
+                                <th>Last Used</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for api_key in api_keys %}
+                            <tr>
+                                <td>{{ api_key.name }}</td>
+                                <td><code>{{ api_key.key_prefix }}</code></td>
+                                <td>
+                                    {% if api_key.allowed_endpoints %}
+                                        {{ api_key.allowed_endpoint_labels|join:', ' }}
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ api_key.created_by|default:'System' }}</td>
+                                <td>{{ api_key.last_used_at|default:'Never' }}</td>
+                                <td>
+                                    {% if api_key.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">Revoked</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right">
+                                    {% if api_key.is_active %}
+                                    <form method="post" action="" class="mb-0">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="revoke_api_key">
+                                        <input type="hidden" name="api_key_id" value="{{ api_key.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            Revoke
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-muted">No API keys have been created.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
                 <h3 class="card-title">Last Import Status</h3>
             </div>
             <div class="card-body">
@@ -276,6 +384,7 @@
                 <ul class="mb-3">
                     <li>Includes core application data, users, groups, and permissions.</li>
                     <li>Excludes active sessions and admin log entries.</li>
+                    <li>Excludes API access keys, which must be created separately in each environment.</li>
                 </ul>
                 <form method="post" action="">
                     {% csrf_token %}
@@ -298,6 +407,7 @@
                 <div class="alert alert-warning" role="alert">
                     <strong>Sensitive data:</strong> Imported snapshots may contain live credentials and other protected configuration values from another environment.
                 </div>
+                <p class="text-muted">API access keys are not imported from snapshots. Existing local keys remain managed separately on this environment.</p>
                 <p class="text-warning"><strong>Warning:</strong> Importing data can overwrite existing records with matching IDs.</p>
                 <form method="post" action="" enctype="multipart/form-data">
                     {% csrf_token %}

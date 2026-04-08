@@ -1,10 +1,11 @@
 from django import forms
+from django.conf import settings
 from django.forms import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
 import re
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
 
 class LoginForm(AuthenticationForm):
     ''' A form for logging a user in '''
@@ -171,11 +172,36 @@ class AppSnapshotImportForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'})
     )
 
+    @staticmethod
+    def _format_bytes(num_bytes):
+        if num_bytes < 1024:
+            return f'{num_bytes} bytes'
+        if num_bytes < 1024 * 1024:
+            kilobytes = num_bytes / 1024
+            if kilobytes.is_integer():
+                return f'{int(kilobytes)} KB'
+            return f'{kilobytes:.1f} KB'
+        megabytes = num_bytes / (1024 * 1024)
+        if megabytes.is_integer():
+            return f'{int(megabytes)} MB'
+        return f'{megabytes:.1f} MB'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        max_size_label = self._format_bytes(settings.SNAPSHOT_IMPORT_MAX_BYTES)
+        self.fields['snapshot_file'].help_text = (
+            f'Upload a JSON fixture exported from this app. Maximum size: {max_size_label}.'
+        )
+
     def clean_snapshot_file(self):
         snapshot_file = self.cleaned_data['snapshot_file']
         name = snapshot_file.name.lower()
         if not (name.endswith('.json') or name.endswith('.json.gz')):
             raise ValidationError('Snapshot file must end with .json or .json.gz')
+        if snapshot_file.size > settings.SNAPSHOT_IMPORT_MAX_BYTES:
+            raise ValidationError(
+                f'Snapshot file exceeds the maximum allowed size of {self._format_bytes(settings.SNAPSHOT_IMPORT_MAX_BYTES)}'
+            )
         return snapshot_file
 
 
@@ -233,3 +259,30 @@ class AKIPSSettingsForm(forms.ModelForm):
             'password': 'Password',
             'verify_ssl': 'Verify SSL Certificate',
         }
+
+
+class APIAccessKeyCreateForm(forms.Form):
+    name = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Reporting integration'}),
+        help_text='Use a descriptive name so you can identify the integration later.'
+    )
+    allowed_endpoints = forms.MultipleChoiceField(
+        choices=APIAccessKey.endpoint_choices(),
+        widget=forms.CheckboxSelectMultiple,
+        help_text='Choose which API endpoints this key may call.'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial.setdefault(
+                'allowed_endpoints',
+                [choice[0] for choice in APIAccessKey.endpoint_choices()],
+            )
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if APIAccessKey.objects.filter(name__iexact=name).exists():
+            raise ValidationError('An API key with this name already exists.')
+        return name

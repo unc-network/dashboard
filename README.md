@@ -20,6 +20,134 @@ It also runs under Docker, refer to [Docker Readme](Docker.md).
 
 Most recently work has been to build a K3s setup.
 
+## API Usage
+
+OCNES supports programmatic access to selected read-only API endpoints.
+
+Interactive users still authenticate through the normal web login flow, which is typically backed by LDAP in production. For service integrations, staff users can now create scoped API keys from the Settings page and limit each key to specific endpoints.
+
+### Create an API Key
+
+1. Sign in as a staff user.
+2. Open the Settings page.
+3. In the `API Access Keys` section, create a key and select the allowed endpoint scopes.
+4. Copy the generated key when it is shown. The full secret is only displayed once.
+
+New keys default to selecting all currently available read-only API paths:
+
+- `/api/devices/`
+- `/api/unreachables/`
+- `/api/summaries/`
+
+### Supported Authentication Headers
+
+The current read-only exports accept either of these headers:
+
+- `X-API-Key: YOUR_NEW_KEY_HERE`
+- `Authorization: Api-Key YOUR_NEW_KEY_HERE`
+
+### Available Endpoints
+
+- `/api/devices/`
+- `/api/unreachables/`
+- `/api/summaries/`
+
+### Devices API
+
+Endpoint:
+
+- `/api/devices/`
+
+Returns device inventory records plus the last inventory sync and AKIPS sync timestamps.
+
+Example request using `X-API-Key`:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/devices/"
+```
+
+Example request with pretty-printed JSON:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/devices/?pretty_print=1"
+```
+
+### Unreachables API
+
+Endpoint:
+
+- `/api/unreachables/`
+
+Returns currently open unreachable records.
+
+Example request using `X-API-Key`:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/unreachables/"
+```
+
+Example request with pretty-printed JSON:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/unreachables/?pretty_print=1"
+```
+
+### Summaries API
+
+Endpoint:
+
+- `/api/summaries/`
+
+Returns current summary records and supports existing filtering parameters such as `type` and `status`.
+
+Example request using `X-API-Key`:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/"
+```
+
+Example request with pretty-printed JSON:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/?pretty_print=1"
+```
+
+Example request filtered to open critical summaries:
+
+```bash
+curl \
+	-H "X-API-Key: YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/?type=Critical&status=Open&pretty_print=1"
+```
+
+Example request using the `Authorization` header instead:
+
+```bash
+curl \
+	-H "Authorization: Api-Key YOUR_NEW_KEY_HERE" \
+	"https://your-dashboard-host/api/summaries/"
+```
+
+### Notes
+
+- API keys only work for endpoints explicitly allowed when the key is created.
+- Requests to endpoints outside that allowlist return `403 Forbidden`.
+- Missing or invalid keys return `401 Unauthorized`.
+- The same authentication header formats work for `/api/devices/`, `/api/unreachables/`, and `/api/summaries/`.
+- Existing session-based browser access continues to work unchanged.
+
 ## Dashboard and HUD Mode
 
 OCNES has two primary viewing modes:

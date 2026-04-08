@@ -1,7 +1,8 @@
 {% extends 'akips/base.html' %}
 {% load static %}
 
-{% block title %}OCNES Devices{% endblock %}
+{% block title %}OCNES {{ page_title }}{% endblock %}
+{% block page_name %}{{ page_title }}{% endblock %}
 
 {% block style_sheets %}
 <link rel="stylesheet" href="{% static 'admin-lte/plugins/datatables-bs4/css/dataTables.bootstrap4.css' %}">
@@ -10,9 +11,25 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
-        <p>Below you will find data for all devices learned from the AKiPS device inventory.</p>
+        <p>{{ page_description }}</p>
+        {% if show_type_filter %}
+        <div class="form-row align-items-end mb-3">
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <label for="typeFilter" class="mb-1">Type</label>
+                <select id="typeFilter" class="form-control form-control-sm">
+                    <option value="">All types</option>
+                    {% for type_option in type_filter_options %}
+                    <option value="{{ type_option.value }}"{% if selected_type == type_option.value %} selected{% endif %}>{{ type_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
         {% if search %}
         <p class="text-muted mb-2">Filtered by search term: <span class="font-weight-bold">{{ search }}</span></p>
+        {% endif %}
+        {% if selected_type %}
+        <p class="text-muted mb-2">Filtered by type: <span class="font-weight-bold">{{ selected_type_label }}</span></p>
         {% endif %}
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
@@ -22,7 +39,14 @@
                     <th>Device</th>
                     <th>IP</th>
                     <th>sysName</th>
+                    {% if show_grouping_problem_columns %}
                     <th>Grouping</th>
+                    <th>Tier</th>
+                    <th>Building</th>
+                    <th>Issue</th>
+                    {% else %}
+                    <th>Grouping</th>
+                    {% endif %}
                     <th>Type</th>
                 </tr>
             </thead>
@@ -53,7 +77,7 @@
             return $('<div/>').text(value || '').html();
         }
 
-        $("#myTable").DataTable({
+        var table = $("#myTable").DataTable({
             "responsive": true,
             "processing": true,
             "serverSide": true,
@@ -65,8 +89,13 @@
             "search": {"search": "{{ search|escapejs }}"},
             "order": [[0, "asc"]],
             "ajax": {
-                "url": "{% url 'devices_data_api' %}",
-                "type": "GET"
+                "url": "{% url data_api_url_name %}",
+                "type": "GET",
+                "data": function (d) {
+                    {% if show_type_filter %}
+                    d.type = $("#typeFilter").val();
+                    {% endif %}
+                }
             },
             "columns": [
                 {
@@ -80,10 +109,23 @@
                 },
                 {"data": "ip4addr"},
                 {"data": "sysName"},
+                {% if show_grouping_problem_columns %}
                 {"data": "group"},
+                {"data": "tier"},
+                {"data": "building_name"},
+                {"data": "grouping_issue"},
+                {% else %}
+                {"data": "group"},
+                {% endif %}
                 {"data": "type"}
             ]
         });
+
+        {% if show_type_filter %}
+        $("#typeFilter").on("change", function () {
+            table.ajax.reload();
+        });
+        {% endif %}
 
     })
 </script>

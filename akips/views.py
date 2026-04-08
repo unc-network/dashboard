@@ -34,15 +34,163 @@ from django.views.decorators.http import require_POST
 
 from django_celery_results.models import TaskResult
 
-from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm
-from .task import SNAPSHOT_FIXTURE_LABELS, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
+from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
+from .session_tracking import SESSION_LOGIN_AT_KEY, get_last_activity_from_expiry, normalize_aware_datetime, parse_session_timestamp
+from .task import SNAPSHOT_FIXTURE_LABELS, SNAPSHOT_IMPORT_CACHE_PREFIX, SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
 from akips.servicenow import ServiceNow
 from akips.tdx import TDX
 
 # Get a instance of logger
 logger = logging.getLogger(__name__)
+
+ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
+ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
+
+
+def get_recent_active_task_queryset(task_name, now=None, stale_after=ACTIVE_TASK_STALE_AFTER):
+    now = now or timezone.now()
+    return TaskResult.objects.filter(
+        task_name=task_name,
+        status__in=ACTIVE_TASK_STATUSES,
+        date_created__gte=now - stale_after,
+    )
+
+
+def get_latest_task_result_for_display(task_name, now=None):
+    now = now or timezone.now()
+    active_task = get_recent_active_task_queryset(task_name, now=now).order_by('-date_created').first()
+    if active_task is not None:
+        return active_task
+
+    return (
+        TaskResult.objects
+        .filter(task_name=task_name)
+        .exclude(status__in=ACTIVE_TASK_STATUSES)
+        .order_by('-date_done', '-date_created')
+        .first()
+    )
+
+
+def build_recent_user_sessions(now=None):
+    now = now or timezone.now()
+    session_list = Session.objects.filter(expire_date__gte=now).order_by('-expire_date')
+    sessions = []
+
+    for session in session_list:
+        session_data = session.get_decoded()
+        user_id = session_data.get('_auth_user_id')
+        if not user_id:
+            continue
+
+        try:
+            user = User.objects.select_related('profile').get(id=user_id)
+        except User.DoesNotExist:
+            logger.debug(f"Session references non-existent user ID: {user_id}")
+            continue
+
+        login_at = parse_session_timestamp(session_data.get(SESSION_LOGIN_AT_KEY))
+        if login_at is None:
+            login_at = normalize_aware_datetime(user.last_login)
+
+        last_activity = get_last_activity_from_expiry(session.expire_date)
+        duration_display = None
+        if login_at is not None and last_activity >= login_at:
+            duration_display = pretty_duration((last_activity - login_at).total_seconds())
+
+        sessions.append({
+            'user': user,
+            'login_at': login_at,
+            'last_activity': last_activity,
+            'expire': session.expire_date,
+            'duration_display': duration_display,
+        })
+
+    sessions.sort(key=lambda row: row['last_activity'], reverse=True)
+    return sessions
+
+
+def get_grouping_problem_devices_queryset():
+    has_tier_and_building = Q(tier__gt='') & Q(building_name__gt='')
+    has_special_grouping = Q(group__gt='') & ~Q(group__in=['default', 'Critical'])
+
+    return (
+        Device.objects.filter(critical=False, notify=True)
+        .exclude(has_tier_and_building)
+        .exclude(has_special_grouping)
+    )
+
+
+def get_grouping_problem_label(device_row):
+    tier = (device_row.get('tier') or '').strip()
+    building_name = (device_row.get('building_name') or '').strip()
+
+    if not tier and not building_name:
+        return 'Missing tier and building'
+    if not tier:
+        return 'Missing tier'
+    if not building_name:
+        return 'Missing building'
+    return 'Review grouping'
+
+
+def get_special_grouping_label(device):
+    if device.group in ('', 'default', 'Critical'):
+        return ''
+    return device.group
+
+
+class SessionOrAPIKeyRequiredMixin:
+    api_key_endpoint = None
+
+    def _get_api_key_token(self, request):
+        header_token = request.headers.get('X-API-Key', '').strip()
+        if header_token:
+            return header_token
+
+        authorization = request.headers.get('Authorization', '').strip()
+        if not authorization:
+            return ''
+
+        parts = authorization.split(None, 1)
+        if len(parts) != 2:
+            return ''
+
+        scheme, token = parts
+        if scheme.lower() not in ('api-key', 'bearer'):
+            return ''
+        return token.strip()
+
+    def _authenticate_api_key(self, request):
+        raw_key = self._get_api_key_token(request)
+        if not raw_key:
+            return None, None
+
+        access_key = APIAccessKey.authenticate(raw_key)
+        if access_key is None:
+            return None, JsonResponse({'detail': 'Invalid API key.'}, status=401)
+
+        if not access_key.allows_endpoint(self.api_key_endpoint):
+            return None, JsonResponse({'detail': 'API key does not have access to this endpoint.'}, status=403)
+
+        access_key.last_used_at = timezone.now()
+        access_key.save(update_fields=['last_used_at'])
+        request.api_access_key = access_key
+        return access_key, None
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        _access_key, error_response = self._authenticate_api_key(request)
+        if error_response is not None:
+            return error_response
+
+        if getattr(request, 'api_access_key', None) is None:
+            return JsonResponse({'detail': 'Authentication credentials were not provided.'}, status=401)
+
+        return super().dispatch(request, *args, **kwargs)
 
 # Create your views here.
 
@@ -115,16 +263,10 @@ class About(LoginRequiredMixin, View):
         since_24h = now - timedelta(hours=24)
         since_7d = now - timedelta(days=7)
 
-        try:
-            last_inventory_sync = TaskResult.objects.filter(task_name='akips.task.refresh_inventory').latest('date_done')
-        except TaskResult.DoesNotExist:
-            last_inventory_sync = None
+        last_inventory_sync = get_latest_task_result_for_display('akips.task.refresh_inventory', now=now)
         context['last_inventory_sync'] = last_inventory_sync
 
-        try:
-            last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices').latest('date_done')
-        except TaskResult.DoesNotExist:
-            last_device_sync = None
+        last_device_sync = get_latest_task_result_for_display('akips.task.refresh_akips_devices', now=now)
         context['last_akips_sync'] = last_device_sync
 
         def get_task_duration(task):
@@ -222,16 +364,68 @@ class About(LoginRequiredMixin, View):
 
 class Devices(LoginRequiredMixin, View):
     ''' Generic first view '''
+    blank_type_filter_value = '__blank__'
+    blank_type_filter_label = '(blank)'
     template_name = 'akips/devices.html'
+    page_title = 'All Devices'
+    page_description = 'Below you will find data for all devices learned from the AKiPS device inventory.'
+    data_api_url_name = 'devices_data_api'
+    show_grouping_problem_columns = False
+    show_type_filter = False
+
+    def get_filter_type_options(self):
+        return []
+
+    def get_selected_type_label(self, selected_type):
+        if selected_type == self.blank_type_filter_value:
+            return self.blank_type_filter_label
+        return selected_type
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        context['search'] = request.GET.get('search', '').strip()
+        selected_type = request.GET.get('type', '').strip()
+        context = {
+            'search': request.GET.get('search', '').strip(),
+            'selected_type': selected_type,
+            'selected_type_label': self.get_selected_type_label(selected_type),
+            'page_title': self.page_title,
+            'page_description': self.page_description,
+            'data_api_url_name': self.data_api_url_name,
+            'show_grouping_problem_columns': self.show_grouping_problem_columns,
+            'show_type_filter': self.show_type_filter,
+            'type_filter_options': self.get_filter_type_options(),
+        }
 
         # last_device_sync = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='SUCCESS').latest('date_done')
         # context['last_device_sync'] = last_device_sync
 
         return render(request, self.template_name, context=context)
+
+
+class GroupingProblemsView(Devices):
+    page_title = 'Grouping Problems'
+    page_description = 'These devices do not match any expected AKiPS grouping category: Critical, Tier plus Building, Specialty grouping, or notify disabled.'
+    data_api_url_name = 'devices_grouping_problems_data_api'
+    show_grouping_problem_columns = True
+    show_type_filter = True
+
+    def get_filter_type_options(self):
+        options = []
+        queryset = get_grouping_problem_devices_queryset()
+
+        if queryset.filter(type='').exists():
+            options.append({
+                'value': self.blank_type_filter_value,
+                'label': self.blank_type_filter_label,
+            })
+
+        options.extend(
+            {
+                'value': device_type,
+                'label': device_type,
+            }
+            for device_type in queryset.exclude(type='').order_by('type').values_list('type', flat=True).distinct()
+        )
+        return options
 
 
 class DevicesDataAPI(LoginRequiredMixin, View):
@@ -241,12 +435,57 @@ class DevicesDataAPI(LoginRequiredMixin, View):
     order_columns = ['ip4addr', 'ip4addr', 'sysName', 'group', 'type']
     total_count_cache_key = 'devices_data_total_count'
     total_count_cache_ttl = 60
+    search_fields = ['name', 'ip4addr', 'sysName', 'group', 'type']
 
     def _parse_int(self, value, default):
         try:
             return int(value)
         except (TypeError, ValueError):
             return default
+
+    def get_base_queryset(self):
+        return Device.objects.all()
+
+    def get_total_count(self):
+        try:
+            records_total = cache.get(self.total_count_cache_key)
+        except Exception as exc:
+            logger.warning('Unable to read cache key %s: %s', self.total_count_cache_key, exc)
+            records_total = None
+
+        if records_total is None:
+            records_total = self.get_base_queryset().count()
+            try:
+                cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
+            except Exception as exc:
+                logger.warning('Unable to write cache key %s: %s', self.total_count_cache_key, exc)
+        return records_total
+
+    def apply_search(self, queryset, search_value):
+        if not search_value:
+            return queryset
+
+        query = Q()
+        for field_name in self.search_fields:
+            query |= Q(**{f'{field_name}__icontains': search_value})
+        return queryset.filter(query)
+
+    def apply_type_filter(self, queryset, request):
+        selected_type = request.GET.get('type', '').strip()
+        if not selected_type:
+            return queryset
+        if selected_type == Devices.blank_type_filter_value:
+            return queryset.filter(type='')
+        return queryset.filter(type__iexact=selected_type)
+
+    def apply_filters(self, queryset, request, search_value):
+        queryset = self.apply_type_filter(queryset, request)
+        return self.apply_search(queryset, search_value)
+
+    def serialize_row(self, row):
+        row_data = dict(row)
+        row_data['device_url'] = reverse('device', args=[row['name']])
+        return row_data
 
     def get(self, request, *args, **kwargs):
         draw = self._parse_int(request.GET.get('draw'), 1)
@@ -265,30 +504,13 @@ class DevicesDataAPI(LoginRequiredMixin, View):
         order_field = self.order_columns[order_index]
         order_by = f'-{order_field}' if order_dir == 'desc' else order_field
 
-        records_total = cache.get(self.total_count_cache_key)
-        if records_total is None:
-            records_total = Device.objects.count()
-            cache.set(self.total_count_cache_key, records_total, self.total_count_cache_ttl)
+        records_total = self.get_total_count()
+        base_qs = self.apply_filters(self.get_base_queryset(), request, search_value)
 
-        base_qs = Device.objects.all()
-
-        if search_value:
-            base_qs = base_qs.filter(
-                Q(name__icontains=search_value)
-                | Q(ip4addr__icontains=search_value)
-                | Q(sysName__icontains=search_value)
-                | Q(group__icontains=search_value)
-                | Q(type__icontains=search_value)
-            )
-
-        records_filtered = records_total if not search_value else base_qs.count()
+        records_filtered = base_qs.count()
 
         rows = base_qs.order_by(order_by).values(*self.columns)[start:start + length]
-        data = []
-        for row in rows:
-            row_data = dict(row)
-            row_data['device_url'] = reverse('device', args=[row['name']])
-            data.append(row_data)
+        data = [self.serialize_row(row) for row in rows]
 
         return JsonResponse({
             'draw': draw,
@@ -296,6 +518,21 @@ class DevicesDataAPI(LoginRequiredMixin, View):
             'recordsFiltered': records_filtered,
             'data': data,
         })
+
+
+class GroupingProblemsDataAPI(DevicesDataAPI):
+    columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+    order_columns = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+    total_count_cache_key = 'devices_grouping_problems_total_count'
+    search_fields = ['name', 'ip4addr', 'sysName', 'group', 'tier', 'building_name', 'type']
+
+    def get_base_queryset(self):
+        return get_grouping_problem_devices_queryset()
+
+    def serialize_row(self, row):
+        row_data = super().serialize_row(row)
+        row_data['grouping_issue'] = get_grouping_problem_label(row)
+        return row_data
 
 class UPSProblems(LoginRequiredMixin, View):
     ''' List UPS current in a problem state '''
@@ -314,32 +551,10 @@ class Users(LoginRequiredMixin, View):
     template_name = 'akips/recent_users.html'
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        date_from = timezone.now() - timedelta(days=7)
-        context['recent_users'] = User.objects.filter(last_login__gte=date_from).order_by('-last_login')
-
-        session_list = Session.objects.filter(expire_date__gte=timezone.now()).order_by('-expire_date')
-        sessions = []
-        for s in session_list:
-            s_decoded = s.get_decoded()
-            session_start = s.expire_date - timedelta(seconds=settings.SESSION_COOKIE_AGE)
-            logger.debug("session {}".format( s.get_decoded() ))
-            logger.debug("session expire {}".format( s.expire_date ))
-            logger.debug("session start {}".format( session_start ))
-            # Skip sessions where the associated user no longer exists (e.g., after import)
-            try:
-                user = User.objects.get(id=s_decoded['_auth_user_id'])
-                sessions.append({ 
-                    'user': user,
-                    'expire': s.expire_date,
-                    'start': session_start,
-                    })
-            except User.DoesNotExist:
-                logger.debug(f"Session references non-existent user ID: {s_decoded.get('_auth_user_id')}")
-                continue
-        context['session_list'] = sessions
-
-
+        context = {
+            'session_list': build_recent_user_sessions(),
+            'session_timeout_hours': int(settings.SESSION_COOKIE_AGE / 3600),
+        }
         return render(request, self.template_name, context=context)
 
 class UserPreferences(LoginRequiredMixin, View):
@@ -377,8 +592,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
     ''' Admin-only settings scaffold page '''
     template_name = 'akips/settings.html'
     fixture_labels = SNAPSHOT_FIXTURE_LABELS
-    fixture_excludes = ('contenttypes', 'admin.logentry', 'sessions')
-    snapshot_import_dir = os.path.join(settings.BASE_DIR, 'tmp', 'snapshot_imports')
+    fixture_excludes = ('akips.apiaccesskey', 'contenttypes', 'admin.logentry', 'sessions')
     tdx_form_prefix = 'tdx'
     inventory_form_prefix = 'inventory'
     akips_form_prefix = 'akips'
@@ -419,15 +633,22 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             prefix=self.akips_form_prefix,
         )
 
+    def _get_api_key_form(self, data=None):
+        return APIAccessKeyCreateForm(data=data)
+
+    def _get_api_keys(self):
+        return APIAccessKey.objects.select_related('created_by').order_by('name')
+
+    def _pop_generated_api_key(self):
+        return self.request.session.pop('generated_api_key', None)
+
     def _queue_inventory_sync(self):
         config = self._get_inventory_config()
         if not config.enabled:
             messages.warning(self.request, 'Inventory sync was not started because the external inventory feed is disabled.')
             return
 
-        pending = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='PENDING').count()
-        started = TaskResult.objects.filter(task_name='akips.task.refresh_inventory', status='STARTED').count()
-        if pending == 0 and started == 0:
+        if not get_recent_active_task_queryset('akips.task.refresh_inventory').exists():
             refresh_inventory.delay()
             messages.success(self.request, 'Inventory sync was queued.')
         else:
@@ -439,9 +660,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             messages.warning(self.request, f'{display_name} was not started because AKIPS integration is disabled.')
             return
 
-        pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
-        started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
-        if pending == 0 and started == 0:
+        if not get_recent_active_task_queryset(task_name).exists():
             task_callable.delay()
             messages.success(self.request, f'{display_name} was queued.')
         else:
@@ -463,9 +682,7 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
         queued_count = 0
         already_running_count = 0
         for task_name, task_callable in status_tasks:
-            pending = TaskResult.objects.filter(task_name=task_name, status='PENDING').count()
-            started = TaskResult.objects.filter(task_name=task_name, status='STARTED').count()
-            if pending == 0 and started == 0:
+            if not get_recent_active_task_queryset(task_name).exists():
                 task_callable.delay()
                 queued_count += 1
             else:
@@ -484,12 +701,15 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             .first()
         )
 
-    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None):
+    def _build_context(self, import_form=None, tdx_form=None, inventory_form=None, akips_form=None, api_key_form=None):
         return {
             'import_form': import_form or self._get_import_form(),
             'tdx_form': tdx_form or self._get_tdx_form(),
             'inventory_form': inventory_form or self._get_inventory_form(),
             'akips_form': akips_form or self._get_akips_form(),
+            'api_key_form': api_key_form or self._get_api_key_form(),
+            'api_keys': self._get_api_keys(),
+            'generated_api_key': self._pop_generated_api_key(),
             'last_import_task': self._get_last_snapshot_import_task(),
         }
 
@@ -520,15 +740,19 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             if os.path.exists(snapshot_path):
                 os.remove(snapshot_path)
 
-    def _persist_uploaded_snapshot(self, uploaded_file):
+    def _cache_uploaded_snapshot(self, uploaded_file):
         suffix = '.json.gz' if uploaded_file.name.lower().endswith('.json.gz') else '.json'
-        os.makedirs(self.snapshot_import_dir, exist_ok=True)
-        snapshot_filename = f"snapshot-{uuid.uuid4()}{suffix}"
-        snapshot_path = os.path.join(self.snapshot_import_dir, snapshot_filename)
-        with open(snapshot_path, 'wb') as fh:
-            for chunk in uploaded_file.chunks():
-                fh.write(chunk)
-        return snapshot_path
+        snapshot_cache_key = f"{SNAPSHOT_IMPORT_CACHE_PREFIX}:{uuid.uuid4()}"
+        payload = b''.join(chunk for chunk in uploaded_file.chunks())
+        cache.set(
+            snapshot_cache_key,
+            {
+                'payload': payload,
+                'suffix': suffix,
+            },
+            SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT,
+        )
+        return snapshot_cache_key
 
     def get(self, request, *args, **kwargs):
         context = self._build_context()
@@ -554,8 +778,8 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
             try:
                 snapshot_file = import_form.cleaned_data['snapshot_file']
                 clear_existing_data = import_form.cleaned_data.get('clear_existing_data', False)
-                snapshot_path = self._persist_uploaded_snapshot(snapshot_file)
-                task_result = import_snapshot_task.delay(snapshot_path, clear_existing_data=clear_existing_data)
+                snapshot_cache_key = self._cache_uploaded_snapshot(snapshot_file)
+                task_result = import_snapshot_task.delay(snapshot_cache_key, clear_existing_data=clear_existing_data)
                 messages.success(request, f'Snapshot import started in the background (task: {task_result.id}). Refresh this page to track progress.')
                 return HttpResponseRedirect(reverse('settings'))
             except Exception as exc:
@@ -595,6 +819,29 @@ class Settings(UserPassesTestMixin, LoginRequiredMixin, View):
 
             messages.error(request, 'AKIPS settings could not be saved. Please review the form.')
             return render(request, self.template_name, context=self._build_context(akips_form=akips_form))
+
+        if action == 'create_api_key':
+            api_key_form = self._get_api_key_form(data=request.POST)
+            if api_key_form.is_valid():
+                access_key, raw_key = APIAccessKey.create_with_generated_key(
+                    name=api_key_form.cleaned_data['name'],
+                    allowed_endpoints=api_key_form.cleaned_data['allowed_endpoints'],
+                    created_by=request.user,
+                )
+                request.session['generated_api_key'] = raw_key
+                messages.success(request, f'API key "{access_key.name}" created.')
+                return HttpResponseRedirect(reverse('settings'))
+
+            messages.error(request, 'API key could not be created. Please review the form.')
+            return render(request, self.template_name, context=self._build_context(api_key_form=api_key_form))
+
+        if action == 'revoke_api_key':
+            api_key_id = request.POST.get('api_key_id', '').strip()
+            access_key = get_object_or_404(APIAccessKey, pk=api_key_id)
+            access_key.is_active = False
+            access_key.save(update_fields=['is_active'])
+            messages.success(request, f'API key "{access_key.name}" was revoked.')
+            return HttpResponseRedirect(reverse('settings'))
 
         if action == 'run_inventory_sync':
             self._queue_inventory_sync()
@@ -1299,6 +1546,8 @@ class DeviceView(LoginRequiredMixin, View):
         device = get_object_or_404(Device, name=device_name)
         #device = Device.objects.get(name=device_name)
         context['device'] = device
+        context['critical_label'] = 'Yes' if device.critical else 'No'
+        context['special_grouping_label'] = get_special_grouping_label(device) or 'None'
 
         #unreachables = Unreachable.objects.filter(device__name=device_name).order_by('-last_refresh')
         unreachables = Unreachable.objects.filter( device=device).order_by('-last_refresh')
@@ -1513,8 +1762,9 @@ class CreateIncidentView(LoginRequiredMixin, View):
             context['form'] = form
         return render(request, self.template_name, context=context)
 
-class DevicesAPI(View):
+class DevicesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export device definitions'''
+    api_key_endpoint = APIAccessKey.Endpoint.DEVICES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
@@ -1613,8 +1863,9 @@ class SetNotificationView(LoginRequiredMixin, View):
         else:
             return JsonResponse(result)
 
-class UnreachablesAPI(View):
+class UnreachablesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export unreachable definitions'''
+    api_key_endpoint = APIAccessKey.Endpoint.UNREACHABLES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
@@ -1628,8 +1879,9 @@ class UnreachablesAPI(View):
         else:
             return JsonResponse(result)
 
-class SummariesAPI(LoginRequiredMixin, View):
+class SummariesAPI(SessionOrAPIKeyRequiredMixin, View):
     ''' API view to export all current summary data'''
+    api_key_endpoint = APIAccessKey.Endpoint.SUMMARIES_READ
 
     def get(self, request, *args, **kwargs):
         pretty_print = request.GET.get('pretty_print', None)
@@ -1850,33 +2102,25 @@ class RequestSync(LoginRequiredMixin,View):
             "device_sync_started": True,
         }
         
-        ping_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='PENDING').count()
-        ping_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ping_status',status='STARTED').count()
-        if (ping_tasks_pending == 0 and ping_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_ping_status').exists():
             refresh_ping_status.delay()
         else:
             result['ping_sync_started'] = False
             logger.debug("Ping status sync is already in progress")
 
-        snmp_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='PENDING').count()
-        snmp_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_snmp_status',status='STARTED').count()
-        if (snmp_tasks_pending == 0 and snmp_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_snmp_status').exists():
             refresh_snmp_status.delay()
         else:
             result['snmp_sync_started'] = False
             logger.debug("SNMP status sync is already in progress")
 
-        ups_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='PENDING').count()
-        ups_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_ups_status',status='STARTED').count()
-        if (ups_tasks_pending == 0 and ups_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_ups_status').exists():
             refresh_ups_status.delay()
         else:
             result['ups_sync_started'] = False
             logger.debug("UPS status sync is already in progress")
 
-        device_tasks_pending = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='PENDING').count()
-        device_tasks_started = TaskResult.objects.filter(task_name='akips.task.refresh_akips_devices',status='STARTED').count()
-        if (device_tasks_pending == 0 and device_tasks_started == 0):
+        if not get_recent_active_task_queryset('akips.task.refresh_akips_devices').exists():
             refresh_akips_devices.delay()
         else:
             result['device_sync_started'] = False
