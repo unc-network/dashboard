@@ -350,8 +350,9 @@ def refresh_akips_devices():
                         current_group = g_match.group('label')
                     elif g_match.group('index') == '6':
                         notify = False
-                    # elif g_match.group('index') == '5' and g_match.group('label') == 'Servers':
-                    #     device.type = 'SERVER'
+                        current_group = g_match.group('label')
+                    else:
+                        logger.warning("device {} unhandled group index {} with label {}".format(device, g_match.group('index'), g_match.group('label')))
             device.critical = critical
             device.tier = tier
             device.building_name = bldg
