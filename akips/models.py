@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING
 import os
+import secrets
 from django.db import models
 from django.db.utils import OperationalError, ProgrammingError
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import check_password, make_password
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -234,6 +235,69 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class APIAccessKey(models.Model):
+    class Endpoint(models.TextChoices):
+        DEVICES_READ = 'devices.read', 'Devices export (/api/devices/)'
+        UNREACHABLES_READ = 'unreachables.read', 'Unreachables export (/api/unreachables/)'
+        SUMMARIES_READ = 'summaries.read', 'Summaries export (/api/summaries/)'
+
+    name = models.CharField(max_length=255, unique=True)
+    key_prefix = models.CharField(max_length=12, db_index=True)
+    hashed_key = models.CharField(max_length=255)
+    allowed_endpoints = models.JSONField(default=list)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='created_api_access_keys')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'API access key'
+        verbose_name_plural = 'API access keys'
+        ordering = ['name']
+
+    @classmethod
+    def endpoint_choices(cls):
+        return cls.Endpoint.choices
+
+    @classmethod
+    def generate_key(cls):
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def create_with_generated_key(cls, *, name, allowed_endpoints, created_by=None):
+        raw_key = cls.generate_key()
+        access_key = cls(
+            name=name,
+            key_prefix=raw_key[:12],
+            hashed_key=make_password(raw_key),
+            allowed_endpoints=list(allowed_endpoints),
+            created_by=created_by,
+        )
+        access_key.save()
+        return access_key, raw_key
+
+    @classmethod
+    def authenticate(cls, raw_key):
+        if not raw_key:
+            return None
+
+        prefix = raw_key[:12]
+        for candidate in cls.objects.filter(is_active=True, key_prefix=prefix):
+            if check_password(raw_key, candidate.hashed_key):
+                return candidate
+        return None
+
+    def allows_endpoint(self, endpoint_name):
+        return endpoint_name in (self.allowed_endpoints or [])
+
+    def allowed_endpoint_labels(self):
+        label_map = dict(self.Endpoint.choices)
+        return [label_map.get(endpoint, endpoint) for endpoint in (self.allowed_endpoints or [])]
+
+    def __str__(self):
+        return self.name
 
 
 class AKIPSConfiguration(models.Model):

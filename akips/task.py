@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 SNAPSHOT_FIXTURE_LABELS = ('akips', 'welcome', 'auth.group', 'auth.user')
 SNAPSHOT_IMPORT_EXCLUDED_MODELS = {
+    'akips.apiaccesskey',
     'admin.logentry',
     'auth.permission',
     'contenttypes.contenttype',
@@ -44,6 +45,8 @@ SNAPSHOT_IMPORT_EXCLUDED_MODELS_MERGE_ONLY = {
 }
 SNAPSHOT_IMPORT_LOCK_KEY = 'snapshot_import_task'
 SNAPSHOT_IMPORT_LOCK_TIMEOUT = 60 * 60 * 4
+SNAPSHOT_IMPORT_CACHE_PREFIX = 'snapshot_import_payload'
+SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT = SNAPSHOT_IMPORT_LOCK_TIMEOUT
 
 
 def get_snapshot_import_models(fixture_labels=SNAPSHOT_FIXTURE_LABELS):
@@ -58,6 +61,8 @@ def get_snapshot_import_models(fixture_labels=SNAPSHOT_FIXTURE_LABELS):
 
         for model in candidate_models:
             model_label = model._meta.label_lower
+            if model_label in SNAPSHOT_IMPORT_EXCLUDED_MODELS:
+                continue
             if model_label in seen_labels:
                 continue
             seen_labels.add(model_label)
@@ -136,26 +141,49 @@ def sanitize_snapshot_for_import(snapshot_path, clear_existing_data=False):
         return sanitized_file.name
 
 
+def materialize_snapshot_import_source(snapshot_source):
+    if snapshot_source and os.path.exists(snapshot_source):
+        return snapshot_source, None
+
+    cached_snapshot = cache.get(snapshot_source)
+    if not cached_snapshot:
+        raise FileNotFoundError(f'Snapshot import source not found: {snapshot_source}')
+
+    payload = cached_snapshot.get('payload')
+    suffix = cached_snapshot.get('suffix', '.json')
+    if payload is None:
+        raise FileNotFoundError(f'Snapshot import payload missing for cache key: {snapshot_source}')
+
+    with tempfile.NamedTemporaryFile('wb', suffix=suffix, delete=False) as snapshot_file:
+        snapshot_file.write(payload)
+        return snapshot_file.name, snapshot_source
+
+
 @shared_task
-def import_snapshot_task(snapshot_path, clear_existing_data=False):
+def import_snapshot_task(snapshot_source, clear_existing_data=False):
     """Import a snapshot fixture file in the background to avoid request timeouts."""
-    import_path = snapshot_path
+    snapshot_path = None
+    import_path = None
+    cached_snapshot_key = None
 
     if not cache.add(SNAPSHOT_IMPORT_LOCK_KEY, True, SNAPSHOT_IMPORT_LOCK_TIMEOUT):
         raise RuntimeError('A snapshot import is already in progress.')
 
     try:
+        snapshot_path, cached_snapshot_key = materialize_snapshot_import_source(snapshot_source)
         import_path = sanitize_snapshot_for_import(snapshot_path, clear_existing_data=clear_existing_data)
         with atomic():
             if clear_existing_data:
                 clear_snapshot_import_targets()
             call_command('loaddata', import_path)
-        logger.info('Snapshot import task completed successfully: %s', snapshot_path)
+        logger.info('Snapshot import task completed successfully: %s', snapshot_source)
     except Exception:
-        logger.exception('Snapshot import task failed: %s', snapshot_path)
+        logger.exception('Snapshot import task failed: %s', snapshot_source)
         raise
     finally:
         cache.delete(SNAPSHOT_IMPORT_LOCK_KEY)
+        if cached_snapshot_key:
+            cache.delete(cached_snapshot_key)
         if import_path != snapshot_path and import_path and os.path.exists(import_path):
             os.remove(import_path)
         if snapshot_path and os.path.exists(snapshot_path):

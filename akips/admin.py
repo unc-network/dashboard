@@ -53,6 +53,14 @@ class ServiceNowIncidentAdmin(admin.ModelAdmin):
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'voice_enabled']
 
+
+@admin.register(models.APIAccessKey)
+class APIAccessKeyAdmin(admin.ModelAdmin):
+    list_display = ['name', 'is_active', 'created_by', 'created_at', 'last_used_at']
+    list_filter = ['is_active', 'created_at']
+    readonly_fields = ['key_prefix', 'hashed_key', 'created_at', 'last_used_at']
+    search_fields = ['name', 'key_prefix', 'created_by__username']
+
 @admin.register(models.AKIPSConfiguration)
 class AKIPSConfigurationAdmin(admin.ModelAdmin):
     list_display = ['enabled', 'server', 'username', 'verify_ssl', 'updated_at']
