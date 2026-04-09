@@ -13,7 +13,7 @@ const PRECACHE_URLS = [
     '{% static 'akips/img/icon-192.png' %}',
     '{% static 'akips/img/icon-512.png' %}',
     '{% static 'akips/img/apple-touch-icon.png' %}',
-    '{% static 'akips/img/favicon.ico' %}',
+    '{% static 'akips/img/favicon.png' %}',
     '{% static 'admin-lte/plugins/jquery/jquery.min.js' %}',
     '{% static 'admin-lte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}',
     '{% static 'admin-lte/dist/js/adminlte.min.js' %}',

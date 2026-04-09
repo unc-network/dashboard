@@ -320,6 +320,18 @@
             color: #ffffff !important;
         }
 
+        .install-app-link.is-installed {
+            background: linear-gradient(180deg, #2f7d64 0%, #256650 100%);
+            color: #f3fcf8 !important;
+            cursor: default;
+        }
+
+        .install-app-link.is-installed:hover,
+        .install-app-link.is-installed:focus {
+            background: linear-gradient(180deg, #2f7d64 0%, #256650 100%);
+            color: #f3fcf8 !important;
+        }
+
         .install-app-link-label {
             font-size: 0.9rem;
             line-height: 1;
@@ -577,6 +589,13 @@
         body.theme-dark .install-app-link:hover,
         body.theme-dark .install-app-link:focus {
             background: linear-gradient(180deg, #3da4da 0%, #2584b2 100%);
+        }
+
+        body.theme-dark .install-app-link.is-installed,
+        body.theme-dark .install-app-link.is-installed:hover,
+        body.theme-dark .install-app-link.is-installed:focus {
+            background: linear-gradient(180deg, #419d7d 0%, #2f7d64 100%);
+            color: #f3fcf8 !important;
         }
 
         body.theme-dark .offline-status-banner {

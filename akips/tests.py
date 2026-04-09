@@ -39,6 +39,7 @@ class PwaViewTests(SimpleTestCase):
         self.assertEqual(payload['name'], 'OCNES Dashboard')
         self.assertEqual(payload['start_url'], reverse('home'))
         self.assertEqual(payload['display'], 'standalone')
+        self.assertEqual(payload['theme_color'], '#007fae')
         self.assertEqual(payload['icons'][0]['sizes'], '192x192')
 
     def test_service_worker_is_available(self):

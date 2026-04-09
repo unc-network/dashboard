@@ -28,10 +28,10 @@
     <title>{% block title %}{{ site.name }}{% endblock %}</title>
     {% endblock %}
 
-    <link rel="icon" href="{% static 'akips/img/favicon.ico' %}" type="image/x-icon" />
+    <link rel="icon" href="{% static 'akips/img/favicon.png' %}" type="image/png" />
     <link rel="apple-touch-icon" href="{% static 'akips/img/apple-touch-icon.png' %}" />
     <link rel="manifest" href="{% url 'pwa_manifest' %}" />
-    <meta name="theme-color" content="#0b7285" />
+    <meta name="theme-color" id="theme-color-meta" content="#007fae" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="OCNES" />
@@ -268,11 +268,50 @@
 <script type="text/javascript">
     (function () {
         var deferredInstallPrompt = null;
+        var installedInCurrentPage = false;
         var installNavItem = document.getElementById('install-app-nav-item');
         var installLink = document.getElementById('install-app-link');
+        var installIcon = document.getElementById('install-app-icon');
+        var installLabel = document.getElementById('install-app-label');
         var offlineBanner = document.getElementById('offline-status-banner');
         var offlineDismiss = document.getElementById('offline-status-dismiss');
         var offlineDismissedKey = 'ocnesOfflineBannerDismissed';
+
+        function isStandaloneMode() {
+            var navigatorStandalone = typeof navigator.standalone !== 'undefined' && navigator.standalone;
+            var mediaStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+            return Boolean(navigatorStandalone || mediaStandalone);
+        }
+
+        function isInstalled() {
+            return installedInCurrentPage || isStandaloneMode();
+        }
+
+        function setInstallLinkState(state) {
+            if (!installLink || !installIcon || !installLabel) {
+                return;
+            }
+
+            installLink.classList.remove('is-available', 'is-installed');
+            installLink.removeAttribute('aria-disabled');
+            installLink.removeAttribute('tabindex');
+
+            if (state === 'installed') {
+                installLink.classList.add('is-installed');
+                installLink.setAttribute('title', 'OCNES is installed on this device');
+                installLink.setAttribute('aria-label', 'OCNES is installed on this device');
+                installLink.setAttribute('aria-disabled', 'true');
+                installIcon.className = 'fas fa-check-circle';
+                installLabel.textContent = 'Installed';
+                return;
+            }
+
+            installLink.classList.add('is-available');
+            installLink.setAttribute('title', 'Install OCNES on this device');
+            installLink.setAttribute('aria-label', 'Install OCNES on this device');
+            installIcon.className = 'fas fa-download';
+            installLabel.textContent = 'Install App';
+        }
 
         function showInstallUi() {
             if (installNavItem) {
@@ -284,6 +323,22 @@
             if (installNavItem) {
                 installNavItem.classList.add('d-none');
             }
+        }
+
+        function syncInstallUi() {
+            if (isInstalled()) {
+                setInstallLinkState('installed');
+                showInstallUi();
+                return;
+            }
+
+            if (deferredInstallPrompt) {
+                setInstallLinkState('available');
+                showInstallUi();
+                return;
+            }
+
+            hideInstallUi();
         }
 
         function isOfflineDismissed() {
@@ -327,12 +382,17 @@
 
         if (!('serviceWorker' in navigator)) {
             syncOfflineBanner();
+            syncInstallUi();
             return;
         }
 
         if (installLink) {
             installLink.addEventListener('click', function (event) {
                 event.preventDefault();
+                if (isInstalled()) {
+                    return;
+                }
+
                 if (!deferredInstallPrompt) {
                     return;
                 }
@@ -340,7 +400,7 @@
                 deferredInstallPrompt.prompt();
                 deferredInstallPrompt.userChoice.finally(function () {
                     deferredInstallPrompt = null;
-                    hideInstallUi();
+                    syncInstallUi();
                 });
             });
         }
@@ -357,12 +417,23 @@
         window.addEventListener('beforeinstallprompt', function (event) {
             event.preventDefault();
             deferredInstallPrompt = event;
-            showInstallUi();
+            installedInCurrentPage = false;
+            syncInstallUi();
         });
 
         window.addEventListener('appinstalled', function () {
+            installedInCurrentPage = true;
             deferredInstallPrompt = null;
-            hideInstallUi();
+            syncInstallUi();
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && isStandaloneMode()) {
+                installedInCurrentPage = true;
+            }
+            if (!document.hidden) {
+                syncInstallUi();
+            }
         });
 
         window.addEventListener('load', function () {
@@ -370,6 +441,7 @@
                 console.warn('Service worker registration failed', error);
             });
             syncOfflineBanner();
+            syncInstallUi();
         });
     })();
 </script>

@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
 ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
 PWA_CACHE_NAME = 'ocnes-pwa-v1'
+PWA_THEME_COLOR = '#007fae'
 
 
 def get_recent_active_task_queryset(task_name, now=None, stale_after=ACTIVE_TASK_STALE_AFTER):
@@ -153,7 +154,7 @@ def pwa_manifest(request):
         'display': 'standalone',
         'orientation': 'portrait-primary',
         'background_color': '#f4f6f9',
-        'theme_color': '#0b7285',
+        'theme_color': PWA_THEME_COLOR,
         'icons': [
             {
                 'src': static('akips/img/icon-192.png'),
