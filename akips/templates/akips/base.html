@@ -47,6 +47,18 @@
 <body class="hold-transition {% block body_class %}{% block bodyclass %}layout-top-nav{% endblock %}{% endblock %}">
 <script type="text/javascript">
     (function () {
+        var THEME_COLOR_LIGHT = '#007fae';
+        var THEME_COLOR_DARK = '#13294b';
+
+        function setDocumentThemeColor(resolvedTheme) {
+            var themeColorMeta = document.getElementById('theme-color-meta');
+            if (!themeColorMeta) {
+                return;
+            }
+
+            themeColorMeta.setAttribute('content', resolvedTheme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+        }
+
         function resolveSystemTheme() {
             try {
                 if (window.matchMedia) {
@@ -80,6 +92,8 @@
 
         document.body.classList.add('theme-' + resolved);
         document.body.setAttribute('data-theme-mode', mode);
+        document.body.setAttribute('data-theme-resolved', resolved);
+        setDocumentThemeColor(resolved);
     })();
 </script>
 
@@ -156,6 +170,17 @@
     (function () {
         var THEME_KEY = 'ocnesThemeMode';
         var MODES = ['light', 'dark', 'system'];
+        var THEME_COLOR_LIGHT = '#007fae';
+        var THEME_COLOR_DARK = '#13294b';
+
+        function updateDocumentThemeColor(resolvedTheme) {
+            var themeColorMeta = document.getElementById('theme-color-meta');
+            if (!themeColorMeta) {
+                return;
+            }
+
+            themeColorMeta.setAttribute('content', resolvedTheme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+        }
 
         function getSystemTheme() {
             try {
@@ -216,6 +241,7 @@
             document.body.classList.add('theme-' + resolved);
             document.body.setAttribute('data-theme-mode', mode);
             document.body.setAttribute('data-theme-resolved', resolved);
+            updateDocumentThemeColor(resolved);
             updateThemeToggleUi(mode, resolved);
         }
 
