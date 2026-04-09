@@ -73,7 +73,8 @@
           "responsive": true, "lengthChange": false, "autoWidth": false,
           "buttons": ["copy", "csv", "excel", "pdf", "print"],
           "pageLength": 25,
-          "ordering": false,
+                    "ordering": true,
+                    "order": [[2, "desc"]],
         }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
     })
