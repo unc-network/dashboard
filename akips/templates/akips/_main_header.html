@@ -84,18 +84,13 @@
                     <i id="theme-toggle-icon" class="fas fa-adjust"></i>
                 </a>
             </li>
-            <li class="nav-item d-none" id="install-app-nav-item">
-                <a class="nav-link install-app-link" href="#" id="install-app-link" title="Install OCNES on this device" aria-label="Install OCNES on this device">
-                    <i class="fas fa-download" id="install-app-icon" aria-hidden="true"></i>
-                    <span class="install-app-link-label" id="install-app-label">Install App</span>
-                </a>
-            </li>
             <!-- Notifications Dropdown Menu -->
             {% block user_info %}
             {% if request.user.is_authenticated %}
             <li class="nav-item dropdown">
                     <a class="nav-link" data-toggle="dropdown" href="#">
-                        Welcome, {% firstof request.user.get_full_name request.user.get_username %}
+                        <span class="user-menu-greeting">Welcome,</span>
+                        <span class="user-menu-name">{% firstof request.user.get_full_name request.user.get_username %}</span>
                         <i class="fas fa-bars"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">

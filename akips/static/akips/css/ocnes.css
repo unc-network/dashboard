@@ -301,42 +301,6 @@
             background-color: #f9eff1;
         }
 
-        .install-app-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            border-radius: 999px;
-            background: linear-gradient(180deg, #158ec2 0%, #007fae 100%);
-            color: #f7fcff !important;
-            font-weight: 700;
-            margin-left: 0.25rem;
-            padding: 0.45rem 0.85rem !important;
-            box-shadow: 0 1px 3px rgba(19, 41, 75, 0.18);
-        }
-
-        .install-app-link:hover,
-        .install-app-link:focus {
-            background: linear-gradient(180deg, #0f7dab 0%, #006d96 100%);
-            color: #ffffff !important;
-        }
-
-        .install-app-link.is-installed {
-            background: linear-gradient(180deg, #2f7d64 0%, #256650 100%);
-            color: #f3fcf8 !important;
-            cursor: default;
-        }
-
-        .install-app-link.is-installed:hover,
-        .install-app-link.is-installed:focus {
-            background: linear-gradient(180deg, #2f7d64 0%, #256650 100%);
-            color: #f3fcf8 !important;
-        }
-
-        .install-app-link-label {
-            font-size: 0.9rem;
-            line-height: 1;
-        }
-
         .offline-status-banner {
             background: linear-gradient(90deg, #12375b 0%, #0b7285 100%);
             color: #f5fbff;
@@ -375,8 +339,60 @@
         }
 
         @media (max-width: 767.98px) {
-            .install-app-link-label {
+            .main-header.navbar {
+                padding-top: max(0.35rem, env(safe-area-inset-top));
+                padding-left: max(0.25rem, env(safe-area-inset-left));
+                padding-right: max(0.25rem, env(safe-area-inset-right));
+            }
+
+            .main-header .container {
+                padding-left: 0.35rem;
+                padding-right: 0.35rem;
+            }
+
+            .navbar-brand {
+                margin-right: 0.35rem;
+            }
+
+            .navbar-brand .brand-image {
+                height: 1.9rem;
+                margin-right: 0.35rem;
+                width: 1.9rem;
+            }
+
+            .navbar-brand .brand-text {
+                font-size: 1rem;
+            }
+
+            .main-header .nav-link {
+                min-height: 2.5rem;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .user-menu-greeting,
+            .user-menu-name {
                 display: none;
+            }
+
+            .content-wrapper {
+                padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+            }
+
+            .content-header {
+                padding-top: 0.5rem;
+                padding-bottom: 0.25rem;
+            }
+
+            .content-header h1 {
+                font-size: 1.45rem;
+                line-height: 1.15;
+            }
+
+            .content-header h1 small {
+                display: block;
+                margin-top: 0.2rem;
+                line-height: 1.3;
             }
 
             .offline-status-banner-inner {
@@ -579,23 +595,6 @@
             border-left-color: #d78493;
             background-color: #4a2831;
             color: #ffe8ed;
-        }
-
-        body.theme-dark .install-app-link {
-            background: linear-gradient(180deg, #3196cb 0%, #1f7ca9 100%);
-            color: #f6fbff !important;
-        }
-
-        body.theme-dark .install-app-link:hover,
-        body.theme-dark .install-app-link:focus {
-            background: linear-gradient(180deg, #3da4da 0%, #2584b2 100%);
-        }
-
-        body.theme-dark .install-app-link.is-installed,
-        body.theme-dark .install-app-link.is-installed:hover,
-        body.theme-dark .install-app-link.is-installed:focus {
-            background: linear-gradient(180deg, #419d7d 0%, #2f7d64 100%);
-            color: #f3fcf8 !important;
         }
 
         body.theme-dark .offline-status-banner {

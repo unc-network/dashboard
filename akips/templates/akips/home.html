@@ -331,6 +331,125 @@
         background: #2f5f8f !important;
         color: #e2efff !important;
     }
+
+    @media (max-width: 767.98px) {
+        .dashboard-toolbar-row {
+            display: none;
+        }
+
+        #chart {
+            display: none;
+        }
+
+        .content-header .header-actions {
+            width: 100%;
+            margin-top: 0.55rem;
+        }
+
+        .header-action-buttons {
+            justify-content: stretch;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            width: 100%;
+        }
+
+        .header-action-buttons .btn {
+            flex: 1 1 calc(50% - 0.25rem);
+            justify-content: center;
+            min-height: 2.55rem;
+            padding-left: 0.7rem;
+            padding-right: 0.7rem;
+            white-space: normal;
+        }
+
+        .header-action-buttons .btn:first-child {
+            flex: 0 0 auto;
+            min-width: 3rem;
+        }
+
+        .ops-status-strip .card-body {
+            align-items: flex-start !important;
+            padding: 0.75rem 0.8rem !important;
+        }
+
+        .ops-status-main {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .ops-chip {
+            font-size: 0.74rem;
+            line-height: 1.2;
+            margin-right: 0.25rem;
+            margin-bottom: 0.28rem;
+            padding: 0.24rem 0.48rem;
+        }
+
+        .ops-status-strip .ops-status-actions {
+            width: 100%;
+            justify-content: flex-start;
+            margin-left: 0;
+            margin-top: 0.35rem;
+        }
+
+        .ops-status-strip .custom-control-label {
+            line-height: 1.35;
+        }
+
+        .ops-card-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .event-card .card-header,
+        #chart .card-header {
+            padding: 0.55rem 0.7rem;
+        }
+
+        .event-card .card-title,
+        #chart .card-title {
+            font-size: 0.95rem;
+            line-height: 1.25;
+            margin-bottom: 0.28rem;
+            white-space: normal;
+        }
+
+        .ops-card-header .card-tools {
+            margin-left: 0 !important;
+            padding-right: 0;
+            width: 100%;
+        }
+
+        .card-meta {
+            font-size: 0.78rem;
+            line-height: 1.25;
+        }
+
+        .bldg-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.22rem;
+            margin-left: 0;
+            margin-top: 0.35rem;
+        }
+
+        .bldg-controls .btn {
+            font-size: 0.68rem;
+            padding: 0.16rem 0.34rem;
+        }
+
+        .chart {
+            overflow-x: auto;
+        }
+
+        #barChart {
+            min-height: 140px !important;
+            height: 140px !important;
+        }
+    }
+
     body.dashboard-compact .event-card .table td,
     body.dashboard-compact .event-card .table th {
         padding: 0.2rem 0.35rem;
@@ -493,7 +612,7 @@
 
 {% block no_heading %}
 {% if not hud_mode %}
-<div class="row">
+<div class="row dashboard-toolbar-row">
     <div class="col my-auto text-left text-sm">
         <div class="custom-control custom-switch d-inline-block ml-3">
             <input type="checkbox" class="custom-control-input" id="compact-toggle">

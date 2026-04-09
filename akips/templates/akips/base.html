@@ -295,10 +295,6 @@
     (function () {
         var deferredInstallPrompt = null;
         var installedInCurrentPage = false;
-        var installNavItem = document.getElementById('install-app-nav-item');
-        var installLink = document.getElementById('install-app-link');
-        var installIcon = document.getElementById('install-app-icon');
-        var installLabel = document.getElementById('install-app-label');
         var offlineBanner = document.getElementById('offline-status-banner');
         var offlineDismiss = document.getElementById('offline-status-dismiss');
         var offlineDismissedKey = 'ocnesOfflineBannerDismissed';
@@ -311,60 +307,6 @@
 
         function isInstalled() {
             return installedInCurrentPage || isStandaloneMode();
-        }
-
-        function setInstallLinkState(state) {
-            if (!installLink || !installIcon || !installLabel) {
-                return;
-            }
-
-            installLink.classList.remove('is-available', 'is-installed');
-            installLink.removeAttribute('aria-disabled');
-            installLink.removeAttribute('tabindex');
-
-            if (state === 'installed') {
-                installLink.classList.add('is-installed');
-                installLink.setAttribute('title', 'OCNES is installed on this device');
-                installLink.setAttribute('aria-label', 'OCNES is installed on this device');
-                installLink.setAttribute('aria-disabled', 'true');
-                installIcon.className = 'fas fa-check-circle';
-                installLabel.textContent = 'Installed';
-                return;
-            }
-
-            installLink.classList.add('is-available');
-            installLink.setAttribute('title', 'Install OCNES on this device');
-            installLink.setAttribute('aria-label', 'Install OCNES on this device');
-            installIcon.className = 'fas fa-download';
-            installLabel.textContent = 'Install App';
-        }
-
-        function showInstallUi() {
-            if (installNavItem) {
-                installNavItem.classList.remove('d-none');
-            }
-        }
-
-        function hideInstallUi() {
-            if (installNavItem) {
-                installNavItem.classList.add('d-none');
-            }
-        }
-
-        function syncInstallUi() {
-            if (isInstalled()) {
-                setInstallLinkState('installed');
-                showInstallUi();
-                return;
-            }
-
-            if (deferredInstallPrompt) {
-                setInstallLinkState('available');
-                showInstallUi();
-                return;
-            }
-
-            hideInstallUi();
         }
 
         function isOfflineDismissed() {
@@ -408,27 +350,7 @@
 
         if (!('serviceWorker' in navigator)) {
             syncOfflineBanner();
-            syncInstallUi();
             return;
-        }
-
-        if (installLink) {
-            installLink.addEventListener('click', function (event) {
-                event.preventDefault();
-                if (isInstalled()) {
-                    return;
-                }
-
-                if (!deferredInstallPrompt) {
-                    return;
-                }
-
-                deferredInstallPrompt.prompt();
-                deferredInstallPrompt.userChoice.finally(function () {
-                    deferredInstallPrompt = null;
-                    syncInstallUi();
-                });
-            });
         }
 
         if (offlineDismiss) {
@@ -444,21 +366,16 @@
             event.preventDefault();
             deferredInstallPrompt = event;
             installedInCurrentPage = false;
-            syncInstallUi();
         });
 
         window.addEventListener('appinstalled', function () {
             installedInCurrentPage = true;
             deferredInstallPrompt = null;
-            syncInstallUi();
         });
 
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden && isStandaloneMode()) {
                 installedInCurrentPage = true;
-            }
-            if (!document.hidden) {
-                syncInstallUi();
             }
         });
 
@@ -467,7 +384,6 @@
                 console.warn('Service worker registration failed', error);
             });
             syncOfflineBanner();
-            syncInstallUi();
         });
     })();
 </script>
