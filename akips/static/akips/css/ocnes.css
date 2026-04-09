@@ -635,6 +635,29 @@
             border-radius: 0.25rem;
         }
 
+
+        body.theme-dark .main-header.navbar.navbar-light .navbar-toggler {
+            border-color: rgba(143, 199, 240, 0.72);
+            background: rgba(255, 255, 255, 0.08);
+            color: #eaf4ff;
+            box-shadow: inset 0 0 0 1px rgba(10, 23, 38, 0.12);
+        }
+
+        body.theme-dark .main-header.navbar.navbar-light .navbar-toggler:hover,
+        body.theme-dark .main-header.navbar.navbar-light .navbar-toggler:focus {
+            background: rgba(143, 199, 240, 0.16);
+            border-color: rgba(179, 221, 249, 0.9);
+            color: #ffffff;
+        }
+
+        body.theme-dark .main-header.navbar.navbar-light .navbar-toggler:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.16rem rgba(143, 199, 240, 0.28);
+        }
+
+        body.theme-dark .main-header.navbar.navbar-light .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28234, 244, 255, 0.96%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
         body.theme-dark .dropdown-menu .dropdown-item:hover,
         body.theme-dark .dropdown-menu .dropdown-item:focus,
         body.theme-dark .dropdown-menu .dropdown-item.active {
@@ -655,6 +678,39 @@
             background-color: var(--oc-primary) !important;
             border-color: var(--oc-primary) !important;
             color: #0a1726 !important;
+        }
+
+        body.theme-dark.login-page .login-box .card,
+        body.theme-dark.login-page .login-card-body {
+            background-color: var(--oc-surface) !important;
+            color: var(--oc-text) !important;
+            border-color: var(--oc-border) !important;
+        }
+
+        body.theme-dark.login-page .login-card-body {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+        }
+
+        body.theme-dark.login-page .login-box-msg,
+        body.theme-dark.login-page .icheck-primary label,
+        body.theme-dark.login-page .login-logo a {
+            color: var(--oc-text) !important;
+        }
+
+        body.theme-dark.login-page .input-group .input-group-text {
+            background-color: var(--oc-surface-2);
+            border-color: var(--oc-border);
+            color: var(--oc-text-muted);
+        }
+
+        body.theme-dark.login-page .icheck-primary input:first-child + label:before {
+            background-color: var(--oc-surface);
+            border-color: var(--oc-border);
+        }
+
+        body.theme-dark.login-page .icheck-primary input:first-child:checked + label:before {
+            background-color: var(--oc-primary) !important;
+            border-color: var(--oc-primary) !important;
         }
 
         .card-primary .card-header,
