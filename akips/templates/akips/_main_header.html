@@ -72,11 +72,14 @@
     <ul class="navbar-nav ml-auto header-controls">
         {% block header_dropdowns %}
         <li class="nav-item">
+            {% with notifications_enabled=request.user.profile.alert_enabled|default:True %}
             <a class="nav-link header-control" href="#" id="alert-toggle"
                data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}"
-               title="Notifications: On" aria-label="Toggle notifications" aria-pressed="true">
-                <i id="alert-toggle-icon" class="fas fa-volume-up header-control-icon" aria-hidden="true"></i>
+               data-enabled="{% if notifications_enabled %}true{% else %}false{% endif %}"
+               title="Notifications: {% if notifications_enabled %}On{% else %}Off{% endif %}" aria-label="Toggle notifications" aria-pressed="{% if notifications_enabled %}true{% else %}false{% endif %}">
+                <i id="alert-toggle-icon" class="fas {% if notifications_enabled %}fa-volume-up{% else %}fa-volume-mute{% endif %} header-control-icon" aria-hidden="true"></i>
             </a>
+            {% endwith %}
         </li>
         <li class="nav-item">
             <a class="nav-link header-control" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
