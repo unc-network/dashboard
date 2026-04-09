@@ -29,6 +29,15 @@ function shouldCachePage(requestUrl) {
     return CACHEABLE_PAGE_URLS.indexOf(requestPath) !== -1;
 }
 
+function shouldBypassRuntimeCache(request) {
+    var requestUrl = new URL(request.url);
+    if (requestUrl.origin !== self.location.origin) {
+        return false;
+    }
+
+    return requestUrl.pathname.indexOf('/api/') === 0;
+}
+
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
@@ -57,6 +66,11 @@ self.addEventListener('activate', function (event) {
 
 self.addEventListener('fetch', function (event) {
     if (event.request.method !== 'GET') {
+        return;
+    }
+
+    if (shouldBypassRuntimeCache(event.request)) {
+        event.respondWith(fetch(event.request));
         return;
     }
 

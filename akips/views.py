@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
 ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
-PWA_CACHE_NAME = 'ocnes-pwa-v1'
+PWA_CACHE_NAME = 'ocnes-pwa-v2'
 PWA_THEME_COLOR = '#007fae'
 
 
@@ -2349,6 +2349,8 @@ class UserAlertView(LoginRequiredMixin, View):
             response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             response = JsonResponse(result)
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
         response.set_cookie('last_notified', result['last_notified'].isoformat())
         return response
 

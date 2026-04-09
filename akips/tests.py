@@ -52,6 +52,7 @@ class PwaViewTests(SimpleTestCase):
         self.assertContains(response, reverse('pwa_offline'))
         self.assertContains(response, reverse('home'))
         self.assertContains(response, reverse('about'))
+        self.assertContains(response, "pathname.indexOf('/api/') === 0")
 
     def test_offline_page_is_available(self):
         response = self.client.get(reverse('pwa_offline'))
