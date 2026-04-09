@@ -227,7 +227,7 @@
             var resolvedMode = resolved || (mode === 'system' ? getSystemTheme() : mode);
             var modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
             var resolvedLabel = resolvedMode.charAt(0).toUpperCase() + resolvedMode.slice(1);
-            icon.className = 'fas ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
+            icon.className = 'fas header-control-icon ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
             if (mode === 'system') {
                 link.setAttribute('title', 'Theme: ' + modeLabel + ' -> ' + resolvedLabel + ' (click to cycle Light, Dark, System)');
             } else {
