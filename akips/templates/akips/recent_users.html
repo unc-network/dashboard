@@ -12,7 +12,7 @@
 <div class="card card-primary">
     <div class="card-body table-responsive">
         <p class="text-muted mb-3">
-            This page is a summary about recent user activity. <b>Logged In</b> shows when the user authenticated, <b>Last Active</b> is estimated from the most recent session refresh, <b>Time Active</b> the time between those two points, and <b>Expires</b> shows when the current {{ session_timeout_hours }}-hour idle timeout will end if there is no further activity.
+            This page summarizes recent user activity. <b>Logged In</b> shows when the user authenticated, <b>Last Active</b> is estimated from the most recent session refresh, <b>Time Active</b> is the time between those two points, <b>Expires</b> shows when the current {{ session_timeout_hours }}-hour idle timeout will end if there is no further activity, and <b>Alert State</b> summarizes the user preference as off, tone, or voice.
         </p>
         <div id="example1_wrapper" class="dataTables_wrapper dt-bootstrap4">
 
@@ -24,9 +24,7 @@
                     <th>Last Active</th>
                     <th>Time Active</th>
                     <th>Expires</th>
-                    <th>Superuser</th>
-                    <th>Alert Enabled</th>
-                    <th>Use Voice</th>
+                    <th>Alert State</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,9 +35,15 @@
                     <td>{{ u.last_activity|date:'m-d H:i:s' }}</td>
                     <td>{{ u.duration_display|default:'-' }}</td>
                     <td>{{ u.expire|date:'m-d H:i:s' }}</td>
-                    <td>{{ u.user.is_superuser }}</td>
-                    <td>{{ u.user.profile.alert_enabled }}</td>
-                    <td>{{ u.user.profile.voice_enabled }}</td>
+                    <td>
+                        {% if not u.user.profile.alert_enabled %}
+                            off
+                        {% elif u.user.profile.voice_enabled %}
+                            voice
+                        {% else %}
+                            tone
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
