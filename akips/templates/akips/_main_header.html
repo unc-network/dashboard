@@ -72,7 +72,7 @@
     <ul class="navbar-nav ml-auto header-controls">
         {% block header_dropdowns %}
         <li class="nav-item">
-            {% with notifications_enabled=request.user.profile.alert_enabled|default:True %}
+            {% with notifications_enabled=request.user.profile.alert_enabled %}
             <a class="nav-link header-control" href="#" id="alert-toggle"
                data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}"
                data-enabled="{% if notifications_enabled %}true{% else %}false{% endif %}"
