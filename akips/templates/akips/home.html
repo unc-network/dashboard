@@ -113,6 +113,32 @@
         position: static;
         margin: 0;
     }
+    .ops-mini-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        border-radius: 999px;
+        padding: 0.22rem 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.1;
+        border: 1px solid transparent;
+    }
+    .ops-mini-pill.is-danger {
+        background: #f6e9ec;
+        border-color: #e8ccd3;
+        color: #6e2e3b;
+    }
+    .ops-mini-pill.is-success {
+        background: #e6f4ed;
+        border-color: #c5e2d3;
+        color: #245a43;
+    }
+    .ops-mini-pill.is-muted {
+        background: #edf1f5;
+        border-color: #d6dde5;
+        color: #445467;
+    }
     .event-card .bldg-parent-row {
         background: #edf3f9;
     }
@@ -331,10 +357,43 @@
         background: #2f5f8f !important;
         color: #e2efff !important;
     }
+    body.theme-dark .ops-mini-pill.is-danger {
+        background: #5a333d;
+        border-color: #7b4b57;
+        color: #ffe3e9;
+    }
+    body.theme-dark .ops-mini-pill.is-success {
+        background: #2f6d59;
+        border-color: #46866f;
+        color: #e3f8ef;
+    }
+    body.theme-dark .ops-mini-pill.is-muted {
+        background: #2b3847;
+        border-color: #3f5065;
+        color: #c8d6e4;
+    }
 
     @media (max-width: 767.98px) {
         .dashboard-toolbar-row {
+            display: flex;
+            margin-bottom: 0.6rem;
+        }
+
+        .dashboard-toolbar-row > .col:first-child,
+        .header-action-buttons .btn:not(#incident_button) {
             display: none;
+        }
+
+        .dashboard-toolbar-row > .header-action-buttons {
+            display: flex;
+            width: 100%;
+            max-width: none;
+            flex: 1 1 100%;
+        }
+
+        .header-action-buttons #incident_button {
+            flex: 1 1 100%;
+            width: 100%;
         }
 
         #chart {
@@ -438,6 +497,259 @@
         .bldg-controls .btn {
             font-size: 0.68rem;
             padding: 0.16rem 0.34rem;
+        }
+
+        .event-card .card-body.table-responsive {
+            overflow-x: visible;
+        }
+
+        .ops-mobile-stack {
+            padding: 0.6rem;
+        }
+
+        .ops-mobile-stack .ops-mini-card + .ops-mini-card {
+            margin-top: 0.55rem;
+        }
+
+        .ops-mini-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 248, 252, 0.98) 100%);
+            border: 1px solid rgba(168, 197, 223, 0.75);
+            border-radius: 0.8rem;
+            box-shadow: 0 10px 22px rgba(16, 39, 63, 0.08);
+            padding: 0.68rem 0.72rem;
+        }
+
+        .ops-mini-card.ops-mini-card-child {
+            margin-left: 0.8rem;
+            position: relative;
+        }
+
+        .ops-mini-card.ops-mini-card-child:before {
+            content: '';
+            position: absolute;
+            left: -0.5rem;
+            top: 0.9rem;
+            bottom: 0.9rem;
+            width: 2px;
+            border-radius: 999px;
+            background: rgba(120, 154, 184, 0.42);
+        }
+
+        .ops-mini-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.7rem;
+        }
+
+        .ops-mini-card-main {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .ops-mini-card-side {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+        }
+
+        .ops-mini-card-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: #11253b;
+            word-break: break-word;
+        }
+
+        .ops-mini-card-title a {
+            color: inherit;
+        }
+
+        .ops-mini-card-subtitle {
+            margin-top: 0.22rem;
+            font-size: 0.76rem;
+            line-height: 1.35;
+            color: #516273;
+            word-break: break-word;
+        }
+
+        .ops-mini-card-facts {
+            margin-top: 0.6rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.42rem 0.55rem;
+        }
+
+        .ops-mini-fact {
+            min-width: 0;
+        }
+
+        .ops-mini-fact.ops-mini-fact-wide {
+            grid-column: 1 / -1;
+        }
+
+        .ops-mini-chip-row {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .ops-mini-chip-row .ops-chip {
+            margin: 0;
+            font-size: 0.68rem;
+            padding: 0.2rem 0.44rem;
+        }
+
+        .ops-mini-label {
+            display: block;
+            margin-bottom: 0.14rem;
+            font-size: 0.64rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #627384;
+        }
+
+        .ops-mini-value {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #10253a;
+            word-break: break-word;
+        }
+
+        .ops-mini-card-actions {
+            margin-top: 0.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.38rem;
+            align-items: center;
+        }
+
+        .ops-mobile-action,
+        .ops-mobile-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.34rem;
+            min-height: 1.9rem;
+            padding: 0.22rem 0.56rem;
+            border-radius: 999px;
+            border: 1px solid rgba(152, 177, 199, 0.9);
+            background: rgba(255, 255, 255, 0.92);
+            color: #143653;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.1;
+            text-decoration: none;
+        }
+
+        .ops-mini-card-actions .btn {
+            min-height: 1.9rem;
+            border-radius: 999px;
+            padding: 0.22rem 0.62rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .ops-mobile-check {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .ops-mobile-check input {
+            margin: 0;
+        }
+
+        .ops-mobile-action-muted {
+            color: #5b6b7b;
+        }
+
+        .ops-mobile-action-toggle {
+            padding-right: 0.3rem;
+        }
+
+        .ops-mobile-action-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #56687a;
+        }
+
+        .ops-ack-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.32rem;
+        }
+
+        .ops-ack-control .form-group {
+            margin: 0 !important;
+        }
+
+        .ops-ack-control [data-toggle="popover"] {
+            line-height: 1;
+        }
+
+        .ops-mobile-empty {
+            border: 1px dashed rgba(150, 177, 201, 0.9);
+            border-radius: 0.75rem;
+            padding: 0.9rem 0.8rem;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #58697a;
+            background: rgba(246, 249, 252, 0.92);
+        }
+
+        .ops-mini-card .dup-data {
+            float: none !important;
+            margin-left: 0.38rem;
+            vertical-align: middle;
+        }
+
+        .ops-mini-card .summary-comment,
+        .ops-mini-card .summary-comment-static {
+            display: inline-flex;
+            margin-left: 0.28rem !important;
+            vertical-align: middle;
+        }
+
+        body.theme-dark .ops-mini-card {
+            background: linear-gradient(180deg, rgba(35, 50, 70, 0.98) 0%, rgba(29, 41, 57, 0.98) 100%);
+            border-color: rgba(82, 110, 139, 0.92);
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+        }
+
+        body.theme-dark .ops-mini-card.ops-mini-card-child:before {
+            background: rgba(120, 154, 184, 0.55);
+        }
+
+        body.theme-dark .ops-mini-card-title,
+        body.theme-dark .ops-mini-value {
+            color: #ebf4ff;
+        }
+
+        body.theme-dark .ops-mini-card-subtitle,
+        body.theme-dark .ops-mini-label,
+        body.theme-dark .ops-mobile-action-label,
+        body.theme-dark .ops-mobile-action-muted,
+        body.theme-dark .ops-mobile-empty {
+            color: #bfd0e2;
+        }
+
+        body.theme-dark .ops-mobile-action,
+        body.theme-dark .ops-mobile-check {
+            background: rgba(24, 38, 55, 0.94);
+            border-color: rgba(82, 110, 139, 0.95);
+            color: #e4f0ff;
+        }
+
+        body.theme-dark .ops-mobile-empty {
+            background: rgba(30, 43, 58, 0.94);
+            border-color: rgba(88, 117, 148, 0.9);
         }
 
         .chart {
@@ -1086,6 +1398,129 @@
         return '<td class="text-center akips_trend d-none d-md-table-cell"></td>';
     }
 
+    function getTrendMeta(trend) {
+        if (trend === 'New' || trend === 'Increasing') {
+            return { label: trend, icon: 'fa-caret-up', className: 'is-danger' };
+        }
+        if (trend === 'Decreasing') {
+            return { label: 'Decreasing', icon: 'fa-caret-down', className: 'is-success' };
+        }
+        if (trend === 'Recovered') {
+            return { label: 'Recovered', icon: 'fa-thumbs-up', className: 'is-success' };
+        }
+        return { label: 'Stable', icon: 'fa-minus', className: 'is-muted' };
+    }
+
+    function renderTrendBadge(trend) {
+        var meta = getTrendMeta(trend);
+        return '<span class="ops-mini-pill ' + meta.className + '"><i class="fas ' + meta.icon + '"></i>' + escapeHtml(meta.label) + '</span>';
+    }
+
+    function renderAckInfo(row) {
+        if (!row.ack) {
+            return '';
+        }
+        return '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>';
+    }
+
+    function renderAckToggle(row, inputClass, idPrefix) {
+        var ackChecked = row.ack ? ' checked' : '';
+        var switchId = idPrefix + '-' + row.id;
+        return '<div class="ops-ack-control"><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ' + inputClass + '" id="' + switchId + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="' + switchId + '"></label></div></div>' + renderAckInfo(row) + '</div>';
+    }
+
+    function renderMobileAckAction(row, inputClass, idPrefix) {
+        if (window.dashboardHudMode) {
+            return '';
+        }
+        return '<div class="ops-mobile-action ops-mobile-action-toggle"><span class="ops-mobile-action-label">Ack</span>' + renderAckToggle(row, inputClass, idPrefix) + '</div>';
+    }
+
+    function renderMobileIncidentAction(incident, eventValue) {
+        if (incident && incident.url && incident.id) {
+            return '<a class="ops-mobile-action ops-mobile-action-link" href="' + escapeHtml(incident.url) + '" target="_blank">Incident ' + escapeHtml(incident.id) + '</a>';
+        }
+        if (window.dashboardHudMode) {
+            return '<span class="ops-mobile-action ops-mobile-action-muted">No incident</span>';
+        }
+        return '<label class="ops-mobile-check ops-mobile-action"><input type="checkbox" name="event" value="' + escapeHtml(eventValue) + '">Incident</label>';
+    }
+
+    function renderMiniFact(label, value, extraClass) {
+        if (value === null || value === undefined || value === '') {
+            return '';
+        }
+        return '<div class="ops-mini-fact ' + (extraClass || '') + '"><span class="ops-mini-label">' + escapeHtml(label) + '</span><span class="ops-mini-value">' + value + '</span></div>';
+    }
+
+    function renderMiniRaw(content, extraClass) {
+        if (!content) {
+            return '';
+        }
+        return '<div class="ops-mini-fact ' + (extraClass || '') + '">' + content + '</div>';
+    }
+
+    function renderCountChip(label, value, chipClass, suffix, extraHtml) {
+        var numericValue = parseInt(value, 10);
+        if (isNaN(numericValue) || numericValue <= 0) {
+            return '';
+        }
+        return '<span class="ops-chip ' + chipClass + '">' + escapeHtml(label) + ': <span>' + escapeHtml(String(numericValue)) + escapeHtml(suffix || '') + '</span>' + (extraHtml || '') + '</span>';
+    }
+
+    function renderBldgSummaryChips(row) {
+        var chips = '';
+        chips += renderCountChip('SW', row.switch_count, 'ops-chip-switch');
+        chips += renderCountChip('AP', row.ap_count, 'ops-chip-ap');
+        chips += renderCountChip('UPS', row.ups_count, 'ops-chip-ups', '', row.ups_battery > 0 ? ' <i class="fas fa-battery-three-quarters text-danger"></i>' : '');
+        chips += renderCountChip('%', row.percent_down, row.percent_down >= 10 ? 'ops-chip-danger' : 'ops-chip-neutral', '%');
+        if (!chips) {
+            chips = '<span class="ops-chip ops-chip-neutral">Clear</span>';
+        }
+        return '<div class="ops-mini-chip-row">' + chips + '</div>';
+    }
+
+    function renderSpecSummaryChips(row) {
+        var chips = '';
+        chips += renderCountChip('All', row.total_count, 'ops-chip-special');
+        chips += renderCountChip('%', row.percent_down, row.percent_down >= 10 ? 'ops-chip-danger' : 'ops-chip-neutral', '%');
+        if (!chips) {
+            chips = '<span class="ops-chip ops-chip-neutral">Clear</span>';
+        }
+        return '<div class="ops-mini-chip-row">' + chips + '</div>';
+    }
+
+    function renderLastEventSubtitle(lastEvent) {
+        if (!lastEvent) {
+            return '';
+        }
+        return 'Last event ' + escapeHtml(lastEvent);
+    }
+
+    function renderMiniCard(titleHtml, subtitleHtml, factsHtml, actionsHtml, extraClass, sideHtml, attrsHtml) {
+        var html = '<article class="ops-mini-card ' + (extraClass || '') + '" ' + (attrsHtml || '') + '><div class="ops-mini-card-header"><div class="ops-mini-card-main"><div class="ops-mini-card-title">' + titleHtml + '</div>';
+        if (subtitleHtml) {
+            html += '<div class="ops-mini-card-subtitle">' + subtitleHtml + '</div>';
+        }
+        html += '</div>';
+        if (sideHtml) {
+            html += '<div class="ops-mini-card-side">' + sideHtml + '</div>';
+        }
+        html += '</div>';
+        if (factsHtml) {
+            html += '<div class="ops-mini-card-facts">' + factsHtml + '</div>';
+        }
+        if (actionsHtml) {
+            html += '<div class="ops-mini-card-actions">' + actionsHtml + '</div>';
+        }
+        html += '</article>';
+        return html;
+    }
+
+    function wrapResponsiveCardContent(tableHtml, mobileHtml) {
+        return '<div class="ops-mobile-stack d-md-none">' + mobileHtml + '</div><div class="d-none d-md-block">' + tableHtml + '</div>';
+    }
+
     function renderIncidentCell(incident, eventValue, extraClass) {
         var klass = extraClass || '';
         if (incident && incident.url && incident.id) {
@@ -1113,6 +1548,7 @@
     function renderCritCard(card) {
         var rows = card.rows || [];
         var html;
+        var mobileHtml = '';
         if (window.dashboardHudMode) {
             html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Critical Device</th><th>IP Address</th><th>Description</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
         } else {
@@ -1120,11 +1556,9 @@
         }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
-            var ackChecked = row.ack ? ' checked' : '';
-            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
             html += '<tr>';
             if (!window.dashboardHudMode) {
-                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+                html += '<td>' + renderAckToggle(row, 'ack-switch', 'ack-switch-table') + '</td>';
             }
             html +=
                 '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.device_name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
@@ -1134,9 +1568,22 @@
                 renderTrendCell(row.trend) +
                 renderIncidentCell(row.incident, 'summary_' + row.id, '') +
                 '</tr>';
+
+            mobileHtml += renderMiniCard(
+                '<a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.device_name) + '</a>' + renderSummaryComment(row),
+                renderLastEventSubtitle(row.last_event),
+                renderMiniFact('IP', escapeHtml(row.device_ip4addr)) +
+                renderMiniFact('Description', escapeHtml(row.device_descr), 'ops-mini-fact-wide'),
+                renderTrendBadge(row.trend) + renderMobileIncidentAction(row.incident, 'summary_' + row.id),
+                '',
+                renderMobileAckAction(row, 'ack-switch', 'ack-switch-mobile')
+            );
         }
         html += '</tbody></table>';
-        return html;
+        if (!mobileHtml) {
+            mobileHtml = '<div class="ops-mobile-empty">No critical devices are currently down.</div>';
+        }
+        return wrapResponsiveCardContent(html, mobileHtml);
     }
 
     function renderDownCount(n) {
@@ -1151,6 +1598,7 @@
         var rows = card.rows || [];
         var allExpanded = window.bldgHierarchyExpanded !== false;
         var html;
+        var mobileHtml = '';
         if (window.dashboardHudMode) {
             html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Tier1 / Building</th><th class="d-none d-md-table-cell num-col">Switch</th><th class="d-none d-md-table-cell num-col">AP</th><th class="d-none d-md-table-cell num-col">UPS</th><th class="d-none d-md-table-cell num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center d-none d-md-table-cell">Incident</th></tr></thead><tbody>';
         } else {
@@ -1163,13 +1611,15 @@
             var isDistribution = row.type === 'Distribution';
             var trClass = '';
             var ackCell = '';
+            var mobileCardClass = '';
+            var mobileSide = '';
+            var mobileTitle = '';
+            var mobileActions = '';
             if (!window.dashboardHudMode) {
                 ackCell = '<td></td>';
             }
             if (!isDistribution && !window.dashboardHudMode) {
-                var ackChecked = row.ack ? ' checked' : '';
-                var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
-                ackCell = '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+                ackCell = '<td>' + renderAckToggle(row, 'ack-switch', 'ack-switch-table') + '</td>';
             }
 
             var upsBatteryIcon = row.ups_battery > 0 ? ' <i class="fas fa-battery-three-quarters text-danger"></i>' : '';
@@ -1185,12 +1635,21 @@
                 nameCell = '<td><button type="button" class="bldg-group-toggle" data-group="' + currentGroup + '" aria-expanded="' + (allExpanded ? 'true' : 'false') + '" title="' + (allExpanded ? 'Collapse section' : 'Expand section') + '"><i class="fas ' + (allExpanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-layer-group"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
                 trendCell = '<td class="d-none d-md-table-cell"></td>';
                 incidentCell = '<td class="text-center d-none d-md-table-cell"></td>';
+                mobileCardClass = 'ops-mini-card-group bldg-parent-row';
+                mobileTitle = '<button type="button" class="bldg-group-toggle" data-group="' + currentGroup + '" aria-expanded="' + (allExpanded ? 'true' : 'false') + '" title="' + (allExpanded ? 'Collapse section' : 'Expand section') + '"><i class="fas ' + (allExpanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '"><i class="fas fa-layer-group"></i> ' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row);
             } else {
                 trClass = currentGroup ? ' class="bldg-child-row bldg-child-of-' + currentGroup + '"' : '';
                 if (!allExpanded) {
                     trClass = trClass.replace('"', '" style="display:none"');
                 }
                 nameCell = '<td><span class="bldg-child-name"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>';
+                mobileCardClass = 'ops-mini-card-child';
+                if (currentGroup) {
+                    mobileCardClass += ' bldg-child-row bldg-child-of-' + currentGroup;
+                }
+                mobileTitle = '<a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a>' + renderSummaryComment(row);
+                mobileSide = renderMobileAckAction(row, 'ack-switch', 'ack-switch-mobile');
+                mobileActions = renderTrendBadge(row.trend) + renderMobileIncidentAction(row.incident, 'summary_' + row.id);
             }
 
             html += '<tr' + trClass + '>' +
@@ -1204,14 +1663,26 @@
                 trendCell +
                 incidentCell +
                 '</tr>';
+
+            mobileHtml += renderMiniCard(
+                mobileTitle,
+                renderLastEventSubtitle(row.last_event),
+                renderMiniRaw(renderBldgSummaryChips(row), 'ops-mini-fact-wide') +
+                '',
+                mobileActions,
+                mobileCardClass,
+                mobileSide,
+                (!allExpanded && !isDistribution) ? 'style="display:none"' : ''
+            );
         }
 
         if (!rows.length) {
             html += '<tr><td colspan="10" class="text-center">' + escapeHtml(card.empty_message || 'Tier 1 and Building events are currently clear') + '</td></tr>';
+            mobileHtml = '<div class="ops-mobile-empty">' + escapeHtml(card.empty_message || 'Tier 1 and Building events are currently clear') + '</div>';
         }
 
         html += '</tbody></table>';
-        return html;
+        return wrapResponsiveCardContent(html, mobileHtml);
     }
 
     function setBldgGroupsExpanded(expanded) {
@@ -1230,6 +1701,7 @@
     function renderSpecCard(card) {
         var rows = card.rows || [];
         var html;
+        var mobileHtml = '';
         if (window.dashboardHudMode) {
             html = '<table class="table table-hover table-sm ops-table"><thead><tr><th>Special Grouping</th><th class="num-col">All</th><th class="num-col">% Affected</th><th class="ts-col">Last Event</th><th class="d-none d-md-table-cell">Trend</th><th class="text-center">Incident</th></tr></thead><tbody>';
         } else {
@@ -1237,12 +1709,10 @@
         }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
-            var ackChecked = row.ack ? ' checked' : '';
-            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
             var percentLabel = row.percent_down >= 10 ? '<span class="text-danger">' + escapeHtml(row.percent_down) + '%</span>' : escapeHtml(row.percent_down) + '%';
             html += '<tr>';
             if (!window.dashboardHudMode) {
-                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-switch" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+                html += '<td>' + renderAckToggle(row, 'ack-switch', 'ack-switch-table') + '</td>';
             }
             html +=
                 '<td><span class="font-weight-bold mr-2"><a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a></span>' + renderSummaryComment(row) + '</td>' +
@@ -1252,9 +1722,21 @@
                 renderTrendCell(row.trend) +
                 renderIncidentCell(row.incident, 'summary_' + row.id, '') +
                 '</tr>';
+
+            mobileHtml += renderMiniCard(
+                '<a href="' + escapeHtml(row.summary_url) + '">' + escapeHtml(row.name) + '</a>' + renderSummaryComment(row),
+                renderLastEventSubtitle(row.last_event),
+                renderMiniRaw(renderSpecSummaryChips(row), 'ops-mini-fact-wide'),
+                renderTrendBadge(row.trend) + renderMobileIncidentAction(row.incident, 'summary_' + row.id),
+                '',
+                renderMobileAckAction(row, 'ack-switch', 'ack-switch-mobile')
+            );
         }
         html += '</tbody></table>';
-        return html;
+        if (!mobileHtml) {
+            mobileHtml = '<div class="ops-mobile-empty">No special group events are currently active.</div>';
+        }
+        return wrapResponsiveCardContent(html, mobileHtml);
     }
 
     function renderTrapCard(card) {
@@ -1262,6 +1744,7 @@
         var page = card.page || 1;
         var totalPages = card.total_pages || 1;
         var html;
+        var mobileHtml = '';
         if (window.dashboardHudMode) {
             html = '<table class="table table-hover table-sm m-0 ops-table"><thead><tr><th>Device</th><th>Trap</th><th class="ts-col">Last</th><th>Incident</th></tr></thead><tbody>';
         } else {
@@ -1269,15 +1752,13 @@
         }
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
-            var ackChecked = row.ack ? ' checked' : '';
-            var ackInfo = row.ack ? '<span data-container="body" data-toggle="popover" data-content="Ack by ' + escapeHtml(row.ack_by) + ' at ' + escapeHtml(row.ack_at) + '"><i class="fas fa-info-circle text-primary"></i></span>' : '';
             var dupBadge = '';
             if (row.dup_count > 0) {
                 dupBadge = '<span class="float-right badge bg-primary dup-data" data-last="' + escapeHtml(row.dup_last_iso) + '">' + escapeHtml(row.dup_count) + ' dup</span>';
             }
             html += '<tr>';
             if (!window.dashboardHudMode) {
-                html += '<td><div class="form-group float-left m-0"><div class="custom-control custom-switch"><input type="checkbox" class="custom-control-input ack-trap" id="ack-switch-' + row.id + '" data-url="' + escapeHtml(row.ack_url) + '"' + ackChecked + '><label class="custom-control-label" for="ack-switch-' + row.id + '"></label></div></div>' + ackInfo + '</td>';
+                html += '<td>' + renderAckToggle(row, 'ack-trap', 'ack-trap-table') + '</td>';
             }
             html += '<td><a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a></td>' +
                 '<td><a href="' + escapeHtml(row.trap_url) + '">' + escapeHtml(row.trap_oid) + '</a>' + dupBadge + '</td>' +
@@ -1287,8 +1768,21 @@
                 html += '<td><button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button></td>';
             }
             html += '</tr>';
+
+            mobileHtml += renderMiniCard(
+                '<a href="' + escapeHtml(row.device_url) + '">' + escapeHtml(row.device_name) + '</a>',
+                renderLastEventSubtitle(row.last_event),
+                renderMiniFact('Trap', '<a href="' + escapeHtml(row.trap_url) + '">' + escapeHtml(row.trap_oid) + '</a>' + dupBadge, 'ops-mini-fact-wide'),
+                renderMobileIncidentAction(row.incident, 'trap_' + row.id) + (!window.dashboardHudMode ? '<button type="button" class="btn btn-primary btn-sm trap-clear" data-url="' + escapeHtml(row.clear_url) + '">Clear</button>' : ''),
+                '',
+                renderMobileAckAction(row, 'ack-trap', 'ack-trap-mobile')
+            );
         }
         html += '</tbody></table>';
+        if (!mobileHtml) {
+            mobileHtml = '<div class="ops-mobile-empty">No open traps right now.</div>';
+        }
+        html = wrapResponsiveCardContent(html, mobileHtml);
         if (totalPages > 1 && !window.dashboardHudMode) {
             html += '<div class="trap-pager border-top d-flex justify-content-between align-items-center px-2 py-2">';
             html += '<button type="button" class="btn btn-outline-secondary btn-xs trap-page-btn" data-page="' + (page - 1) + '"' + (card.has_prev ? '' : ' disabled') + '>Prev</button>';
@@ -1680,7 +2174,7 @@
                 return;
             }
             //$(this).prop('disabled', true);
-            var tr = $(this).closest('tr');
+            var tr = $(this).closest('tr, .ops-mini-card');
             var url = $(this).data("url");
             $.get(url, {})
 
@@ -1706,9 +2200,10 @@
             var group = $(this).data('group');
             var expanded = $(this).attr('aria-expanded') === 'true';
             var nextExpanded = !expanded;
-            $(this).attr('aria-expanded', nextExpanded ? 'true' : 'false');
-            $(this).attr('title', nextExpanded ? 'Collapse section' : 'Expand section');
-            $(this).find('i').toggleClass('fa-chevron-down', nextExpanded).toggleClass('fa-chevron-right', !nextExpanded);
+            var toggles = $('.bldg-group-toggle[data-group="' + group + '"]');
+            toggles.attr('aria-expanded', nextExpanded ? 'true' : 'false');
+            toggles.attr('title', nextExpanded ? 'Collapse section' : 'Expand section');
+            toggles.find('i').toggleClass('fa-chevron-down', nextExpanded).toggleClass('fa-chevron-right', !nextExpanded);
             $('.bldg-child-of-' + group).toggle(nextExpanded);
         });
 
