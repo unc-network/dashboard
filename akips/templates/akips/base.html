@@ -92,6 +92,14 @@
         {% block content_wrapper %}
         <div class="content-wrapper">
             <audio id="audiotag1" src="{% static 'akips/sound/alert.wav' %}" preload="auto"></audio>
+            <div id="offline-status-banner" class="offline-status-banner d-none" role="status" aria-live="polite">
+                <div class="container offline-status-banner-inner">
+                    <span class="offline-status-copy">
+                        <strong>Offline mode:</strong> cached pages remain available, but live dashboard data and actions require a connection.
+                    </span>
+                    <button type="button" class="offline-status-close" id="offline-status-dismiss" aria-label="Dismiss offline status">Dismiss</button>
+                </div>
+            </div>
             {% block content_header %}
                 <section class="content-header">
                     <div class="container">
@@ -259,14 +267,109 @@
 
 <script type="text/javascript">
     (function () {
+        var deferredInstallPrompt = null;
+        var installNavItem = document.getElementById('install-app-nav-item');
+        var installLink = document.getElementById('install-app-link');
+        var offlineBanner = document.getElementById('offline-status-banner');
+        var offlineDismiss = document.getElementById('offline-status-dismiss');
+        var offlineDismissedKey = 'ocnesOfflineBannerDismissed';
+
+        function showInstallUi() {
+            if (installNavItem) {
+                installNavItem.classList.remove('d-none');
+            }
+        }
+
+        function hideInstallUi() {
+            if (installNavItem) {
+                installNavItem.classList.add('d-none');
+            }
+        }
+
+        function isOfflineDismissed() {
+            try {
+                return window.localStorage.getItem(offlineDismissedKey) === 'true';
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function setOfflineDismissed(value) {
+            try {
+                if (value) {
+                    window.localStorage.setItem(offlineDismissedKey, 'true');
+                } else {
+                    window.localStorage.removeItem(offlineDismissedKey);
+                }
+            } catch (error) {
+                // Ignore storage access errors
+            }
+        }
+
+        function syncOfflineBanner() {
+            if (!offlineBanner) {
+                return;
+            }
+
+            if (navigator.onLine) {
+                offlineBanner.classList.add('d-none');
+                setOfflineDismissed(false);
+                return;
+            }
+
+            if (isOfflineDismissed()) {
+                offlineBanner.classList.add('d-none');
+                return;
+            }
+
+            offlineBanner.classList.remove('d-none');
+        }
+
         if (!('serviceWorker' in navigator)) {
+            syncOfflineBanner();
             return;
         }
+
+        if (installLink) {
+            installLink.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (!deferredInstallPrompt) {
+                    return;
+                }
+
+                deferredInstallPrompt.prompt();
+                deferredInstallPrompt.userChoice.finally(function () {
+                    deferredInstallPrompt = null;
+                    hideInstallUi();
+                });
+            });
+        }
+
+        if (offlineDismiss) {
+            offlineDismiss.addEventListener('click', function () {
+                setOfflineDismissed(true);
+                syncOfflineBanner();
+            });
+        }
+
+        window.addEventListener('online', syncOfflineBanner);
+        window.addEventListener('offline', syncOfflineBanner);
+        window.addEventListener('beforeinstallprompt', function (event) {
+            event.preventDefault();
+            deferredInstallPrompt = event;
+            showInstallUi();
+        });
+
+        window.addEventListener('appinstalled', function () {
+            deferredInstallPrompt = null;
+            hideInstallUi();
+        });
 
         window.addEventListener('load', function () {
             navigator.serviceWorker.register('{% url 'service_worker' %}').catch(function (error) {
                 console.warn('Service worker registration failed', error);
             });
+            syncOfflineBanner();
         });
     })();
 </script>

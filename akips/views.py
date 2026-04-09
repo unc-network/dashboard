@@ -181,6 +181,10 @@ def service_worker(request):
         {
             'cache_name': PWA_CACHE_NAME,
             'offline_url': reverse('pwa_offline'),
+            'cacheable_page_urls': [
+                reverse('home'),
+                reverse('about'),
+            ],
         },
         content_type='application/javascript',
     )

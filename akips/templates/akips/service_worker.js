@@ -1,6 +1,11 @@
 {% load static %}
 const CACHE_NAME = '{{ cache_name|escapejs }}';
 const OFFLINE_URL = '{{ offline_url|escapejs }}';
+const CACHEABLE_PAGE_URLS = [
+{% for page_url in cacheable_page_urls %}
+    '{{ page_url|escapejs }}'{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
 const PRECACHE_URLS = [
     OFFLINE_URL,
     '{% static 'akips/css/ocnes.css' %}',
@@ -14,6 +19,15 @@ const PRECACHE_URLS = [
     '{% static 'admin-lte/dist/js/adminlte.min.js' %}',
     '{% static 'admin-lte/dist/css/adminlte.min.css' %}'
 ];
+
+function normalizePath(url) {
+    return new URL(url, self.location.origin).pathname;
+}
+
+function shouldCachePage(requestUrl) {
+    var requestPath = normalizePath(requestUrl);
+    return CACHEABLE_PAGE_URLS.indexOf(requestPath) !== -1;
+}
 
 self.addEventListener('install', function (event) {
     event.waitUntil(
@@ -48,7 +62,23 @@ self.addEventListener('fetch', function (event) {
 
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request).catch(function () {
+            fetch(event.request).then(function (networkResponse) {
+                if (networkResponse && networkResponse.status === 200 && shouldCachePage(event.request.url)) {
+                    var responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(function (cache) {
+                        cache.put(normalizePath(event.request.url), responseToCache);
+                    });
+                }
+                return networkResponse;
+            }).catch(function () {
+                if (shouldCachePage(event.request.url)) {
+                    return caches.match(normalizePath(event.request.url)).then(function (cachedPage) {
+                        if (cachedPage) {
+                            return cachedPage;
+                        }
+                        return caches.match(OFFLINE_URL);
+                    });
+                }
                 return caches.match(OFFLINE_URL);
             })
         );

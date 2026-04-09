@@ -49,6 +49,8 @@ class PwaViewTests(SimpleTestCase):
         self.assertEqual(response['Service-Worker-Allowed'], '/')
         self.assertContains(response, 'const CACHE_NAME =')
         self.assertContains(response, reverse('pwa_offline'))
+        self.assertContains(response, reverse('home'))
+        self.assertContains(response, reverse('about'))
 
     def test_offline_page_is_available(self):
         response = self.client.get(reverse('pwa_offline'))

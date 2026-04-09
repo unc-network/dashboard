@@ -84,6 +84,12 @@
                     <i id="theme-toggle-icon" class="fas fa-adjust"></i>
                 </a>
             </li>
+            <li class="nav-item d-none" id="install-app-nav-item">
+                <a class="nav-link install-app-link" href="#" id="install-app-link" title="Install OCNES on this device" aria-label="Install OCNES on this device">
+                    <i class="fas fa-download"></i>
+                    <span class="install-app-link-label">Install App</span>
+                </a>
+            </li>
             <!-- Notifications Dropdown Menu -->
             {% block user_info %}
             {% if request.user.is_authenticated %}

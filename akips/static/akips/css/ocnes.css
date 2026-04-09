@@ -301,6 +301,78 @@
             background-color: #f9eff1;
         }
 
+        .install-app-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #158ec2 0%, #007fae 100%);
+            color: #f7fcff !important;
+            font-weight: 700;
+            margin-left: 0.25rem;
+            padding: 0.45rem 0.85rem !important;
+            box-shadow: 0 1px 3px rgba(19, 41, 75, 0.18);
+        }
+
+        .install-app-link:hover,
+        .install-app-link:focus {
+            background: linear-gradient(180deg, #0f7dab 0%, #006d96 100%);
+            color: #ffffff !important;
+        }
+
+        .install-app-link-label {
+            font-size: 0.9rem;
+            line-height: 1;
+        }
+
+        .offline-status-banner {
+            background: linear-gradient(90deg, #12375b 0%, #0b7285 100%);
+            color: #f5fbff;
+            box-shadow: 0 4px 14px rgba(12, 41, 66, 0.18);
+        }
+
+        .offline-status-banner-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+
+        .offline-status-copy {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .offline-status-close {
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #f5fbff;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            white-space: nowrap;
+        }
+
+        .offline-status-close:hover,
+        .offline-status-close:focus {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        @media (max-width: 767.98px) {
+            .install-app-link-label {
+                display: none;
+            }
+
+            .offline-status-banner-inner {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
         body.theme-dark {
             --oc-bg: #0f1b2e;
             --oc-surface: #13294b;
@@ -495,6 +567,27 @@
             border-left-color: #d78493;
             background-color: #4a2831;
             color: #ffe8ed;
+        }
+
+        body.theme-dark .install-app-link {
+            background: linear-gradient(180deg, #3196cb 0%, #1f7ca9 100%);
+            color: #f6fbff !important;
+        }
+
+        body.theme-dark .install-app-link:hover,
+        body.theme-dark .install-app-link:focus {
+            background: linear-gradient(180deg, #3da4da 0%, #2584b2 100%);
+        }
+
+        body.theme-dark .offline-status-banner {
+            background: linear-gradient(90deg, #17365a 0%, #1f7ca9 100%);
+            color: #f5fbff;
+        }
+
+        body.theme-dark .offline-status-close {
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.08);
+            color: #f5fbff;
         }
 
         body.theme-dark .card-header,
