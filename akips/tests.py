@@ -14,7 +14,8 @@ from django.utils import timezone
 from django_celery_results.models import TaskResult
 from unittest.mock import patch
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Unreachable, create_profile, save_profile
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Status, Unreachable, create_profile, save_profile
+from .ocnes import EventManager
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
     get_snapshot_import_models,
@@ -872,6 +873,71 @@ class SummariesAPITests(TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()['detail'], 'Invalid API key.')
+
+
+class SummaryBatteryCleanupTests(TestCase):
+    def setUp(self):
+        cache_delete_patcher = patch('akips.signals.cache.delete')
+        self.mock_cache_delete = cache_delete_patcher.start()
+        self.addCleanup(cache_delete_patcher.stop)
+
+        self.user = User.objects.create_user(username='summary-user', password='testpass123')
+        self.device = Device.objects.create(
+            name='ups-device-1',
+            ip4addr='172.29.5.224',
+            sysName='ups-device-1',
+            sysDescr='UPS device',
+            group='default',
+            tier='ITS-Manning',
+            building_name='Genetic-Medicine-Research-Building',
+            critical=False,
+            type='UPS',
+            maintenance=False,
+            hibernate=False,
+            inventory_url='https://inventory.example.edu/ups-device-1',
+            last_refresh=timezone.now(),
+        )
+        self.status = Status.objects.create(
+            device=self.device,
+            child='ups',
+            attribute='UPS-MIB.upsOutputSource',
+            index='3',
+            value='normal',
+            device_added=timezone.now(),
+            last_change=timezone.now(),
+            ip4addr='172.29.5.224',
+        )
+        self.summary = Summary.objects.create(
+            type='Building',
+            tier='ITS-Manning',
+            name='Genetic-Medicine-Research-Building',
+            ack=False,
+            first_event=timezone.now(),
+            last_event=timezone.now(),
+            trend='Recovered',
+            status='Closed',
+        )
+        self.summary.batteries.add(self.status)
+
+    @patch('akips.ocnes.TDX')
+    def test_refresh_summary_removes_stale_battery_associations(self, mock_tdx):
+        mock_tdx.return_value.enabled = False
+
+        EventManager().refresh_summary()
+
+        self.summary.refresh_from_db()
+        self.assertEqual(self.summary.batteries.count(), 0)
+
+    @patch('akips.ocnes.TDX')
+    def test_summary_view_does_not_show_normal_ups_as_battery_problem(self, mock_tdx):
+        mock_tdx.return_value.enabled = False
+
+        EventManager().refresh_summary()
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('summary', args=[self.summary.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['batteries']), [])
 
 
 class DevicesAPITests(TestCase):

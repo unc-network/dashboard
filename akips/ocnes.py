@@ -224,6 +224,22 @@ class EventManager:
             'building_ups_battery': building_ups_battery,
         }
 
+    def _get_live_battery_statuses(self):
+        """Return the current UPS-on-battery statuses that should appear in summaries."""
+        return Status.objects.filter(
+            attribute='UPS-MIB.upsOutputSource',
+            value='battery',
+            device__maintenance=False,
+        ).exclude(
+            device__hibernate=True,
+        ).exclude(
+            device__notify=False,
+        ).select_related('device')
+
+    def _sync_summary_batteries(self, active_battery_ids):
+        """Drop stale battery links so summary details match live UPS state."""
+        Summary.batteries.through.objects.exclude(status_id__in=active_battery_ids).delete()
+
     def refresh_unreachable(self,mode='poll'):
         """ Update current data for unreachable devices from AKiPS """
         logger.info("AKIPS unreachable refresh starting")
@@ -417,6 +433,7 @@ class EventManager:
 
         unreachable_count = unreachables.count()
         t_after_unreachable_query = time.perf_counter()
+        t_after_unreachable_processing = t_after_unreachable_query
 
         if settings.MAX_UNREACHABLE and unreachable_count >= settings.MAX_UNREACHABLE:
             # Something may be wrong, stop processing summaries
@@ -447,15 +464,9 @@ class EventManager:
             t_after_unreachable_processing = time.perf_counter()
 
         # Process all ups on battery
-        ups_on_battery = Status.objects.filter(
-            attribute='UPS-MIB.upsOutputSource',
-            value='battery',
-            device__maintenance=False,
-        ).exclude(
-            device__hibernate=True,
-        ).exclude(
-            device__notify=False,
-        ).select_related('device')
+        ups_on_battery = self._get_live_battery_statuses()
+        active_battery_ids = list(ups_on_battery.values_list('id', flat=True))
+        self._sync_summary_batteries(active_battery_ids)
         for ups in ups_on_battery:
             logger.debug("Processing ups on battery {} in {} under {}".format(ups.device,ups.device.building_name,ups.device.tier))
             self.update_tier_battery(now, ups)
