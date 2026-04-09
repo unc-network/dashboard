@@ -4,6 +4,10 @@ from . import views
 
 urlpatterns = [
 
+    path('manifest.webmanifest', views.pwa_manifest, name='pwa_manifest'),
+    path('service-worker.js', views.service_worker, name='service_worker'),
+    path('offline/', views.pwa_offline, name='pwa_offline'),
+
     # Main Views
     path('', views.Home.as_view(), name='home'),
     path('hud/', views.Home.as_view(), {'hud_mode': True}, name='home_hud'),

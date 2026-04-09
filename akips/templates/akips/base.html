@@ -30,6 +30,12 @@
 
     <link rel="icon" href="{% static 'akips/img/favicon.ico' %}" type="image/x-icon" />
     <link rel="apple-touch-icon" href="{% static 'akips/img/apple-touch-icon.png' %}" />
+    <link rel="manifest" href="{% url 'pwa_manifest' %}" />
+    <meta name="theme-color" content="#0b7285" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="OCNES" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     {% block stylesheets %}
         {% include 'akips/_styles.html' %}
@@ -250,6 +256,20 @@
 </script>
 
 {% block extra_js %}{% endblock %}
+
+<script type="text/javascript">
+    (function () {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{% url 'service_worker' %}').catch(function (error) {
+                console.warn('Service worker registration failed', error);
+            });
+        });
+    })();
+</script>
 
 {% block extra_foot %}{% endblock %}
 </body>

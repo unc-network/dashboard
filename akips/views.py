@@ -21,6 +21,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.sessions.models import Session
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.contrib import messages
 from django.utils import timezone
 
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
 ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
+PWA_CACHE_NAME = 'ocnes-pwa-v1'
 
 
 def get_recent_active_task_queryset(task_name, now=None, stale_after=ACTIVE_TASK_STALE_AFTER):
@@ -139,6 +141,56 @@ def get_special_grouping_label(device):
     if device.group in ('', 'default', 'Critical'):
         return ''
     return device.group
+
+
+def pwa_manifest(request):
+    manifest = {
+        'name': 'OCNES Dashboard',
+        'short_name': 'OCNES',
+        'description': 'OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination.',
+        'start_url': reverse('home'),
+        'scope': '/',
+        'display': 'standalone',
+        'orientation': 'portrait-primary',
+        'background_color': '#f4f6f9',
+        'theme_color': '#0b7285',
+        'icons': [
+            {
+                'src': static('akips/img/icon-192.png'),
+                'sizes': '192x192',
+                'type': 'image/png',
+                'purpose': 'any maskable',
+            },
+            {
+                'src': static('akips/img/icon-512.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'any maskable',
+            },
+        ],
+    }
+    response = HttpResponse(json.dumps(manifest), content_type='application/manifest+json')
+    response['Cache-Control'] = 'no-cache'
+    return response
+
+
+def service_worker(request):
+    response = render(
+        request,
+        'akips/service_worker.js',
+        {
+            'cache_name': PWA_CACHE_NAME,
+            'offline_url': reverse('pwa_offline'),
+        },
+        content_type='application/javascript',
+    )
+    response['Cache-Control'] = 'no-cache'
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+
+def pwa_offline(request):
+    return render(request, 'akips/pwa_offline.html')
 
 
 class SessionOrAPIKeyRequiredMixin:

@@ -28,6 +28,36 @@ from .task import (
 from .session_tracking import SESSION_LOGIN_AT_KEY
 from .views import Home, Users
 
+
+class PwaViewTests(SimpleTestCase):
+    def test_manifest_is_available(self):
+        response = self.client.get(reverse('pwa_manifest'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/manifest+json'))
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(payload['name'], 'OCNES Dashboard')
+        self.assertEqual(payload['start_url'], reverse('home'))
+        self.assertEqual(payload['display'], 'standalone')
+        self.assertEqual(payload['icons'][0]['sizes'], '192x192')
+
+    def test_service_worker_is_available(self):
+        response = self.client.get(reverse('service_worker'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/javascript'))
+        self.assertEqual(response['Service-Worker-Allowed'], '/')
+        self.assertContains(response, 'const CACHE_NAME =')
+        self.assertContains(response, reverse('pwa_offline'))
+
+    def test_offline_page_is_available(self):
+        response = self.client.get(reverse('pwa_offline'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Connection Required')
+        self.assertContains(response, 'live OCNES data is not available offline yet')
+
+
 class HomeHudScaleTests(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
