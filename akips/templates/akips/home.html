@@ -45,6 +45,54 @@
     .ops-chip-special { background: #e4f4ec; color: #1f5a41; border-color: #bfe1cf; }
     .ops-chip-trap { background: #e7effa; color: #214b77; border-color: #c8d9ef; }
 
+    .ops-live-alert {
+        display: none;
+        margin-bottom: 1rem;
+        border-radius: 0.75rem;
+        border: 2px solid rgba(183, 28, 28, 0.14);
+        border-left: 6px solid #b71c1c;
+        background: linear-gradient(135deg, rgba(255, 245, 245, 0.98), rgba(255, 234, 234, 0.96));
+        box-shadow: 0 14px 28px rgba(113, 25, 25, 0.12);
+    }
+
+    .ops-live-alert-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+        padding: 1rem 1.1rem;
+    }
+
+    .ops-live-alert-icon {
+        flex: 0 0 auto;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 999px;
+        background: #b71c1c;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .ops-live-alert-copy {
+        min-width: 0;
+    }
+
+    .ops-live-alert-title {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #7f1d1d;
+    }
+
+    .ops-live-alert-message {
+        margin: 0;
+        color: #5f2121;
+        line-height: 1.5;
+    }
+
     .event-card .table-responsive {
         overflow-x: auto;
     }
@@ -73,6 +121,22 @@
     }
     body.theme-dark .event-card .card-body .refresh-overlay {
         background: rgba(15, 27, 46, 0.28);
+    }
+    body.theme-dark .ops-live-alert {
+        border-color: rgba(248, 113, 113, 0.24);
+        border-left-color: #f87171;
+        background: linear-gradient(135deg, rgba(70, 16, 16, 0.96), rgba(52, 12, 12, 0.98));
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
+    }
+    body.theme-dark .ops-live-alert-icon {
+        background: #f87171;
+        color: #2f0a0a;
+    }
+    body.theme-dark .ops-live-alert-title {
+        color: #fecaca;
+    }
+    body.theme-dark .ops-live-alert-message {
+        color: #fee2e2;
     }
     .event-card .table,
     #chart .card-body,
@@ -817,6 +881,14 @@
     .ops-dashboard-column {
         display: contents;
     }
+    #myForm.ops-live-blocked .ops-status-strip,
+    #myForm.ops-live-blocked #chart,
+    #myForm.ops-live-blocked .ops-dashboard-grid {
+        display: none;
+    }
+    #myForm.ops-live-blocked .ops-live-alert {
+        display: block;
+    }
     body.hud-mode .ops-dashboard-grid {
         display: grid;
         /* wider left column for Tier/Building (fix 4) */
@@ -944,6 +1016,16 @@
 
 {% block content %}
 <form method="get" id="myForm" action="{% url 'create_incident' %}" data-cards-url="{% url 'dashboard_cards' %}">
+    <div id="ops-live-alert" class="card ops-live-alert" role="alert" aria-live="assertive" aria-hidden="true">
+        <div class="ops-live-alert-body">
+            <span class="ops-live-alert-icon"><i class="fas fa-plug"></i></span>
+            <div class="ops-live-alert-copy">
+                <strong class="ops-live-alert-title">Live dashboard unavailable</strong>
+                <p class="ops-live-alert-message" id="ops-live-alert-message">OCNES cannot reach live monitoring data right now. Connect to the campus network or VPN, then retry.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="card ops-status-strip">
         <div class="card-body py-2 d-flex align-items-center flex-wrap">
             <div class="ops-status-main">
@@ -1896,6 +1978,24 @@
         }
     }
 
+    function setDashboardLiveState(isLive, message) {
+        var form = $('#myForm');
+        var alert = $('#ops-live-alert');
+        if (!form.length || !alert.length) {
+            return;
+        }
+
+        if (isLive) {
+            form.removeClass('ops-live-blocked');
+            alert.attr('aria-hidden', 'true');
+            return;
+        }
+
+        $('#ops-live-alert-message').text(message || 'OCNES cannot reach live monitoring data right now. Connect to the campus network or VPN, then retry.');
+        form.addClass('ops-live-blocked');
+        alert.attr('aria-hidden', 'false');
+    }
+
     function refresh_cards() {
         var overlay = '<div class="overlay refresh-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>';
         var cardsUrl = $('#myForm').data('cards-url');
@@ -1980,10 +2080,12 @@
 
                 updateCardMeta(cards, changedCards);
                 updateOpsStrip(cards, changedCards, 30);
+                setDashboardLiveState(true);
 
                 refresh_duplicates();
             },
             error: function (xhr, status, error) {
+                setDashboardLiveState(false, 'Live OCNES dashboard data is unavailable. Connect to the campus network or VPN to continue.');
                 $('.event-card').each(function () {
                     var body = $(this).find('.card-body');
                     var previous = body.data('previous-html') || '';

@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
 ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
-PWA_CACHE_NAME = 'ocnes-pwa-v2'
+PWA_CACHE_NAME = 'ocnes-pwa-v3'
 PWA_THEME_COLOR = '#007fae'
 
 
@@ -188,10 +188,7 @@ def service_worker(request):
         {
             'cache_name': PWA_CACHE_NAME,
             'offline_url': reverse('pwa_offline'),
-            'cacheable_page_urls': [
-                reverse('home'),
-                reverse('about'),
-            ],
+            'cacheable_page_urls': [],
         },
         content_type='application/javascript',
     )

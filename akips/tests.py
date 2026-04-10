@@ -45,14 +45,16 @@ class PwaViewTests(SimpleTestCase):
 
     def test_service_worker_is_available(self):
         response = self.client.get(reverse('service_worker'))
+        worker_script = response.content.decode('utf-8')
+        cacheable_pages_block = worker_script.split('const CACHEABLE_PAGE_URLS = [', 1)[1].split('];', 1)[0].strip()
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response['Content-Type'].startswith('application/javascript'))
         self.assertEqual(response['Service-Worker-Allowed'], '/')
         self.assertContains(response, 'const CACHE_NAME =')
         self.assertContains(response, reverse('pwa_offline'))
-        self.assertContains(response, reverse('home'))
-        self.assertContains(response, reverse('about'))
+        self.assertNotContains(response, reverse('about'))
+        self.assertEqual(cacheable_pages_block, '')
         self.assertContains(response, "pathname.indexOf('/api/') === 0")
         self.assertContains(response, "pathname.indexOf('/ajax/') === 0")
         self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
@@ -62,7 +64,7 @@ class PwaViewTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Connection Required')
-        self.assertContains(response, 'live OCNES data is not available offline yet')
+        self.assertContains(response, 'live OCNES data requires campus or VPN connectivity')
 
 
 class HomeHudScaleTests(SimpleTestCase):
