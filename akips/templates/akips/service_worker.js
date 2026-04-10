@@ -35,7 +35,10 @@ function shouldBypassRuntimeCache(request) {
         return false;
     }
 
-    return requestUrl.pathname.indexOf('/api/') === 0;
+    return requestUrl.pathname.indexOf('/api/') === 0 ||
+        requestUrl.pathname.indexOf('/ajax/') === 0 ||
+        requestUrl.pathname === '/manifest.webmanifest' ||
+        requestUrl.pathname === '/service-worker.js';
 }
 
 self.addEventListener('install', function (event) {

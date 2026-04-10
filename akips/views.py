@@ -144,6 +144,13 @@ def get_special_grouping_label(device):
     return device.group
 
 
+def add_no_store_headers(response):
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
 def pwa_manifest(request):
     manifest = {
         'name': 'OCNES Dashboard',
@@ -171,8 +178,7 @@ def pwa_manifest(request):
         ],
     }
     response = HttpResponse(json.dumps(manifest), content_type='application/manifest+json')
-    response['Cache-Control'] = 'no-cache'
-    return response
+    return add_no_store_headers(response)
 
 
 def service_worker(request):
@@ -189,7 +195,7 @@ def service_worker(request):
         },
         content_type='application/javascript',
     )
-    response['Cache-Control'] = 'no-cache'
+    add_no_store_headers(response)
     response['Service-Worker-Allowed'] = '/'
     return response
 
@@ -1397,8 +1403,10 @@ class DashboardCardsView(LoginRequiredMixin, View):
                 card_json = json.dumps(card_data, sort_keys=True, default=str)
                 result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
             if self.pretty_print:
-                return JsonResponse(result, json_dumps_params={'indent': 4})
-            return JsonResponse(result)
+                response = JsonResponse(result, json_dumps_params={'indent': 4})
+            else:
+                response = JsonResponse(result)
+            return add_no_store_headers(response)
 
         result = {'cards': {}, 'signatures': {}}
         for card_id in CARD_REFRESH_CONFIG:
@@ -1417,8 +1425,10 @@ class DashboardCardsView(LoginRequiredMixin, View):
             result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
 
         if self.pretty_print:
-            return JsonResponse(result, json_dumps_params={'indent': 4})
-        return JsonResponse(result)
+            response = JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            response = JsonResponse(result)
+        return add_no_store_headers(response)
 
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1428,7 +1438,8 @@ class CritCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('crit_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class TierCard(LoginRequiredMixin, View):
@@ -1442,7 +1453,8 @@ class TierCard(LoginRequiredMixin, View):
         cached_html = cache.get(self.cache_key)
         if cached_html is not None:
             logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
+            response = HttpResponse(cached_html, content_type='text/html')
+            return add_no_store_headers(response)
 
         logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
@@ -1451,7 +1463,8 @@ class TierCard(LoginRequiredMixin, View):
         
         # Store in cache
         cache.set(self.cache_key, html, self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class BuildingCard(LoginRequiredMixin, View):
@@ -1462,7 +1475,8 @@ class BuildingCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('bldg_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1472,7 +1486,8 @@ class SpecialtyCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('spec_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 class TrapCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1482,7 +1497,8 @@ class TrapCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('trap_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class UnreachableView(LoginRequiredMixin, View):
@@ -2368,9 +2384,10 @@ class ChartDataView(LoginRequiredMixin, View):
         if cached_result is not None:
             logger.debug(f"Cache HIT for {self.cache_key}")
             if self.pretty_print:
-                return JsonResponse(cached_result, json_dumps_params={'indent': 4})
+                response = JsonResponse(cached_result, json_dumps_params={'indent': 4})
             else:
-                return JsonResponse(cached_result)
+                response = JsonResponse(cached_result)
+            return add_no_store_headers(response)
 
         logger.debug(f"Cache MISS for {self.cache_key}")
         now = timezone.now()
@@ -2434,9 +2451,10 @@ class ChartDataView(LoginRequiredMixin, View):
 
         # Return the results
         if self.pretty_print:
-            return JsonResponse(result, json_dumps_params={'indent': 4})
+            response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
-            return JsonResponse(result)
+            response = JsonResponse(result)
+        return add_no_store_headers(response)
 
     def datetime_range(self, start, end, delta):
         ''' return a generator of times at each delta '''

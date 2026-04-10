@@ -54,6 +54,8 @@ class PwaViewTests(SimpleTestCase):
         self.assertContains(response, reverse('home'))
         self.assertContains(response, reverse('about'))
         self.assertContains(response, "pathname.indexOf('/api/') === 0")
+        self.assertContains(response, "pathname.indexOf('/ajax/') === 0")
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
 
     def test_offline_page_is_available(self):
         response = self.client.get(reverse('pwa_offline'))
@@ -1417,3 +1419,22 @@ class DashboardCardsViewTests(TestCase):
         self.assertIn('signatures', payload)
         self.assertEqual(set(payload['cards'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})
         self.assertEqual(set(payload['signatures'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
+        self.assertEqual(response['Pragma'], 'no-cache')
+
+
+class ChartDataViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse('chart_data')
+        self.user = User.objects.create_user(username='chart-user', password='testpass123')
+
+    @patch('akips.views.cache.get', return_value=None)
+    @patch('akips.views.cache.set')
+    def test_chart_data_response_disables_browser_caching(self, mock_cache_set, mock_cache_get):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
+        self.assertEqual(response['Pragma'], 'no-cache')
