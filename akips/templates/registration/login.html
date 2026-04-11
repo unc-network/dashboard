@@ -64,7 +64,7 @@
                             </div>
                             <div class="col-8">
                                 <div class="icheck-primary">
-                                    <input type="checkbox" id="remember">
+                                    <input type="checkbox" name="remember_me" id="remember" {% if form.remember_me.value %}checked{% endif %}>
                                     <label for="remember">
                                         Remember Me
                                     </label>

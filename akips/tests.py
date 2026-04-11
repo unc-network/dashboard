@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -141,6 +142,48 @@ class HomeHudScaleTests(SimpleTestCase):
         response = self.view(request, hud_mode=True)
 
         self.assertEqual(response.status_code, 302)
+
+
+@override_settings(
+    AUTHENTICATION_BACKENDS=['django.contrib.auth.backends.ModelBackend'],
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    },
+)
+class LoginRememberMeTests(TestCase):
+    def setUp(self):
+        self.url = reverse('login')
+        self.user = User.objects.create_user(username='remember-user', password='testpass123')
+
+    def test_login_page_posts_remember_me_field(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="remember_me"')
+
+    def test_login_without_remember_me_expires_on_browser_close(self):
+        response = self.client.post(self.url, {
+            'username': 'remember-user',
+            'password': 'testpass123',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], settings.LOGIN_REDIRECT_URL)
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_login_with_remember_me_persists_session(self):
+        response = self.client.post(self.url, {
+            'username': 'remember-user',
+            'password': 'testpass123',
+            'remember_me': 'on',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], settings.LOGIN_REDIRECT_URL)
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+        self.assertGreaterEqual(self.client.session.get_expiry_age(), settings.SESSION_COOKIE_AGE - 5)
 
 
 class SettingsViewTests(TestCase):

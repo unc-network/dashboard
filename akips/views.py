@@ -16,7 +16,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
-#from django.contrib.auth import views as auth_views
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.sessions.models import Session
@@ -36,7 +36,7 @@ from django.views.decorators.http import require_POST
 from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm, LoginForm
 from .session_tracking import SESSION_LOGIN_AT_KEY, get_last_activity_from_expiry, normalize_aware_datetime, parse_session_timestamp
 from .task import SNAPSHOT_FIXTURE_LABELS, SNAPSHOT_IMPORT_CACHE_PREFIX, SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
@@ -252,23 +252,22 @@ class SessionOrAPIKeyRequiredMixin:
 
         return super().dispatch(request, *args, **kwargs)
 
+class DashboardLoginView(auth_views.LoginView):
+    form_class = LoginForm
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        remember_me = form.cleaned_data.get('remember_me', False)
+        if remember_me:
+            self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            self.request.session.set_expiry(0)
+        self.request.session.modified = True
+        return response
+
+
 # Create your views here.
-
-# def login(request, *args, **kwargs):
-#     if request.method == 'POST':
-#         if not request.POST.get('remember_me', None):
-#             request.session.set_expiry(0)
-#     return auth_views.login(request, *args, **kwargs)
-
-# Testing a remember me
-# class UpdatedLoginView(LoginView):
-#     form_class = LoginForm
-#     def form_valid(self, form):
-#         remember_me = form.cleaned_data['remember_me']  # get remember me data from cleaned_data of form
-#         if not remember_me:
-#             self.request.session.set_expiry(0)  # if remember me is 
-#             self.request.session.modified = True
-#         return super(UpdatedLoginView, self).form_valid(form)
 
 class Home(LoginRequiredMixin, View):
     ''' Generic first view '''

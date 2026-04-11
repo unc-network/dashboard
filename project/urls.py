@@ -17,10 +17,12 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
+from akips.views import DashboardLoginView
 from welcome.views import health
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/login/', DashboardLoginView.as_view(), name='login'),
     path('accounts/', include("django.contrib.auth.urls")),
     path('health/', health),
 
