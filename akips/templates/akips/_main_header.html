@@ -1,13 +1,13 @@
 {% load adminlte_helpers i18n %}
 {% load static %}
-<nav class="main-header navbar navbar-expand-md navbar-white navbar-light">
+<nav class="main-header navbar navbar-expand-lg navbar-white navbar-light">
     <div class="container">
 
     <!-- Branding -->
     {% block logo %}
     <a href="{% url 'home' %}" class="navbar-brand">
         <img src="{%static 'akips/img/loch-ness-monster.png' %}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        {% block logo_text %}<span class="brand-text font-weight-light">OCNES </span>{% endblock %}
+        {% block logo_text %}<span class="brand-text">OCNES</span>{% endblock %}
     </a>
     {% endblock %}
     <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,8 +27,8 @@
                         <a href="{% url 'unreachable' %}" class="nav-link{% if current_url == 'unreachable' %} active{% endif %}">Unreachables</a>
         </li>
         <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle{% if current_url == 'recent' or current_url == 'recent_unreachables' or current_url == 'recent_traps' or current_url == 'ups_problems' or current_url == 'users' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Recent</a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="nav-link dropdown-toggle nav-dropdown-toggle{% if current_url == 'recent' or current_url == 'recent_unreachables' or current_url == 'recent_traps' or current_url == 'ups_problems' or current_url == 'users' %} active{% endif %}" href="#" id="navbarDropdownRecent" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Recent <span class="navbar-caret" aria-hidden="true"><i class="fas fa-chevron-down"></i></span></a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownRecent">
                             <a class="dropdown-item{% if current_url == 'recent' %} active{% endif %}" href="{% url 'recent' %}">Events</a>
                             <a class="dropdown-item{% if current_url == 'recent_unreachables' %} active{% endif %}" href="{% url 'recent_unreachables' %}">Unreachables</a>
                             <a class="dropdown-item{% if current_url == 'recent_traps' %} active{% endif %}" href="{% url 'recent_traps' %}">Traps</a>
@@ -39,8 +39,8 @@
             </div>
         </li>
         <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle{% if current_url == 'hibernate_requests' or current_url == 'maintenance' or current_url == 'devices' or current_url == 'device' or current_url == 'devices_grouping_problems' %} active{% endif %}" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Devices</a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="nav-link dropdown-toggle nav-dropdown-toggle{% if current_url == 'hibernate_requests' or current_url == 'maintenance' or current_url == 'devices' or current_url == 'device' or current_url == 'devices_grouping_problems' %} active{% endif %}" href="#" id="navbarDropdownDevices" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Devices <span class="navbar-caret" aria-hidden="true"><i class="fas fa-chevron-down"></i></span></a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownDevices">
                             <a class="dropdown-item{% if current_url == 'hibernate_requests' %} active{% endif %}" href="{% url 'hibernate_requests' %}">Hibernate Mode</a>
                             <a class="dropdown-item{% if current_url == 'maintenance' %} active{% endif %}" href="{% url 'maintenance' %}">Maintenance Mode</a>
                             <a class="dropdown-item{% if current_url == 'devices' or current_url == 'device' %} active{% endif %}" href="{% url 'devices' %}">All Devices</a>
@@ -69,30 +69,41 @@
 
     {% block nav_custom_menu %}
     <!-- Right navbar links -->
-    <ul class="navbar-nav ml-auto">
-        <ul class="nav navbar-nav">
-            {% block header_dropdowns %}
-            <li class="nav-item">
-                <a class="nav-link" href="#" id="alert-toggle"
-                   data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}"
-                   title="Notifications: On" aria-label="Toggle notifications" aria-pressed="true">
-                    <i id="alert-toggle-icon" class="fas fa-volume-up"></i>
+    <ul class="navbar-nav ml-auto header-controls">
+        {% block header_dropdowns %}
+        <li class="nav-item">
+            {% with notifications_enabled=request.user.profile.alert_enabled %}
+            <a class="nav-link header-control" href="#" id="alert-toggle"
+               data-url="{% url 'profile_api' %}" data-alert-url="{% url 'api_notifications' %}"
+               data-enabled="{% if notifications_enabled %}true{% else %}false{% endif %}"
+               title="Notifications: {% if notifications_enabled %}On{% else %}Off{% endif %}" aria-label="Toggle notifications" aria-pressed="{% if notifications_enabled %}true{% else %}false{% endif %}">
+                <i id="alert-toggle-icon" class="fas {% if notifications_enabled %}fa-volume-up{% else %}fa-volume-mute{% endif %} header-control-icon" aria-hidden="true"></i>
+            </a>
+            {% endwith %}
+        </li>
+        <li class="nav-item">
+            <a class="nav-link header-control" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
+                <i id="theme-toggle-icon" class="fas fa-adjust header-control-icon" aria-hidden="true"></i>
+            </a>
+        </li>
+        {% if request.user.is_staff %}
+        <li class="nav-item">
+            <a class="nav-link header-control{% if request.resolver_match.url_name == 'settings' %} active{% endif %}" href="{% url 'settings' %}" title="Application Settings" aria-label="Application Settings">
+                <i class="fas fa-cog header-control-icon" aria-hidden="true"></i>
+            </a>
+        </li>
+        {% endif %}
+        {% block user_info %}
+        {% if request.user.is_authenticated %}
+        <li class="nav-item dropdown">
+                <a class="nav-link header-control header-control-user" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false" title="Open account menu for {{ request.user.get_username }}" aria-label="Open account menu for {{ request.user.get_username }}">
+                    <i class="fas fa-user-circle header-control-icon" aria-hidden="true"></i>
+                    <span class="header-control-label">{{ request.user.get_username }}</span>
+                    <span class="navbar-caret" aria-hidden="true">
+                        <i class="fas fa-chevron-down"></i>
+                    </span>
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" id="theme-toggle" title="Theme: System (click to cycle Light, Dark, System)">
-                    <i id="theme-toggle-icon" class="fas fa-adjust"></i>
-                </a>
-            </li>
-            <!-- Notifications Dropdown Menu -->
-            {% block user_info %}
-            {% if request.user.is_authenticated %}
-            <li class="nav-item dropdown">
-                    <a class="nav-link" data-toggle="dropdown" href="#">
-                        Welcome, {% firstof request.user.get_full_name request.user.get_username %}
-                        <i class="fas fa-bars"></i>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                         <a href="#" class="dropdown-item">
                             <!-- Message Start -->
                             <div class="media">
@@ -114,12 +125,6 @@
                             <i class="fas fa-sliders-h mr-2"></i> User Preferences
                         </a>
                         {% if request.user.is_staff %}
-                        <a href="{% url 'settings' %}" class="dropdown-item">
-                            <i class="fas fa-cogs mr-2"></i> Application Settings
-                        </a>
-                        <a href="{% url 'admin:index' %}" class="dropdown-item">
-                            <i class="fas fa-cogs mr-2"></i> Django Admin
-                        </a>
                         {% endif %}
 
                         <div class="dropdown-divider"></div>
@@ -127,12 +132,11 @@
                                 <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">{%trans 'Log out'%}</a>
                             </div>
                         
-                    </div>
-                </li>
-            {% endif %}
-            {% endblock user_info %}
-            {% endblock header_dropdowns %}
-        </ul>
+                </div>
+            </li>
+        {% endif %}
+        {% endblock user_info %}
+        {% endblock header_dropdowns %}
     </ul>
         {% endblock nav_custom_menu %}
 

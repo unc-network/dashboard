@@ -1,0 +1,133 @@
+{% load static %}
+const CACHE_NAME = '{{ cache_name|escapejs }}';
+const OFFLINE_URL = '{{ offline_url|escapejs }}';
+const CACHEABLE_PAGE_URLS = [
+{% for page_url in cacheable_page_urls %}
+    '{{ page_url|escapejs }}'{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
+const PRECACHE_URLS = [
+    OFFLINE_URL,
+    '{% static 'akips/css/ocnes.css' %}',
+    '{% static 'akips/js/ocnes.js' %}',
+    '{% static 'akips/img/icon-192.png' %}',
+    '{% static 'akips/img/icon-512.png' %}',
+    '{% static 'akips/img/apple-touch-icon.png' %}',
+    '{% static 'akips/img/favicon.png' %}',
+    '{% static 'admin-lte/plugins/jquery/jquery.min.js' %}',
+    '{% static 'admin-lte/plugins/bootstrap/js/bootstrap.bundle.min.js' %}',
+    '{% static 'admin-lte/dist/js/adminlte.min.js' %}',
+    '{% static 'admin-lte/dist/css/adminlte.min.css' %}'
+];
+
+function normalizePath(url) {
+    return new URL(url, self.location.origin).pathname;
+}
+
+function shouldCachePage(requestUrl) {
+    var requestPath = normalizePath(requestUrl);
+    return CACHEABLE_PAGE_URLS.indexOf(requestPath) !== -1;
+}
+
+function shouldBypassRuntimeCache(request) {
+    var requestUrl = new URL(request.url);
+    if (requestUrl.origin !== self.location.origin) {
+        return false;
+    }
+
+    return requestUrl.pathname.indexOf('/api/') === 0 ||
+        requestUrl.pathname.indexOf('/ajax/') === 0 ||
+        requestUrl.pathname === '/manifest.webmanifest' ||
+        requestUrl.pathname === '/service-worker.js';
+}
+
+self.addEventListener('install', function (event) {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(function (cache) {
+            return cache.addAll(PRECACHE_URLS);
+        })
+    );
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function (event) {
+    event.waitUntil(
+        caches.keys().then(function (keys) {
+            return Promise.all(
+                keys.map(function (key) {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+                    return Promise.resolve();
+                })
+            );
+        }).then(function () {
+            return self.clients.claim();
+        })
+    );
+});
+
+self.addEventListener('fetch', function (event) {
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
+    if (shouldBypassRuntimeCache(event.request)) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).then(function (networkResponse) {
+                if (networkResponse && networkResponse.status === 200 && shouldCachePage(event.request.url)) {
+                    var responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(function (cache) {
+                        cache.put(normalizePath(event.request.url), responseToCache);
+                    });
+                }
+                return networkResponse;
+            }).catch(function () {
+                if (shouldCachePage(event.request.url)) {
+                    return caches.match(normalizePath(event.request.url)).then(function (cachedPage) {
+                        if (cachedPage) {
+                            return cachedPage;
+                        }
+                        return caches.match(OFFLINE_URL);
+                    });
+                }
+                return caches.match(OFFLINE_URL);
+            })
+        );
+        return;
+    }
+
+    event.respondWith(
+        caches.match(event.request).then(function (cachedResponse) {
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            return fetch(event.request).then(function (networkResponse) {
+                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                    return networkResponse;
+                }
+
+                if (!event.request.url.startsWith(self.location.origin)) {
+                    return networkResponse;
+                }
+
+                var responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then(function (cache) {
+                    cache.put(event.request, responseToCache);
+                });
+                return networkResponse;
+            }).catch(function () {
+                if (event.request.destination === 'document') {
+                    return caches.match(OFFLINE_URL);
+                }
+                return Promise.reject(new Error('Network request failed'));
+            });
+        })
+    );
+});

@@ -176,7 +176,10 @@ function alert_user() {
 }
 
 function set_alert_toggle_state(enabled) {
-    var toggle = $('#alert-toggle');
+    var toggle = $('.main-header #alert-toggle').first();
+    if (!toggle.length) {
+        toggle = $('#alert-toggle').first();
+    }
     if (!toggle.length) {
         return;
     }
@@ -193,7 +196,10 @@ function set_alert_toggle_state(enabled) {
 }
 
 function get_alert_toggle_state() {
-    var toggle = $('#alert-toggle');
+    var toggle = $('.main-header #alert-toggle').first();
+    if (!toggle.length) {
+        toggle = $('#alert-toggle').first();
+    }
     if (!toggle.length) {
         return true;
     }
@@ -202,10 +208,22 @@ function get_alert_toggle_state() {
 }
 
 function enable_alert_toggle() {
-    // Initialize from user profile API so templates do not need to query profile directly.
-    var toggle = $('#alert-toggle');
+    var toggle = $('.main-header #alert-toggle').first();
+    if (!toggle.length) {
+        toggle = $('#alert-toggle').first();
+    }
     var url = toggle.data('url');
-    if (toggle.length && url) {
+
+    // Apply the server-rendered state immediately so the icon is correct on first paint.
+    if (toggle.length) {
+        var initialEnabled = toggle.attr('data-enabled');
+        if (typeof initialEnabled !== 'undefined') {
+            set_alert_toggle_state(initialEnabled === 'true');
+        }
+    }
+
+    // Fall back to the profile API only when the server did not render an initial state.
+    if (toggle.length && url && typeof toggle.attr('data-enabled') === 'undefined') {
         $.get(url, function (data) {
             if (typeof data.alert_enabled !== 'undefined') {
                 set_alert_toggle_state(!!data.alert_enabled);

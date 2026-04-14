@@ -16,11 +16,20 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.http import Http404, JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
-#from django.contrib.auth import views as auth_views
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
+# Mixin to return 401 for AJAX/JSON requests if not authenticated
+class AjaxLoginRequiredMixin(LoginRequiredMixin):
+    def handle_no_permission(self):
+        req = getattr(self, 'request', None)
+        if req and (req.headers.get('x-requested-with') == 'XMLHttpRequest' or req.headers.get('accept', '').startswith('application/json')):
+            return JsonResponse({'detail': 'Authentication required'}, status=401)
+        return super().handle_no_permission()
 from django.contrib.sessions.models import Session
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.contrib import messages
 from django.utils import timezone
 
@@ -35,7 +44,7 @@ from django.views.decorators.http import require_POST
 from django_celery_results.models import TaskResult
 
 from .models import HibernateRequest, Summary, Unreachable, Device, Trap, Status, ServiceNowIncident, TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey
-from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm
+from .forms import IncidentForm, HibernateForm, PreferencesForm, AppSnapshotImportForm, TDXSettingsForm, InventorySettingsForm, AKIPSSettingsForm, APIAccessKeyCreateForm, LoginForm
 from .session_tracking import SESSION_LOGIN_AT_KEY, get_last_activity_from_expiry, normalize_aware_datetime, parse_session_timestamp
 from .task import SNAPSHOT_FIXTURE_LABELS, SNAPSHOT_IMPORT_CACHE_PREFIX, SNAPSHOT_IMPORT_PAYLOAD_TIMEOUT, refresh_ping_status, refresh_snmp_status, refresh_ups_status, refresh_akips_devices, refresh_battery_test_status, refresh_inventory, import_snapshot_task
 from .utils import AKIPS, pretty_duration
@@ -47,6 +56,8 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_TASK_STATUSES = ('PENDING', 'STARTED')
 ACTIVE_TASK_STALE_AFTER = timedelta(minutes=30)
+PWA_CACHE_NAME = 'ocnes-pwa-v3'
+PWA_THEME_COLOR = '#007fae'
 
 
 def get_recent_active_task_queryset(task_name, now=None, stale_after=ACTIVE_TASK_STALE_AFTER):
@@ -141,6 +152,63 @@ def get_special_grouping_label(device):
     return device.group
 
 
+def add_no_store_headers(response):
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
+def pwa_manifest(request):
+    manifest = {
+        'name': 'OCNES Dashboard',
+        'short_name': 'OCNES',
+        'description': 'OCNES network operations dashboard for AKiPS visibility, unreachable device tracking, trap monitoring, and incident coordination.',
+        'start_url': reverse('home'),
+        'scope': '/',
+        'display': 'standalone',
+        'orientation': 'portrait-primary',
+        'background_color': '#f4f6f9',
+        'theme_color': PWA_THEME_COLOR,
+        'icons': [
+            {
+                'src': static('akips/img/icon-192.png'),
+                'sizes': '192x192',
+                'type': 'image/png',
+                'purpose': 'any maskable',
+            },
+            {
+                'src': static('akips/img/icon-512.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'any maskable',
+            },
+        ],
+    }
+    response = HttpResponse(json.dumps(manifest), content_type='application/manifest+json')
+    return add_no_store_headers(response)
+
+
+def service_worker(request):
+    response = render(
+        request,
+        'akips/service_worker.js',
+        {
+            'cache_name': PWA_CACHE_NAME,
+            'offline_url': reverse('pwa_offline'),
+            'cacheable_page_urls': [],
+        },
+        content_type='application/javascript',
+    )
+    add_no_store_headers(response)
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+
+def pwa_offline(request):
+    return render(request, 'akips/pwa_offline.html')
+
+
 class SessionOrAPIKeyRequiredMixin:
     api_key_endpoint = None
 
@@ -192,25 +260,24 @@ class SessionOrAPIKeyRequiredMixin:
 
         return super().dispatch(request, *args, **kwargs)
 
+class DashboardLoginView(auth_views.LoginView):
+    form_class = LoginForm
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        remember_me = form.cleaned_data.get('remember_me', False)
+        if remember_me:
+            self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            self.request.session.set_expiry(0)
+        self.request.session.modified = True
+        return response
+
+
 # Create your views here.
 
-# def login(request, *args, **kwargs):
-#     if request.method == 'POST':
-#         if not request.POST.get('remember_me', None):
-#             request.session.set_expiry(0)
-#     return auth_views.login(request, *args, **kwargs)
-
-# Testing a remember me
-# class UpdatedLoginView(LoginView):
-#     form_class = LoginForm
-#     def form_valid(self, form):
-#         remember_me = form.cleaned_data['remember_me']  # get remember me data from cleaned_data of form
-#         if not remember_me:
-#             self.request.session.set_expiry(0)  # if remember me is 
-#             self.request.session.modified = True
-#         return super(UpdatedLoginView, self).form_valid(form)
-
-class Home(LoginRequiredMixin, View):
+class Home(AjaxLoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
     hud_font_scale_default = 1.0
@@ -253,7 +320,7 @@ class Home(LoginRequiredMixin, View):
         context = {}
         return render(request, post_template, context=context)
 
-class About(LoginRequiredMixin, View):
+class About(AjaxLoginRequiredMixin, View):
     ''' basic about page '''
     template_name = 'akips/about.html'
 
@@ -1340,8 +1407,10 @@ class DashboardCardsView(LoginRequiredMixin, View):
                 card_json = json.dumps(card_data, sort_keys=True, default=str)
                 result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
             if self.pretty_print:
-                return JsonResponse(result, json_dumps_params={'indent': 4})
-            return JsonResponse(result)
+                response = JsonResponse(result, json_dumps_params={'indent': 4})
+            else:
+                response = JsonResponse(result)
+            return add_no_store_headers(response)
 
         result = {'cards': {}, 'signatures': {}}
         for card_id in CARD_REFRESH_CONFIG:
@@ -1360,8 +1429,10 @@ class DashboardCardsView(LoginRequiredMixin, View):
             result['signatures'][card_id] = hashlib.md5(card_json.encode('utf-8')).hexdigest()
 
         if self.pretty_print:
-            return JsonResponse(result, json_dumps_params={'indent': 4})
-        return JsonResponse(result)
+            response = JsonResponse(result, json_dumps_params={'indent': 4})
+        else:
+            response = JsonResponse(result)
+        return add_no_store_headers(response)
 
 class CritCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1371,7 +1442,8 @@ class CritCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('crit_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class TierCard(LoginRequiredMixin, View):
@@ -1385,7 +1457,8 @@ class TierCard(LoginRequiredMixin, View):
         cached_html = cache.get(self.cache_key)
         if cached_html is not None:
             logger.debug(f"Cache HIT for {self.cache_key}")
-            return HttpResponse(cached_html, content_type='text/html')
+            response = HttpResponse(cached_html, content_type='text/html')
+            return add_no_store_headers(response)
 
         logger.debug(f"Cache MISS for {self.cache_key}")
         context = {}
@@ -1394,7 +1467,8 @@ class TierCard(LoginRequiredMixin, View):
         
         # Store in cache
         cache.set(self.cache_key, html, self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class BuildingCard(LoginRequiredMixin, View):
@@ -1405,7 +1479,8 @@ class BuildingCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('bldg_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 class SpecialtyCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1415,7 +1490,8 @@ class SpecialtyCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('spec_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 class TrapCard(LoginRequiredMixin, View):
     ''' Generic card refresh view '''
@@ -1425,7 +1501,8 @@ class TrapCard(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         html = render_card_fragment('trap_card', cache_timeout=self.cache_timeout)
-        return HttpResponse(html, content_type='text/html')
+        response = HttpResponse(html, content_type='text/html')
+        return add_no_store_headers(response)
 
 
 class UnreachableView(LoginRequiredMixin, View):
@@ -2292,6 +2369,8 @@ class UserAlertView(LoginRequiredMixin, View):
             response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
             response = JsonResponse(result)
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
         response.set_cookie('last_notified', result['last_notified'].isoformat())
         return response
 
@@ -2309,9 +2388,10 @@ class ChartDataView(LoginRequiredMixin, View):
         if cached_result is not None:
             logger.debug(f"Cache HIT for {self.cache_key}")
             if self.pretty_print:
-                return JsonResponse(cached_result, json_dumps_params={'indent': 4})
+                response = JsonResponse(cached_result, json_dumps_params={'indent': 4})
             else:
-                return JsonResponse(cached_result)
+                response = JsonResponse(cached_result)
+            return add_no_store_headers(response)
 
         logger.debug(f"Cache MISS for {self.cache_key}")
         now = timezone.now()
@@ -2375,9 +2455,10 @@ class ChartDataView(LoginRequiredMixin, View):
 
         # Return the results
         if self.pretty_print:
-            return JsonResponse(result, json_dumps_params={'indent': 4})
+            response = JsonResponse(result, json_dumps_params={'indent': 4})
         else:
-            return JsonResponse(result)
+            response = JsonResponse(result)
+        return add_no_store_headers(response)
 
     def datetime_range(self, start, end, delta):
         ''' return a generator of times at each delta '''

@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -14,7 +15,8 @@ from django.utils import timezone
 from django_celery_results.models import TaskResult
 from unittest.mock import patch
 
-from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Unreachable, create_profile, save_profile
+from .models import TDXConfiguration, InventoryConfiguration, AKIPSConfiguration, APIAccessKey, Summary, Device, Status, Unreachable, create_profile, save_profile
+from .ocnes import EventManager
 from .task import (
     SNAPSHOT_FIXTURE_LABELS,
     get_snapshot_import_models,
@@ -27,6 +29,44 @@ from .task import (
 )
 from .session_tracking import SESSION_LOGIN_AT_KEY
 from .views import Home, Users
+
+
+class PwaViewTests(SimpleTestCase):
+    def test_manifest_is_available(self):
+        response = self.client.get(reverse('pwa_manifest'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/manifest+json'))
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(payload['name'], 'OCNES Dashboard')
+        self.assertEqual(payload['start_url'], reverse('home'))
+        self.assertEqual(payload['display'], 'standalone')
+        self.assertEqual(payload['theme_color'], '#007fae')
+        self.assertEqual(payload['icons'][0]['sizes'], '192x192')
+
+    def test_service_worker_is_available(self):
+        response = self.client.get(reverse('service_worker'))
+        worker_script = response.content.decode('utf-8')
+        cacheable_pages_block = worker_script.split('const CACHEABLE_PAGE_URLS = [', 1)[1].split('];', 1)[0].strip()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/javascript'))
+        self.assertEqual(response['Service-Worker-Allowed'], '/')
+        self.assertContains(response, 'const CACHE_NAME =')
+        self.assertContains(response, reverse('pwa_offline'))
+        self.assertNotContains(response, reverse('about'))
+        self.assertEqual(cacheable_pages_block, '')
+        self.assertContains(response, "pathname.indexOf('/api/') === 0")
+        self.assertContains(response, "pathname.indexOf('/ajax/') === 0")
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
+
+    def test_offline_page_is_available(self):
+        response = self.client.get(reverse('pwa_offline'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Connection Required')
+        self.assertContains(response, 'live OCNES data requires campus or VPN connectivity')
+
 
 class HomeHudScaleTests(SimpleTestCase):
     def setUp(self):
@@ -102,6 +142,48 @@ class HomeHudScaleTests(SimpleTestCase):
         response = self.view(request, hud_mode=True)
 
         self.assertEqual(response.status_code, 302)
+
+
+@override_settings(
+    AUTHENTICATION_BACKENDS=['django.contrib.auth.backends.ModelBackend'],
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    },
+)
+class LoginRememberMeTests(TestCase):
+    def setUp(self):
+        self.url = reverse('login')
+        self.user = User.objects.create_user(username='remember-user', password='testpass123')
+
+    def test_login_page_posts_remember_me_field(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="remember_me"')
+
+    def test_login_without_remember_me_expires_on_browser_close(self):
+        response = self.client.post(self.url, {
+            'username': 'remember-user',
+            'password': 'testpass123',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], settings.LOGIN_REDIRECT_URL)
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_login_with_remember_me_persists_session(self):
+        response = self.client.post(self.url, {
+            'username': 'remember-user',
+            'password': 'testpass123',
+            'remember_me': 'on',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], settings.LOGIN_REDIRECT_URL)
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+        self.assertGreaterEqual(self.client.session.get_expiry_age(), settings.SESSION_COOKIE_AGE - 5)
 
 
 class SettingsViewTests(TestCase):
@@ -840,6 +922,71 @@ class SummariesAPITests(TestCase):
         self.assertEqual(response.json()['detail'], 'Invalid API key.')
 
 
+class SummaryBatteryCleanupTests(TestCase):
+    def setUp(self):
+        cache_delete_patcher = patch('akips.signals.cache.delete')
+        self.mock_cache_delete = cache_delete_patcher.start()
+        self.addCleanup(cache_delete_patcher.stop)
+
+        self.user = User.objects.create_user(username='summary-user', password='testpass123')
+        self.device = Device.objects.create(
+            name='ups-device-1',
+            ip4addr='172.29.5.224',
+            sysName='ups-device-1',
+            sysDescr='UPS device',
+            group='default',
+            tier='ITS-Manning',
+            building_name='Genetic-Medicine-Research-Building',
+            critical=False,
+            type='UPS',
+            maintenance=False,
+            hibernate=False,
+            inventory_url='https://inventory.example.edu/ups-device-1',
+            last_refresh=timezone.now(),
+        )
+        self.status = Status.objects.create(
+            device=self.device,
+            child='ups',
+            attribute='UPS-MIB.upsOutputSource',
+            index='3',
+            value='normal',
+            device_added=timezone.now(),
+            last_change=timezone.now(),
+            ip4addr='172.29.5.224',
+        )
+        self.summary = Summary.objects.create(
+            type='Building',
+            tier='ITS-Manning',
+            name='Genetic-Medicine-Research-Building',
+            ack=False,
+            first_event=timezone.now(),
+            last_event=timezone.now(),
+            trend='Recovered',
+            status='Closed',
+        )
+        self.summary.batteries.add(self.status)
+
+    @patch('akips.ocnes.TDX')
+    def test_refresh_summary_removes_stale_battery_associations(self, mock_tdx):
+        mock_tdx.return_value.enabled = False
+
+        EventManager().refresh_summary()
+
+        self.summary.refresh_from_db()
+        self.assertEqual(self.summary.batteries.count(), 0)
+
+    @patch('akips.ocnes.TDX')
+    def test_summary_view_does_not_show_normal_ups_as_battery_problem(self, mock_tdx):
+        mock_tdx.return_value.enabled = False
+
+        EventManager().refresh_summary()
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('summary', args=[self.summary.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['batteries']), [])
+
+
 class DevicesAPITests(TestCase):
     def setUp(self):
         self.url = reverse('devices_all')
@@ -1317,3 +1464,22 @@ class DashboardCardsViewTests(TestCase):
         self.assertIn('signatures', payload)
         self.assertEqual(set(payload['cards'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})
         self.assertEqual(set(payload['signatures'].keys()), {'crit_card', 'bldg_card', 'spec_card', 'trap_card'})
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
+        self.assertEqual(response['Pragma'], 'no-cache')
+
+
+class ChartDataViewTests(TestCase):
+    def setUp(self):
+        self.url = reverse('chart_data')
+        self.user = User.objects.create_user(username='chart-user', password='testpass123')
+
+    @patch('akips.views.cache.get', return_value=None)
+    @patch('akips.views.cache.set')
+    def test_chart_data_response_disables_browser_caching(self, mock_cache_set, mock_cache_get):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store, no-cache, must-revalidate, max-age=0')
+        self.assertEqual(response['Pragma'], 'no-cache')

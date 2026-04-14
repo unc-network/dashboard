@@ -28,8 +28,14 @@
     <title>{% block title %}{{ site.name }}{% endblock %}</title>
     {% endblock %}
 
-    <link rel="icon" href="{% static 'akips/img/favicon.ico' %}" type="image/x-icon" />
+    <link rel="icon" href="{% static 'akips/img/favicon.png' %}" type="image/png" />
     <link rel="apple-touch-icon" href="{% static 'akips/img/apple-touch-icon.png' %}" />
+    <link rel="manifest" href="{% url 'pwa_manifest' %}" />
+    <meta name="theme-color" id="theme-color-meta" content="#007fae" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="OCNES" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     {% block stylesheets %}
         {% include 'akips/_styles.html' %}
@@ -41,6 +47,18 @@
 <body class="hold-transition {% block body_class %}{% block bodyclass %}layout-top-nav{% endblock %}{% endblock %}">
 <script type="text/javascript">
     (function () {
+        var THEME_COLOR_LIGHT = '#007fae';
+        var THEME_COLOR_DARK = '#13294b';
+
+        function setDocumentThemeColor(resolvedTheme) {
+            var themeColorMeta = document.getElementById('theme-color-meta');
+            if (!themeColorMeta) {
+                return;
+            }
+
+            themeColorMeta.setAttribute('content', resolvedTheme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+        }
+
         function resolveSystemTheme() {
             try {
                 if (window.matchMedia) {
@@ -74,6 +92,8 @@
 
         document.body.classList.add('theme-' + resolved);
         document.body.setAttribute('data-theme-mode', mode);
+        document.body.setAttribute('data-theme-resolved', resolved);
+        setDocumentThemeColor(resolved);
     })();
 </script>
 
@@ -86,6 +106,14 @@
         {% block content_wrapper %}
         <div class="content-wrapper">
             <audio id="audiotag1" src="{% static 'akips/sound/alert.wav' %}" preload="auto"></audio>
+            <div id="offline-status-banner" class="offline-status-banner d-none" role="status" aria-live="polite">
+                <div class="container offline-status-banner-inner">
+                    <span class="offline-status-copy">
+                        <strong>Connection issue:</strong> live dashboard pages and actions require campus or VPN access. Cached monitoring data is intentionally hidden.
+                    </span>
+                    <button type="button" class="offline-status-close" id="offline-status-dismiss" aria-label="Dismiss offline status">Dismiss</button>
+                </div>
+            </div>
             {% block content_header %}
                 <section class="content-header">
                     <div class="container">
@@ -142,6 +170,17 @@
     (function () {
         var THEME_KEY = 'ocnesThemeMode';
         var MODES = ['light', 'dark', 'system'];
+        var THEME_COLOR_LIGHT = '#007fae';
+        var THEME_COLOR_DARK = '#13294b';
+
+        function updateDocumentThemeColor(resolvedTheme) {
+            var themeColorMeta = document.getElementById('theme-color-meta');
+            if (!themeColorMeta) {
+                return;
+            }
+
+            themeColorMeta.setAttribute('content', resolvedTheme === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+        }
 
         function getSystemTheme() {
             try {
@@ -188,7 +227,7 @@
             var resolvedMode = resolved || (mode === 'system' ? getSystemTheme() : mode);
             var modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
             var resolvedLabel = resolvedMode.charAt(0).toUpperCase() + resolvedMode.slice(1);
-            icon.className = 'fas ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
+            icon.className = 'fas header-control-icon ' + (mode === 'light' ? 'fa-sun' : (mode === 'dark' ? 'fa-moon' : 'fa-adjust'));
             if (mode === 'system') {
                 link.setAttribute('title', 'Theme: ' + modeLabel + ' -> ' + resolvedLabel + ' (click to cycle Light, Dark, System)');
             } else {
@@ -202,6 +241,7 @@
             document.body.classList.add('theme-' + resolved);
             document.body.setAttribute('data-theme-mode', mode);
             document.body.setAttribute('data-theme-resolved', resolved);
+            updateDocumentThemeColor(resolved);
             updateThemeToggleUi(mode, resolved);
         }
 
@@ -250,6 +290,103 @@
 </script>
 
 {% block extra_js %}{% endblock %}
+
+<script type="text/javascript">
+    (function () {
+        var deferredInstallPrompt = null;
+        var installedInCurrentPage = false;
+        var offlineBanner = document.getElementById('offline-status-banner');
+        var offlineDismiss = document.getElementById('offline-status-dismiss');
+        var offlineDismissedKey = 'ocnesOfflineBannerDismissed';
+
+        function isStandaloneMode() {
+            var navigatorStandalone = typeof navigator.standalone !== 'undefined' && navigator.standalone;
+            var mediaStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+            return Boolean(navigatorStandalone || mediaStandalone);
+        }
+
+        function isInstalled() {
+            return installedInCurrentPage || isStandaloneMode();
+        }
+
+        function isOfflineDismissed() {
+            try {
+                return window.localStorage.getItem(offlineDismissedKey) === 'true';
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function setOfflineDismissed(value) {
+            try {
+                if (value) {
+                    window.localStorage.setItem(offlineDismissedKey, 'true');
+                } else {
+                    window.localStorage.removeItem(offlineDismissedKey);
+                }
+            } catch (error) {
+                // Ignore storage access errors
+            }
+        }
+
+        function syncOfflineBanner() {
+            if (!offlineBanner) {
+                return;
+            }
+
+            if (navigator.onLine) {
+                offlineBanner.classList.add('d-none');
+                setOfflineDismissed(false);
+                return;
+            }
+
+            if (isOfflineDismissed()) {
+                offlineBanner.classList.add('d-none');
+                return;
+            }
+
+            offlineBanner.classList.remove('d-none');
+        }
+
+        if (!('serviceWorker' in navigator)) {
+            syncOfflineBanner();
+            return;
+        }
+
+        if (offlineDismiss) {
+            offlineDismiss.addEventListener('click', function () {
+                setOfflineDismissed(true);
+                syncOfflineBanner();
+            });
+        }
+
+        window.addEventListener('online', syncOfflineBanner);
+        window.addEventListener('offline', syncOfflineBanner);
+        window.addEventListener('beforeinstallprompt', function (event) {
+            event.preventDefault();
+            deferredInstallPrompt = event;
+            installedInCurrentPage = false;
+        });
+
+        window.addEventListener('appinstalled', function () {
+            installedInCurrentPage = true;
+            deferredInstallPrompt = null;
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && isStandaloneMode()) {
+                installedInCurrentPage = true;
+            }
+        });
+
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{% url 'service_worker' %}').catch(function (error) {
+                console.warn('Service worker registration failed', error);
+            });
+            syncOfflineBanner();
+        });
+    })();
+</script>
 
 {% block extra_foot %}{% endblock %}
 </body>
