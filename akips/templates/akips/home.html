@@ -2107,6 +2107,17 @@
     }
 </script>
 <script type="text/javascript">
+    // Global AJAX error handler for session expiry
+    $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+        // If 401/403 or login page HTML returned, redirect to login
+        var isAuthError = jqxhr.status === 401 || jqxhr.status === 403;
+        var isLoginHtml = jqxhr.responseText && jqxhr.responseText.indexOf('login-box') !== -1 && jqxhr.responseText.indexOf('Sign in to start your session') !== -1;
+        if (isAuthError || isLoginHtml) {
+            var nextUrl = window.location.pathname + window.location.search;
+            window.location.href = '/accounts/login/?next=' + encodeURIComponent(nextUrl);
+        }
+    });
+
     $(document).ready(function () {
         var refresh_seconds = 30;
         var auto_refresh = true;

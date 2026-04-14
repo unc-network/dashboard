@@ -19,6 +19,14 @@ from django.urls import reverse
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
+# Mixin to return 401 for AJAX/JSON requests if not authenticated
+class AjaxLoginRequiredMixin(LoginRequiredMixin):
+    def handle_no_permission(self):
+        req = getattr(self, 'request', None)
+        if req and (req.headers.get('x-requested-with') == 'XMLHttpRequest' or req.headers.get('accept', '').startswith('application/json')):
+            return JsonResponse({'detail': 'Authentication required'}, status=401)
+        return super().handle_no_permission()
 from django.contrib.sessions.models import Session
 from django.template.loader import render_to_string
 from django.templatetags.static import static
@@ -269,7 +277,7 @@ class DashboardLoginView(auth_views.LoginView):
 
 # Create your views here.
 
-class Home(LoginRequiredMixin, View):
+class Home(AjaxLoginRequiredMixin, View):
     ''' Generic first view '''
     template_name = 'akips/home.html'
     hud_font_scale_default = 1.0
@@ -312,7 +320,7 @@ class Home(LoginRequiredMixin, View):
         context = {}
         return render(request, post_template, context=context)
 
-class About(LoginRequiredMixin, View):
+class About(AjaxLoginRequiredMixin, View):
     ''' basic about page '''
     template_name = 'akips/about.html'
 
