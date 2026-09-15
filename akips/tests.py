@@ -31,6 +31,48 @@ from .session_tracking import SESSION_LOGIN_AT_KEY
 from .views import Home, Users
 
 
+@override_settings(AKIPS_WEBHOOK_TOKEN='test-webhook-token')
+class WebhookViewTests(TestCase):
+    def test_duplicate_device_ip_logs_details_and_returns_unsuccessful_response(self):
+        shared_ip = '192.0.2.10'
+        first_device = Device.objects.create(
+            name='switch-one',
+            ip4addr=shared_ip,
+            sysName='switch-one.example.edu',
+            last_refresh=timezone.now(),
+        )
+        second_device = Device.objects.create(
+            name='switch-two',
+            ip4addr=shared_ip,
+            sysName='switch-two.example.edu',
+            last_refresh=timezone.now(),
+        )
+
+        payload = {
+            'device': 'trap-source',
+            'ipaddr': shared_ip,
+            'kind': 'trap',
+        }
+        with self.assertLogs('akips.views', level='ERROR') as captured_logs:
+            response = self.client.post(
+                reverse('akips_webhook'),
+                data=json.dumps(payload),
+                content_type='application/json',
+                HTTP_AKIPS_WEBHOOK_TOKEN='test-webhook-token',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': False})
+        log_output = '\n'.join(captured_logs.output)
+        self.assertIn('Webhook device lookup is ambiguous', log_output)
+        self.assertIn(shared_ip, log_output)
+        self.assertIn('trap-source', log_output)
+        self.assertIn(str(first_device.id), log_output)
+        self.assertIn(first_device.name, log_output)
+        self.assertIn(str(second_device.id), log_output)
+        self.assertIn(second_device.name, log_output)
+
+
 class PwaViewTests(SimpleTestCase):
     def test_manifest_is_available(self):
         response = self.client.get(reverse('pwa_manifest'))

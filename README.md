@@ -189,6 +189,10 @@ You can combine options:
 
 - /hud/?scale=1.9&simulate=1
 
+## Changelog
+
+Release history and notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing
 
 Contributions are welcome.  The project has been in-house for a while but we recently published the repository to facilitate collaboration with other higher education institutions utilizing AKiPS.  
