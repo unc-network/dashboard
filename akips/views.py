@@ -2575,6 +2575,22 @@ def process_webhook_payload(payload):
             device = Device.objects.get(ip4addr=payload['ipaddr'])
         else:
             device = Device.objects.get(name=payload['device'])
+    except Device.MultipleObjectsReturned:
+        matching_devices = list(
+            Device.objects
+            .filter(ip4addr=payload.get('ipaddr'))
+            .order_by('id')
+            .values('id', 'name', 'sysName', 'ip4addr')
+        )
+        logger.error(
+            'Webhook device lookup is ambiguous: ipaddr=%s payload_device=%s '
+            'kind=%s matching_devices=%s',
+            payload.get('ipaddr'),
+            payload.get('device'),
+            payload.get('kind'),
+            matching_devices,
+        )
+        return False
     except Device.DoesNotExist:
         logger.warn("Webhook received for unknown device {}".format(payload))
         # logger.warn("Trap {} received from unknown device {} with address {}".format(
