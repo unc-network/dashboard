@@ -10,11 +10,12 @@ stages:
 
 
 ###############################################################################
-# workflow:
-#   rules:
-    # - if: $CI_COMMIT_BRANCH == "$CI_DEFAULT_BRANCH"
-    # - if: $CI_COMMIT_BRANCH == "main"
-    ### NOTE:  Temporarily commenting out previous line to trigger pipeline runs in testing
+# Git tags mark releases; branch pipelines build and publish the images.
+workflow:
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - when: always
 
 
 ###############################################################################
@@ -124,9 +125,7 @@ build-ocnes-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.OCNES-image"
-      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
-  # rules:
-  #   - if: $CI_COMMIT_TAG
+      --destination "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_SHA}"
 
 ###############################################################################
 # Stage 3:  Create Celery image and push to GitLab Container Registry
@@ -152,7 +151,7 @@ build-celery-image:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.Celery-image"
-      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}"
+      --destination "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_SHA}"
   # only:
   #   changes:
   #     - Dockerfile.Celery-image
@@ -162,7 +161,7 @@ build-celery-image:
 
 ###############################################################################
 # Stage 4:  Tag OCNES image as latest IF this is the main branch.
-#           This should trigger K3s to pull images and build new containers.
+#           New pods pull this tag; the k3s rollout is managed separately.
 ###############################################################################
 tag-latest-build-ocnes:
   rules:
@@ -182,11 +181,11 @@ tag-latest-build-ocnes:
     # - crane auth login -u ${GITLAB_REGISTRY_USER} -p ${GITLAB_REGISTRY_PASSWORD} ${CI_REGISTRY}
     - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
     - echo "Tagging OCNES image as latest..."
-    - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
+    - crane tag "${CI_REGISTRY_IMAGE}/ocnes:${CI_COMMIT_SHA}" latest
 
 ###############################################################################
 # Stage 4:  Tag Celery image as latest IF this is the main branch.
-#           This should trigger K3s to pull images and build new containers.
+#           New pods pull this tag; the k3s rollout is managed separately.
 ###############################################################################
 tag-latest-build-celery:
   rules:
@@ -206,7 +205,7 @@ tag-latest-build-celery:
     # - crane auth login -u ${GITLAB_REGISTRY_USER} -p ${GITLAB_REGISTRY_PASSWORD} ${CI_REGISTRY}
     - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
     - echo "Tagging Celery image as latest..."
-    - crane tag "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED_AT:0:13}${CI_PIPELINE_CREATED_AT:14:2}${CI_PIPELINE_CREATED_AT:17:2}" latest
+    - crane tag "${CI_REGISTRY_IMAGE}/celery:${CI_COMMIT_SHA}" latest
   # only:
   #   changes:
   #     - Dockerfile.Celery-image

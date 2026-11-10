@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries before 2.1.1 were reconstructed from Git tags and commit history.
 
+## [Unreleased]
+
+### Changed
+
+- Tag web and Celery images with their source commit SHA and promote those images to `latest` on main.
+- Skip Git tag pipelines to avoid rebuilding release images already built by branch pipelines.
+
 ## [2.2.0] - 2026-11-10
 
 ### Changed
