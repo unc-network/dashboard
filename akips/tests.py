@@ -9,7 +9,7 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from django_celery_results.models import TaskResult
@@ -226,6 +226,41 @@ class LoginRememberMeTests(TestCase):
         self.assertEqual(response['Location'], settings.LOGIN_REDIRECT_URL)
         self.assertFalse(self.client.session.get_expire_at_browser_close())
         self.assertGreaterEqual(self.client.session.get_expiry_age(), settings.SESSION_COOKIE_AGE - 5)
+
+
+@override_settings(
+    AUTHENTICATION_BACKENDS=['django.contrib.auth.backends.ModelBackend'],
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+)
+class LogoutTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='logout-user', password='testpass123')
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.user)
+
+    def test_account_menu_logout_form_ends_session(self):
+        response = self.client.get(reverse('about'))
+        self.assertContains(response, f'<form method="post" action="{reverse("logout")}">')
+        self.assertContains(response, 'name="csrfmiddlewaretoken"')
+
+        response = self.client.post(reverse('logout'), {
+            'csrfmiddlewaretoken': self.client.cookies['csrftoken'].value,
+        })
+
+        self.assertRedirects(response, settings.LOGOUT_REDIRECT_URL, fetch_redirect_response=False)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_logout_requires_csrf_token(self):
+        response = self.client.post(reverse('logout'))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.client.session['_auth_user_id'], str(self.user.pk))
+
+    def test_get_logout_keeps_session(self):
+        response = self.client.get(reverse('logout'))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(self.client.session['_auth_user_id'], str(self.user.pk))
 
 
 class SettingsViewTests(TestCase):

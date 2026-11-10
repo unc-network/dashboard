@@ -20,6 +20,24 @@ It also runs under Docker, refer to [Docker Readme](Docker.md).
 
 Most recently work has been to build a K3s setup.
 
+### Runtime and upgrades
+
+The app uses Django 5.2 LTS. Docker images and CI use Python 3.12. Install
+`requirements.txt` for production or `requirements-dev.txt` for development;
+both use the same dependency requirements.
+
+Django 5.2 requires PostgreSQL 14 or newer; Docker and CI use PostgreSQL 15.
+Check the running database version before deploying this upgrade. An older
+PostgreSQL database needs a major-version upgrade using `pg_upgrade` or
+dump/restore before the Django upgrade; changing the container image alone
+does not upgrade its data directory.
+
+For OpenShift, select an available Python 3.12 S2I builder in the cluster's web
+and Celery BuildConfigs. Those live build settings are managed outside this
+repository. Rebuild both images with the updated requirements, then run
+`python manage.py migrate --noinput` and
+`python manage.py collectstatic --noinput` as part of deployment.
+
 ## API Usage
 
 OCNES supports programmatic access to selected read-only API endpoints.

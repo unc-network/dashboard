@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries before 2.1.1 were reconstructed from Git tags and commit history.
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade to Django 5.2 LTS and Python 3.12 in Docker builds and CI.
+- Update the debug toolbar and set compatible LDAP and Celery dependency ranges.
+- Share production dependencies with development and document the PostgreSQL 14 minimum.
+
+### Fixed
+
+- Submit logout with a CSRF-protected POST form for Django 5 compatibility.
+- Use Python's UTC timezone in a historical migration so it can load on Django 5.
+- Remove the obsolete localization setting and Python 3.12 regex escape warnings.
+
 ## [2.1.1] - 2026-09-15
 
 ### Fixed

@@ -1,6 +1,6 @@
-# Base Django 4.2 requirements
-Django>=4.2,<5.0
-django-debug-toolbar==4.4.6
+# Base Django 5.2 LTS requirements
+Django>=5.2,<5.3
+django-debug-toolbar==5.2.0
 gunicorn==23.0.0
 psycopg2-binary==2.9.9
 pytz==2024.1
@@ -12,11 +12,11 @@ python-dotenv
 requests
 
 # Django LDAP 
-django-auth-ldap
+django-auth-ldap>=5.2,<6.0
 django-adminlte3
 
 # Celery
-celery
-django_celery_results
-django_celery_beat
+celery>=5.5,<6.0
+django_celery_results>=2.6,<3.0
+django_celery_beat>=2.8,<3.0
 redis
