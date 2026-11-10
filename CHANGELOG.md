@@ -17,6 +17,7 @@ Entries before 2.1.1 were reconstructed from Git tags and commit history.
 
 ### Fixed
 
+- Upgrade sqlparse to 0.6.0 to address the dependency audit's denial-of-service and source-code injection advisories.
 - Submit logout with a CSRF-protected POST form for Django 5 compatibility.
 - Use Python's UTC timezone in a historical migration so it can load on Django 5.
 - Remove the obsolete localization setting and Python 3.12 regex escape warnings.
