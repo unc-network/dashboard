@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries before 2.1.1 were reconstructed from Git tags and commit history.
 
-## [Unreleased]
+## [2.2.0] - 2026-11-10
 
 ### Changed
 
@@ -109,6 +109,7 @@ Entries before 2.1.1 were reconstructed from Git tags and commit history.
 - Add LDAP authentication, ServiceNow incident integration, maintenance and hibernation workflows, and scheduled Celery tasks.
 - Add Docker, OpenShift, PostgreSQL, Redis, Gunicorn, and static-file deployment support.
 
+[2.2.0]: https://sc.its.unc.edu/network/dashboard/-/compare/b91012c...v2.2.0
 [2.1.1]: https://github.com/unc-network/dashboard/compare/2e09b8b...v2.1.1
 [2.1.0]: https://github.com/unc-network/dashboard/compare/v2.0.1...2e09b8b
 [2.0.1]: https://github.com/unc-network/dashboard/compare/v2.0.0...v2.0.1
