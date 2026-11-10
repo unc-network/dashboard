@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Entries before 2.1.1 were reconstructed from Git tags and commit history.
 
+## [2.2.0] - 2026-11-10
+
+### Changed
+
+- Upgrade to Django 5.2 LTS and Python 3.12 in Docker builds and CI.
+- Update the debug toolbar and set compatible LDAP and Celery dependency ranges.
+- Share production dependencies with development and document the PostgreSQL 14 minimum.
+
+### Fixed
+
+- Upgrade sqlparse to 0.6.0 to address the dependency audit's denial-of-service and source-code injection advisories.
+- Submit logout with a CSRF-protected POST form for Django 5 compatibility.
+- Use Python's UTC timezone in a historical migration so it can load on Django 5.
+- Remove the obsolete localization setting and Python 3.12 regex escape warnings.
+
 ## [2.1.1] - 2026-09-15
 
 ### Fixed
@@ -94,6 +109,7 @@ Entries before 2.1.1 were reconstructed from Git tags and commit history.
 - Add LDAP authentication, ServiceNow incident integration, maintenance and hibernation workflows, and scheduled Celery tasks.
 - Add Docker, OpenShift, PostgreSQL, Redis, Gunicorn, and static-file deployment support.
 
+[2.2.0]: https://sc.its.unc.edu/network/dashboard/-/compare/b91012c...v2.2.0
 [2.1.1]: https://github.com/unc-network/dashboard/compare/2e09b8b...v2.1.1
 [2.1.0]: https://github.com/unc-network/dashboard/compare/v2.0.1...2e09b8b
 [2.0.1]: https://github.com/unc-network/dashboard/compare/v2.0.0...v2.0.1

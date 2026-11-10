@@ -233,7 +233,6 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/New_York'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 
@@ -243,7 +242,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# To enable compressed manifest storage, configure STORAGES['staticfiles']
+# with 'whitenoise.storage.CompressedManifestStaticFilesStorage'.
 
 INTERNAL_IPS = ['127.0.0.1']
 

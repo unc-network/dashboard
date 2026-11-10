@@ -48,7 +48,7 @@ class AKIPS:
             # 152.19.198.29 sys SNMPv2-MIB.sysName = bc11-n01.isis.unc.edu
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(.*)$", line)
+                match = re.match(r"^(\S+)\s(\S+)\s(\S+)\s=\s(.*)$", line)
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
@@ -79,7 +79,7 @@ class AKIPS:
             # 172.28.12.112 = 2-Campus-Services,3-Building-Entrance-Switches,4-Lenoir-Hall,admin,Extreme,user
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s=\s(.*)$", line)
+                match = re.match(r"^(\S+)\s=\s(.*)$", line)
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
@@ -106,7 +106,7 @@ class AKIPS:
             # ok: mget * * any group maintenance_mode
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)$", line)
+                match = re.match(r"^(\S+)$", line)
                 if match:
                     data.append( match.group(1) )
             logger.debug("Found {} devices in maintenance mode".format( len( data )))
@@ -173,7 +173,7 @@ class AKIPS:
             # 152.19.198.29 sys SNMPv2-MIB.sysName = bc11-n01.isis.unc.edu
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=(\s(.*))?$", line)
+                match = re.match(r"^(\S+)\s(\S+)\s(\S+)\s=(\s(.*))?$", line)
                 if match:
                     name = match.group(1)
                     if match.group(2) not in data:
@@ -216,7 +216,7 @@ class AKIPS:
             # IP Address 10.194.200.99 is not configured on any devices
             lines = text.split('\n')
             for line in lines:
-                match = re.match("IP Address (\S+) is configured on (\S+)", line)
+                match = re.match(r"IP Address (\S+) is configured on (\S+)", line)
                 if match:
                     input = match.group(1)
                     device = match.group(2)
@@ -249,7 +249,7 @@ class AKIPS:
             # sys	SNMP.snmpState	1,down,1575702020,1662054911,
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
+                match = re.match(r"^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$", line)
                 if match:
                     name = match.group(1)
                     attribute = match.group(3)
@@ -352,7 +352,7 @@ class AKIPS:
             data = []
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$", line)
+                match = re.match(r"^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$", line)
                 if match:
                     entry = {
                         'device': match.group(1),
